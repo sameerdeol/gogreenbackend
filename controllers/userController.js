@@ -8,7 +8,7 @@ require('dotenv').config();
 // signup api only by superadmins
 const signup = async (req, res) => {
     try {
-        const { username, email, password, role_id } = req.body;
+        const { username, email, password, role_id, firstname, lastname, phonenumber } = req.body;
         const loggedInUserRole = req.user ? req.user.role_id : 5; // The role of the logged-in user, from the token, or null if not logged in
 
         // **If the user is a Customer**, they can sign up without authentication
@@ -22,9 +22,9 @@ const signup = async (req, res) => {
         
                 const userId = result.insertId;  // Get the userId from the insert result
         
-                // Insert into the 'customers' table with the user_id
-                const insertCustomerQuery = 'INSERT INTO customers (user_id) VALUES (?)';
-                db.query(insertCustomerQuery, [userId], (err) => {
+                // Insert into the 'customers' table with the user_id and additional details
+                const insertCustomerQuery = 'INSERT INTO customers (user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?)';
+                db.query(insertCustomerQuery, [userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
                     if (err) return res.status(500).send(err);
         
                     res.status(201).send('Customer created successfully');
@@ -81,35 +81,35 @@ const signup = async (req, res) => {
 
                 const userId = result.insertId;
                 
-                // Now insert into the corresponding table based on role_id
+                // Now insert into the corresponding table based on role_id and include firstname, lastname, phonenumber
                 switch (role_id) {
                     case 1: // SuperAdmin
-                        const insertSuperAdminQuery = 'INSERT INTO superadmins (user_id) VALUES (?)';
-                        db.query(insertSuperAdminQuery, [userId], (err) => {
+                        const insertSuperAdminQuery = 'INSERT INTO superadmins (user_id, firstname, lastname, phonenumber) VALUES (?, ?, ?, ?)';
+                        db.query(insertSuperAdminQuery, [userId, firstname, lastname, phonenumber], (err) => {
                             if (err) return res.status(500).send(err);
                             res.status(201).send('SuperAdmin created successfully');
                         });
                         break;
 
                     case 2: // Manager
-                        const insertManagerQuery = 'INSERT INTO managers (user_id) VALUES (?)';
-                        db.query(insertManagerQuery, [userId], (err) => {
+                        const insertManagerQuery = 'INSERT INTO managers (user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?)';
+                        db.query(insertManagerQuery, [userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
                             if (err) return res.status(500).send(err);
                             res.status(201).send('Manager created successfully');
                         });
                         break;
 
                     case 3: // Vendor
-                        const insertVendorQuery = 'INSERT INTO vendors (user_id) VALUES (?)';
-                        db.query(insertVendorQuery, [userId], (err) => {
+                        const insertVendorQuery = 'INSERT INTO vendors (user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?)';
+                        db.query(insertVendorQuery, [userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
                             if (err) return res.status(500).send(err);
                             res.status(201).send('Vendor created successfully');
                         });
                         break;
                     
                     case 4: // Delivery Partner
-                        const insertDeliveryPartnerQuery = 'INSERT INTO delivery_partners (user_id) VALUES (?)';
-                        db.query(insertDeliveryPartnerQuery, [userId], (err) => {
+                        const insertDeliveryPartnerQuery = 'INSERT INTO delivery_partners (user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?)';
+                        db.query(insertDeliveryPartnerQuery, [userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
                             if (err) return res.status(500).send(err);
                             res.status(201).send('Delivery Partner created successfully');
                         });
