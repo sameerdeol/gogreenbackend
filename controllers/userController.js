@@ -18,35 +18,57 @@ const signup = async (req, res) => {
         if (finalRoleId === 5) {  // Customer role
             const hashedPassword = await bcrypt.hash(password, 10);
         
-            // Insert into the 'users' table
-            const insertUserQuery = 'INSERT INTO `users` (username, email, password, role_id) VALUES (?, ?, ?, ?)';
-            db.query(insertUserQuery, [username, email, hashedPassword, finalRoleId], (err, result) => {
+            // Check if a user with the same email and role_id already exists
+            const checkUserQuery = 'SELECT * FROM users WHERE email = ? AND role_id = ?';
+            db.query(checkUserQuery, [email, finalRoleId], (err, result) => {
                 if (err) {
-                    // Check if the error is a duplicate entry error
-                    if (err.code === 'ER_DUP_ENTRY') {
-                        return res.status(200).json({
-                            success: false,
-                            message: 'A user with this email already exists'
-                        });
-                    }
                     return res.status(500).json({
                         success: false,
-                        message: 'Server error, please try again later',
+                        message: 'Server error while checking existing user',
                         error: err
                     });
                 }
-            
-                const userId = result.insertId;
         
-                // Insert into the 'customers' table with the user_id and additional details
-                const insertCustomerQuery = 'INSERT INTO customers (username, email, user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?, ?, ?)';
-                db.query(insertCustomerQuery, [username, email, userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
-                    if (err) return res.status(500).send(err);
+                // If a user with the same email and role_id exists, return an error message
+                if (result.length > 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'A user with this email and role already exists'
+                    });
+                }
         
-                    res.status(201).send('Customer created successfully');
+                // Proceed with inserting the user into the 'users' table
+                const insertUserQuery = 'INSERT INTO `users` (username, email, password, role_id) VALUES (?, ?, ?, ?)';
+                db.query(insertUserQuery, [username, email, hashedPassword, finalRoleId], (err, result) => {
+                    if (err) {
+                        return res.status(500).json({
+                            success: false,
+                            message: 'Server error while inserting user',
+                            error: err
+                        });
+                    }
+        
+                    const userId = result.insertId;
+        
+                    // Insert into the 'customers' table with the user_id and additional details
+                    const insertCustomerQuery = 'INSERT INTO customers (username, email, user_id, firstname, lastname, phonenumber, password) VALUES (?, ?, ?, ?, ?, ?, ?)';
+                    db.query(insertCustomerQuery, [username, email, userId, firstname, lastname, phonenumber, hashedPassword], (err) => {
+                        if (err) {
+                            return res.status(500).json({
+                                success: false,
+                                message: 'Error inserting customer details',
+                                error: err
+                            });
+                        }
+        
+                        res.status(201).json({
+                            success: true,
+                            message: 'Customer created successfully'
+                        });
+                    });
                 });
             });
-            return;  // Exit early after customer creation
+            return;  // Exit early after customer creation process begins
         }
 
         // For other roles, the logged-in user needs to be authenticated and their role should be checked
@@ -91,27 +113,34 @@ const signup = async (req, res) => {
         } else {
             return res.status(403).send('You do not have permission to create this role');
         }
-        
+        const hashedPassword = await bcrypt.hash(password, 10);       
         // Check if the email already exists in the users table
-        const checkQuery = 'SELECT * FROM users WHERE email = ? AND role_id = ?';
-        db.query(checkQuery, [email, role_id], (err, result) => {
-            if (err) return res.status(500).send(err);
-            if (result.length > 0) {
-                return res.status(400).send('A user with the same email and role already exists');
+        const checkUserQuery = 'SELECT * FROM users WHERE email = ? AND role_id = ?';
+        db.query(checkUserQuery, [email, role_id], (err, result) => {
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error while checking for existing user',
+                    error: err
+                });
             }
-
-            // Hash the password
-            const hashedPassword = bcrypt.hashSync(password, 10);
-
-            // Insert into `users` table
+        
+            // If a user with the same email and role_id already exists, send an error message
+            if (result.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'A user with this email and role already exists'
+                });
+            }
+            // Proceed to insert the new user into the 'users' table
             const insertUserQuery = 'INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, ?)';
             db.query(insertUserQuery, [username, email, hashedPassword, role_id], (err, result) => {
                 if (err) {
-                    // Check if the error is a duplicate entry error
+                    // Check if the error is a duplicate entry error for other columns (like email, but with a different role)
                     if (err.code === 'ER_DUP_ENTRY') {
                         return res.status(400).json({
                             success: false,
-                            message: 'A user with this email already exists'
+                            message: 'A user with this email already exists, but with a different role'
                         });
                     }
                     return res.status(500).json({
@@ -213,42 +242,4 @@ const getDashboard = (req, res) => {
             res.status(403).send('Access Denied');
     }
 };
-
-// Create manager by superadmins
-const createManager = async (req, res) => {
-    const { username, email, password } = req.body;
-
-    // Validate the input
-    if (!username || !email || !password) {
-        return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    try {
-        // Check if the email is already in use
-        const [existingUser] = await pool.promise().query('SELECT * FROM users WHERE email = ?', [email]);
-
-        if (existingUser.length > 0) {
-            return res.status(400).json({ message: 'Email already in use' });
-        }
-
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Insert the new manager into the database with role_id = 5
-        await pool
-            .promise()
-            .query('INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, ?)', [
-                username,
-                email,
-                hashedPassword,
-                5, // role_id for Manager
-            ]);
-
-        res.status(201).json({ message: 'Manager created successfully' });
-    } catch (error) {
-        console.error('Error creating manager:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-};
-
-module.exports = { signup, loginUser, getDashboard,createManager  };
+module.exports = { signup, loginUser, getDashboard  };
