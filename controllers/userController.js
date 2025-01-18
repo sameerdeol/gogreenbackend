@@ -23,8 +23,8 @@ const signup = async (req, res) => {
                 const userId = result.insertId;  // Get the userId from the insert result
         
                 // Insert into the 'customers' table with the user_id and additional details
-                const insertCustomerQuery = 'INSERT INTO customers (user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?)';
-                db.query(insertCustomerQuery, [userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
+                const insertCustomerQuery = 'INSERT INTO customers (username, email, user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?, ?)';
+                db.query(insertCustomerQuery, [username, email, userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
                     if (err) return res.status(500).send(err);
         
                     res.status(201).send('Customer created successfully');
@@ -64,11 +64,11 @@ const signup = async (req, res) => {
         }
         
         // Check if the email already exists in the users table
-        const checkQuery = 'SELECT * FROM users WHERE email = ?';
-        db.query(checkQuery, [email], (err, result) => {
+        const checkQuery = 'SELECT * FROM users WHERE email = ? AND role_id = ?';
+        db.query(checkQuery, [email, role_id], (err, result) => {
             if (err) return res.status(500).send(err);
             if (result.length > 0) {
-                return res.status(400).send('User already exists');
+                return res.status(400).send('A user with the same email and role already exists');
             }
 
             // Hash the password
@@ -84,32 +84,32 @@ const signup = async (req, res) => {
                 // Now insert into the corresponding table based on role_id and include firstname, lastname, phonenumber
                 switch (role_id) {
                     case 1: // SuperAdmin
-                        const insertSuperAdminQuery = 'INSERT INTO superadmins (user_id, firstname, lastname, phonenumber) VALUES (?, ?, ?, ?)';
-                        db.query(insertSuperAdminQuery, [userId, firstname, lastname, phonenumber], (err) => {
+                        const insertSuperAdminQuery = 'INSERT INTO superadmins (username, email, user_id, firstname, lastname, phonenumber) VALUES (?, ?, ?, ?, ?, ?)';
+                        db.query(insertSuperAdminQuery, username, email, [userId, firstname, lastname, phonenumber], (err) => {
                             if (err) return res.status(500).send(err);
                             res.status(201).send('SuperAdmin created successfully');
                         });
                         break;
 
                     case 2: // Manager
-                        const insertManagerQuery = 'INSERT INTO managers (user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?)';
-                        db.query(insertManagerQuery, [userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
+                        const insertManagerQuery = 'INSERT INTO managers (username, email, user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?, ?, ?)';
+                        db.query(insertManagerQuery, [username, email, userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
                             if (err) return res.status(500).send(err);
                             res.status(201).send('Manager created successfully');
                         });
                         break;
 
                     case 3: // Vendor
-                        const insertVendorQuery = 'INSERT INTO vendors (user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?)';
-                        db.query(insertVendorQuery, [userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
+                        const insertVendorQuery = 'INSERT INTO vendors (username, email, user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?, ?, ?)';
+                        db.query(insertVendorQuery, [username, email, userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
                             if (err) return res.status(500).send(err);
                             res.status(201).send('Vendor created successfully');
                         });
                         break;
                     
                     case 4: // Delivery Partner
-                        const insertDeliveryPartnerQuery = 'INSERT INTO delivery_partners (user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?)';
-                        db.query(insertDeliveryPartnerQuery, [userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
+                        const insertDeliveryPartnerQuery = 'INSERT INTO delivery_partners (username, email, user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?, ?, ?)';
+                        db.query(insertDeliveryPartnerQuery, [username, email, userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
                             if (err) return res.status(500).send(err);
                             res.status(201).send('Delivery Partner created successfully');
                         });
