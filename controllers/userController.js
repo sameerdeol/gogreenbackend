@@ -10,20 +10,36 @@ const signup = async (req, res) => {
     try {
         const { username, email, password, role_id, firstname, lastname, phonenumber } = req.body;
         const loggedInUserRole = req.user ? req.user.role_id : 5; // The role of the logged-in user, from the token, or null if not logged in
-
+        
+        // If role_id is not provided, default to 5 (Customer)
+        const finalRoleId = role_id || 5;  // Use a new variable to avoid redeclaring `role_id`
+    
         // **If the user is a Customer**, they can sign up without authentication
-        if (role_id === 5) {  // Customer role
+        if (finalRoleId === 5) {  // Customer role
             const hashedPassword = await bcrypt.hash(password, 10);
         
             // Insert into the 'users' table
             const insertUserQuery = 'INSERT INTO `users` (username, email, password, role_id) VALUES (?, ?, ?, ?)';
-            db.query(insertUserQuery, [username, email, hashedPassword, role_id], (err, result) => {
-                if (err) return res.status(500).send(err);
-        
-                const userId = result.insertId;  // Get the userId from the insert result
+            db.query(insertUserQuery, [username, email, hashedPassword, finalRoleId], (err, result) => {
+                if (err) {
+                    // Check if the error is a duplicate entry error
+                    if (err.code === 'ER_DUP_ENTRY') {
+                        return res.status(200).json({
+                            success: false,
+                            message: 'A user with this email already exists'
+                        });
+                    }
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Server error, please try again later',
+                        error: err
+                    });
+                }
+            
+                const userId = result.insertId;
         
                 // Insert into the 'customers' table with the user_id and additional details
-                const insertCustomerQuery = 'INSERT INTO customers (username, email, user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?, ?)';
+                const insertCustomerQuery = 'INSERT INTO customers (username, email, user_id, firstname, lastname, phonenumber,password) VALUES (?, ?, ?, ?, ?, ?, ?)';
                 db.query(insertCustomerQuery, [username, email, userId, firstname, lastname, phonenumber,hashedPassword], (err) => {
                     if (err) return res.status(500).send(err);
         
@@ -41,24 +57,37 @@ const signup = async (req, res) => {
         // Restrict user creation based on roles
         if (loggedInUserRole === 1) {  // SuperAdmin
             if (![1, 2, 3, 4, 5].includes(role_id)) {
-                return res.status(400).send('SuperAdmin can only create users with valid roles.');
+                return res.status(403).json({
+                    success: false,
+                    message: 'SuperAdmin can only create users with valid roles.'
+                });
             }
         } else if (loggedInUserRole === 2) {  // Manager
             if (![3, 4, 5].includes(role_id)) {
-                return res.status(400).send('Manager can only create Vendors, Delivery Partners, or Customers.');
+                return res.status(403).json({
+                    success: false,
+                    message: 'Manager can only create vendors and delievery partners.'
+                });
             }
         } else if (loggedInUserRole === 3) {  // Vendor
             if (![4, 5].includes(role_id)) {
-                return res.status(400).send('Vendor can only create Delivery Partners or Customers.');
+                return res.status(403).json({
+                    success: false,
+                    message: 'Vendor can only create delievery partners.'
+                });
             }
         } else if (loggedInUserRole === 4) {  // Delivery Partner
             if (role_id === 5) {  // Delivery Partner cannot create Customers
-                return res.status(400).send('Delivery Partner cannot create Customers.');
+                return res.status(403).json({
+                    success: false,
+                    message: 'delivery partner can not create any users.'
+                });
             } else {
-                return res.status(400).send('Delivery Partner cannot create other users.');
+                return res.status(403).json({
+                    success: false,
+                    message: 'invalid role_id'
+                });
             }
-        } else if (loggedInUserRole === 5) {  // Customer
-            return res.status(400).send('Customer cannot create other users.');
         } else {
             return res.status(403).send('You do not have permission to create this role');
         }
@@ -77,8 +106,21 @@ const signup = async (req, res) => {
             // Insert into `users` table
             const insertUserQuery = 'INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, ?)';
             db.query(insertUserQuery, [username, email, hashedPassword, role_id], (err, result) => {
-                if (err) return res.status(500).send(err);
-
+                if (err) {
+                    // Check if the error is a duplicate entry error
+                    if (err.code === 'ER_DUP_ENTRY') {
+                        return res.status(400).json({
+                            success: false,
+                            message: 'A user with this email already exists'
+                        });
+                    }
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Server error, please try again later',
+                        error: err
+                    });
+                }
+            
                 const userId = result.insertId;
                 
                 // Now insert into the corresponding table based on role_id and include firstname, lastname, phonenumber
