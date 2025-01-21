@@ -37,7 +37,30 @@ const Product = {
                 console.error('Database error:', err);
                 return callback(err, null);
             }
-            callback(null, results);
+    
+            // Loop through each product and fetch the gallery images
+            const productsWithImages = [];
+            let count = 0; // To track the number of products processed
+    
+            results.forEach((product) => {
+                const galleryQuery = 'SELECT image_path  FROM gallery_images WHERE product_id = ?';
+                db.query(galleryQuery, [product.id], (err, images) => {
+                    if (err) {
+                        console.error('Error fetching gallery images:', err);
+                        return callback(err, null);
+                    }
+    
+                    // Add the gallery images to the product object
+                    product.gallery_images = images;
+                    productsWithImages.push(product);
+                    count++;
+    
+                    // Once all products are processed, return the result
+                    if (count === results.length) {
+                        callback(null, productsWithImages);
+                    }
+                });
+            });
         });
     },
     
