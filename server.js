@@ -4,6 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const userRoutes = require('./routes/userRoutes');
+const productRoutes = require('./routes/productRoutes');  // Import the product routes
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(cors());
 
 // Routes
 app.use('/', userRoutes);
+app.use('/', productRoutes);  // Product-related routes (Prefix with /api)
 
 // Start Server
 const PORT = process.env.PORT || 3000;

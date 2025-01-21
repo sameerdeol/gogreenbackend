@@ -1,7 +1,8 @@
 const express = require('express');
-const { allowRoles } = require('../middleware/roleMiddleware');
+// const { allowRoles } = require('../middleware/roleMiddleware');
 const { signup, loginUser, getDashboard } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/authMiddleware');
+
 
 const router = express.Router();
 
@@ -26,5 +27,6 @@ router.post('/signup', (req, res, next) => {
 
 router.post('/login', loginUser);
 router.get('/dashboard', authenticateToken, getDashboard);
+
 
 module.exports = router;
