@@ -201,12 +201,16 @@ const loginUser = (req, res) => {
     const { email, password } = req.body;
 
     User.findByEmail(email, async (err, results) => {
-        if (err) return res.status(500).send(err);
-        if (results.length === 0) return res.status(404).send('User not found');
+        if (err) return res.status(500).json({ message: 'Internal server error', error: err });
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         const user = results[0];
         const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) return res.status(401).send('Invalid credentials');
+        if (!isValid) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
 
         const token = jwt.sign(
             { id: user.id, role_id: user.role_id, role: user.role_name },
@@ -214,9 +218,10 @@ const loginUser = (req, res) => {
             { expiresIn: '1h' }
         );
 
-        res.json({ token });
+        res.json({ message: 'Login successful', token });
     });
 };
+
 
 // dashboard accorsing to roleid
 const getDashboard = (req, res) => {
@@ -242,4 +247,24 @@ const getDashboard = (req, res) => {
             res.status(403).send('Access Denied');
     }
 };
-module.exports = { signup, loginUser, getDashboard  };
+const getuserDetails = (req, res) => {
+    const { id } = req.user;  // Get the user_id from the authenticated user (assumes JWT token contains id)
+
+    // Call the findById method to get user data by user_id
+    User.findById(id, (err, results) => {
+        if (err) {
+            console.error('Error fetching user details:', err);
+            return res.status(500).json({ message: 'Server error' });
+        }
+
+        // Check if the user with that id exists
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No user found with that id' });
+        }
+        const user = results[0];
+        // Assuming results is an array, return the first user object from the array
+        res.status(200).json(user);  // Return the first user object, not the entire array
+    });
+};
+
+module.exports = { signup, loginUser, getDashboard, getuserDetails  };
