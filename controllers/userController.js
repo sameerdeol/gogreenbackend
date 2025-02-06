@@ -213,9 +213,8 @@ const loginUser = (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: user.id, role_id: user.role_id, role: user.role_name },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { id: user.id, role_id: user.role_id, role: user.role_name ,username:user.username },
+            process.env.JWT_SECRET
         );
 
         res.json({ message: 'Login successful', token });
@@ -266,5 +265,22 @@ const getuserDetails = (req, res) => {
         res.status(200).json(user);  // Return the first user object, not the entire array
     });
 };
+const updateUser = (req, res) => {
+    const { role_id } = req.user;
+    console.log(role_id);
 
-module.exports = { signup, loginUser, getDashboard, getuserDetails  };
+    User.updateUser(role_id, (err, results) => {
+    });
+};
+const fetchUser = (req, res) => {
+    const { role_id } = req.user;
+    console.log(role_id);
+
+    User.fetchUsersByCondition(role_id, (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Database query failed' });
+        }
+        res.json(results);
+    });
+};
+module.exports = { signup, loginUser, getDashboard, getuserDetails , fetchUser, updateUser};

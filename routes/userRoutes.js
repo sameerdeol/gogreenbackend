@@ -1,6 +1,6 @@
 const express = require('express');
 // const { allowRoles } = require('../middleware/roleMiddleware');
-const { signup, loginUser, getDashboard, getuserDetails } = require('../controllers/userController');
+const { signup, loginUser, getDashboard, getuserDetails, fetchUser, updateUser } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
 
@@ -26,8 +26,10 @@ router.post('/signup', (req, res, next) => {
 
 
 router.post('/login', loginUser);
+router.put('/update-user', updateUser);
 router.get('/get-userDetails', authenticateToken,getuserDetails);
 router.get('/dashboard', authenticateToken, getDashboard);
+router.get('/fetchuser', authenticateToken, fetchUser);
 
 
 module.exports = router;
