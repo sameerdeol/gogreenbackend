@@ -26,7 +26,7 @@ router.post('/signup', (req, res, next) => {
 
 
 router.post('/login', loginUser);
-router.put('/update-user', updateUser);
+router.put('/update-user', authenticateToken,updateUser);
 router.get('/get-userDetails', authenticateToken,getuserDetails);
 router.get('/dashboard', authenticateToken, getDashboard);
 router.get('/fetchuser', authenticateToken, fetchUser);
