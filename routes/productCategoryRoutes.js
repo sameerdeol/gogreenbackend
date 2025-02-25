@@ -4,9 +4,9 @@ const {
     checkManagerRole, // Role checking middleware
     createCategory,
     getCategoryById,
-    updateCategory,
-    deleteCategory,
-    getCategories
+    updateCategoryById,
+    deleteCategoryById,
+    getAllCategories
 } = require('../controllers/productCategoryController');
 
 // Route to create a new category - only managers can create categories
@@ -16,12 +16,12 @@ router.post('/categories', checkManagerRole, createCategory);
 router.get('/categories/:id', getCategoryById);
 
 // Route to get the list of categories
-router.get('/categories', getCategories);
+router.get('/categories', getAllCategories);
 
 // Route to update a category - only managers can update categories
-router.put('/categories', checkManagerRole, updateCategory);
+router.put('/categories', checkManagerRole, updateCategoryById);
 
 // Route to delete a category - only managers can delete categories
-router.delete('/categories', checkManagerRole, deleteCategory);
+router.delete('/categories', checkManagerRole, deleteCategoryById);
 
 module.exports = router;
