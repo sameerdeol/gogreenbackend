@@ -40,7 +40,7 @@ const upload = multer({ storage: storage });
 const uploadFields = upload.fields([
     { name: 'featuredImage', maxCount: 1 },
     { name: 'galleryImages', maxCount: 5 },
-    { name: 'brandLogo', maxCount: 1 }  // Added brandLogo field
+    { name: 'brand_logo', maxCount: 1 }  // Added brandLogo field
 ]);
 
 module.exports = uploadFields;

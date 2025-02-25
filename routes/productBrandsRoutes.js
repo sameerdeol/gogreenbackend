@@ -14,15 +14,15 @@ const {
 router.post('/product-brands', checkManagerRole, uploadFields, createProductBrand);
 
 // Route to get a product brand by ID
-router.get('/product-brands/:id', getProductBrandById);
+router.get('/product-brands', getProductBrandById);
 
 // Route to get the list of product brands
-router.get('/product-brands', getAllProductBrands);
+router.get('/allProduct-brands', getAllProductBrands);
 
 // Route to update a product brand - only managers can update brands
-router.put('/product-brands/:id', checkManagerRole, uploadFields, updateProductBrandById);  // Add uploadFields for updating
+router.put('/product-brands', checkManagerRole, uploadFields, updateProductBrandById);  // Add uploadFields for updating
 
 // Route to delete a product brand - only managers can delete brands
-router.delete('/product-brands/:id', checkManagerRole, deleteProductBrandById);
+router.delete('/product-brands', checkManagerRole, deleteProductBrandById);
 
 module.exports = router;
