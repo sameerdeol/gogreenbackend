@@ -75,15 +75,15 @@ const uploadFields = upload.fields([
 
 // Create a new product
 const createProduct = (req, res) => {
-    console.log(req.files);
-    const { name, description, price, category, stock, manufacturer_details } = req.body;
+    // console.log(req.files);
+    const { name, description, price, category, sub_category, stock, manufacturer_details } = req.body; // Include sub_category
     const featuredImage = req.files['featuredImage'] ? req.files['featuredImage'][0].path : null;
 
     // Assume gallery images are uploaded as an array of files
     const galleryImages = req.files['galleryImages'] ? req.files['galleryImages'].map(file => file.path) : [];
 
     // Create the product first
-    Product.create(name, description, price, category, stock, featuredImage, manufacturer_details, (err, productResult) => {
+    Product.create(name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, (err, productResult) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error creating product', error: err });
         }
@@ -98,6 +98,7 @@ const createProduct = (req, res) => {
         });
     });
 };
+
 
 // Get product by ID
 const getProductById = (req, res) => {
@@ -128,7 +129,7 @@ const getProducts = (req, res) => {
 
 // Update product by ID
 const updateProductById = (req, res) => {
-    const { id, name, description, price, category, stock, manufacturer_details } = req.body;
+    const { id, name, description, price, category, sub_category, stock, manufacturer_details } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required.' });
@@ -139,6 +140,7 @@ const updateProductById = (req, res) => {
         description,
         price,
         category,
+        sub_category, // Include sub_category
         stock,
         manufacturer_details,
     };

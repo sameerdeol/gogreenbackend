@@ -2,22 +2,22 @@ const db = require('../config/db');
 const sqlString = require('sqlstring');
 
 const Product = {
-    // Create a new product
-    create: (name, description, price, category, stock, featured_image, manufacturer_details, callback) => {
-
-        // Ensure featured_image is either a string (file path) or null
+    // Create a new product (Uses sub_category instead of name)
+    create: (name, description, price, category, sub_category, stock, featured_image, manufacturer_details, callback) => {
         featured_image = featured_image && typeof featured_image === 'string' ? featured_image : null;
 
-        // Insert product data into the products table
         const query = sqlString.format(
-            'INSERT INTO products (name, description, price, category, stock, featured_image, manufacturer_details) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            `INSERT INTO products 
+            (name, description, price, category, sub_category, stock, featured_image, manufacturer_details) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                String(name), 
-                String(description), 
-                parseInt(price),  // Ensure it's a number
-                String(category), 
-                parseInt(stock, 10), 
-                String(featured_image), 
+                String(name),
+                String(description),
+                parseFloat(price),  // Ensure price is a float
+                parseInt(category, 10),  // Ensure category is a number
+                parseInt(sub_category, 10),  // Store sub_category as an integer
+                parseInt(stock, 10),  // Ensure stock is an integer
+                featured_image,
                 String(manufacturer_details)
             ]
         );
@@ -27,68 +27,88 @@ const Product = {
 
     // Get a product by ID
     findById: (id, callback) => {
-        const query = 'SELECT * FROM products WHERE id = ?';
-        db.query(query, [id], callback);
-    },
-    find: (callback) => {
-        const query = 'SELECT * FROM products';
-        db.query(query, (err, results) => {
-            if (err) {
-                console.error('Database error:', err);
-                return callback(err, null);
+        const query = `
+            SELECT p.*, c.name AS category_name, s.name AS sub_category_name 
+            FROM products p
+            LEFT JOIN product_categories c ON p.category = c.id
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id
+            WHERE p.id = ?
+        `;
+        
+        db.query(query, [id], (err, productResult) => {
+            if (err || !productResult.length) {
+                return callback(err || 'Product not found', null);
             }
-    
-            // Loop through each product and fetch the gallery images
-            const productsWithImages = [];
-            let count = 0; // To track the number of products processed
-    
-            results.forEach((product) => {
-                const galleryQuery = 'SELECT image_path  FROM gallery_images WHERE product_id = ?';
-                db.query(galleryQuery, [product.id], (err, images) => {
-                    if (err) {
-                        console.error('Error fetching gallery images:', err);
-                        return callback(err, null);
-                    }
-    
-                    // Add the gallery images to the product object
-                    product.gallery_images = images;
-                    productsWithImages.push(product);
-                    count++;
-    
-                    // Once all products are processed, return the result
-                    if (count === results.length) {
-                        callback(null, productsWithImages);
-                    }
-                });
+
+            // Fetch gallery images for this product
+            const galleryQuery = 'SELECT image_path FROM gallery_images WHERE product_id = ?';
+            db.query(galleryQuery, [id], (imgErr, images) => {
+                if (imgErr) {
+                    return callback(imgErr, null);
+                }
+
+                // Attach images to the product
+                productResult[0].gallery_images = images;
+                callback(null, productResult[0]);
             });
         });
     },
-    
-    
 
-    // Update a product by ID
+    // Get all products (Optimized with Promise.all)
+    find: (callback) => {
+        const query = `
+            SELECT p.*, c.name AS category_name, s.name AS sub_category_name 
+            FROM products p
+            LEFT JOIN product_categories c ON p.category = c.id
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id
+        `;
+
+        db.query(query, (err, results) => {
+            if (err) {
+                return callback(err, null);
+            }
+
+            // Fetch gallery images for all products using Promise.all
+            const productPromises = results.map((product) => {
+                return new Promise((resolve, reject) => {
+                    const galleryQuery = 'SELECT image_path FROM gallery_images WHERE product_id = ?';
+                    db.query(galleryQuery, [product.id], (imgErr, images) => {
+                        if (imgErr) reject(imgErr);
+                        product.gallery_images = images;
+                        resolve(product);
+                    });
+                });
+            });
+
+            Promise.all(productPromises)
+                .then((productsWithImages) => callback(null, productsWithImages))
+                .catch((error) => callback(error, null));
+        });
+    },
+
+    // Update a product by ID (Includes sub_category)
     updateById: (id, updateData, callback) => {
+        if (!id) return callback('Product ID is required.', null);
+
         const fields = [];
         const values = [];
-    
-        // Dynamically build the query with provided fields
+
         Object.keys(updateData).forEach((key) => {
-            fields.push(`${key} = ?`);
-            values.push(updateData[key]);
+            if (updateData[key] !== undefined) {
+                fields.push(`${key} = ?`);
+                values.push(updateData[key]);
+            }
         });
-    
-        // Add `updated_at` field to track updates
+
+        // Ensure we don't create an invalid SQL query
+        if (fields.length === 0) {
+            return callback('No valid fields provided for update.', null);
+        }
+
         fields.push('updated_at = CURRENT_TIMESTAMP');
-    
-        const query = `
-            UPDATE products 
-            SET ${fields.join(', ')}
-            WHERE id = ?
-        `;
-    
-        // Append the product ID to the values array
         values.push(id);
-    
+
+        const query = `UPDATE products SET ${fields.join(', ')} WHERE id = ?`;
         db.query(query, values, callback);
     },
 
@@ -98,11 +118,10 @@ const Product = {
         db.query(query, [id], callback);
     },
 
-    // Get all products
+    // Get all products (Optimized duplicate function)
     findAll: (callback) => {
-        const query = 'SELECT * FROM products';
-        db.query(query, callback);
-    },
+        Product.find(callback);  // Uses the same optimized `find()` function
+    }
 };
 
 module.exports = Product;
