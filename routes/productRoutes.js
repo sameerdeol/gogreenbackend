@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
 const {
-    uploadFields, // Multer upload middleware
     checkManagerRole, // Role checking middleware
     createProduct,
     getProductById,

@@ -1,8 +1,7 @@
-const multer = require('multer');
-const path = require('path');
 const Product = require('../models/productModel');
 const GalleryImage = require('../models/galleryImage');
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
+const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
 
 const checkManagerRole = (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -54,51 +53,47 @@ const checkManagerRole = (req, res, next) => {
     }
 };
 
-// Configure multer storage for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Specify the folder for storing images
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9); // Adds randomness
-        cb(null, uniqueSuffix + path.extname(file.originalname)); // Unique filename
-    }
-});
-
-const upload = multer({ storage: storage });
-
-// Middleware for multer file uploads
-const uploadFields = upload.fields([
-    { name: 'featuredImage', maxCount: 1 },
-    { name: 'galleryImages', maxCount: 5 }
-]);
-
 // Create a new product
 const createProduct = (req, res) => {
-    // console.log(req.files);
-    const { name, description, price, category, sub_category, stock, manufacturer_details } = req.body; // Include sub_category
-    const featuredImage = req.files['featuredImage'] ? req.files['featuredImage'][0].path : null;
+    console.log("Uploaded Files:", req.files);
+    console.log("Request Body:", req.body);
 
-    // Assume gallery images are uploaded as an array of files
-    const galleryImages = req.files['galleryImages'] ? req.files['galleryImages'].map(file => file.path) : [];
+    // Extract values from req.body
+    let { name, description, price, category, sub_category, stock, manufacturer_details } = req.body;
 
-    // Create the product first
+    // Convert numeric values safely
+    price = parseFloat(price) || 0; // Ensure price is a valid float
+    stock = parseInt(stock) || 0; // Ensure stock is a valid integer
+    sub_category = sub_category && !isNaN(sub_category) ? parseInt(sub_category) : null; // Fix NaN issue
+
+    // Image paths
+    const featuredImage = req.files['featuredImage'] ? `uploads/featured-images/${req.files['featuredImage'][0].filename}` : null;
+    const galleryImages = req.files['galleryImages'] ? req.files['galleryImages'].map(file => `uploads/gallery-images/${file.filename}`) : [];
+
+    // Insert product into database
     Product.create(name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, (err, productResult) => {
         if (err) {
+            console.error("Database Error:", err);
             return res.status(500).json({ success: false, message: 'Error creating product', error: err });
         }
 
-        // After the product is created, insert the gallery images
         const productId = productResult.insertId;
+
+        // Insert gallery images
         GalleryImage.create(productId, galleryImages, (imageErr, imageResult) => {
             if (imageErr) {
+                console.error("Gallery Image Error:", imageErr);
                 return res.status(500).json({ success: false, message: 'Error adding gallery images', error: imageErr });
             }
-            res.status(201).json({ success: true, message: 'Product created successfully', gallery_images: imageResult });
+            res.status(201).json({ 
+                success: true, 
+                message: 'Product created successfully', 
+                product_id: productId,
+                gallery_images: imageResult 
+            });
         });
     });
 };
-
 
 // Get product by ID
 const getProductById = (req, res) => {
