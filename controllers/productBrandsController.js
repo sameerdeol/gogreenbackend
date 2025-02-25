@@ -1,12 +1,17 @@
 const ProductBrand = require('../models/productBrandModel');
+const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
 
 // Create a new product brand
 const createProductBrand = (req, res) => {
-    console.log(req.body);
+    console.log(req.files)
     const { name, description } = req.body;
+    const brandLogo = req.files['brand_logo'] ? req.files['brand_logo'][0].path : null;
 
-    ProductBrand.create(name, description, (err, result) => {
-        if (err) return res.status(500).json({ success: false, message: 'Error creating product brand', error: err });
+    // Call the create function to insert the brand with the logo path
+    ProductBrand.create(name, description, brandLogo, (err, result) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error creating product brand', error: err });
+        }
         res.status(201).json({ success: true, message: 'Product brand created successfully', id: result.insertId });
     });
 };

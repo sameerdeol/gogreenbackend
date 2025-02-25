@@ -11,11 +11,11 @@ const ProductBrand = {
         db.query(query, [id], callback);
     },
 
-    create: (name, description, callback) => {
-        const query = 'INSERT INTO product_brands (name, description) VALUES (?, ?)';
-        db.query(query, [name, description], callback);
+    create: (name, description, brandLogo, callback) => {
+        const query = 'INSERT INTO product_brands (name, description, brand_logo) VALUES (?, ?, ?)';
+        db.query(query, [name, description, brandLogo], callback);
     },
-
+    
     update: (id, updateFields, callback) => {
         const fields = Object.keys(updateFields).map(key => `${key} = ?`).join(', ');
         const values = Object.values(updateFields);

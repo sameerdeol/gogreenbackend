@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const {checkManagerRole} = require('../middleware/checkManagerRoll');
+const { checkManagerRole } = require('../middleware/checkManagerRoll');
+const uploadFields = require('../middleware/multerConfig');  // Import your uploadFields middleware
 const {
     createProductBrand,
     getProductBrandById,
@@ -10,7 +11,7 @@ const {
 } = require('../controllers/productBrandsController');
 
 // Route to create a new product brand - only managers can create brands
-router.post('/product-brands', checkManagerRole, createProductBrand);
+router.post('/product-brands', checkManagerRole, uploadFields, createProductBrand);
 
 // Route to get a product brand by ID
 router.get('/product-brands/:id', getProductBrandById);
@@ -19,7 +20,7 @@ router.get('/product-brands/:id', getProductBrandById);
 router.get('/product-brands', getAllProductBrands);
 
 // Route to update a product brand - only managers can update brands
-router.put('/product-brands/:id', checkManagerRole, updateProductBrandById);
+router.put('/product-brands/:id', checkManagerRole, uploadFields, updateProductBrandById);  // Add uploadFields for updating
 
 // Route to delete a product brand - only managers can delete brands
 router.delete('/product-brands/:id', checkManagerRole, deleteProductBrandById);
