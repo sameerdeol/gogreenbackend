@@ -89,28 +89,41 @@ const Product = {
     // Update a product by ID (Includes sub_category)
     updateById: (id, updateData, callback) => {
         if (!id) return callback('Product ID is required.', null);
-
+    
         const fields = [];
         const values = [];
-
-        Object.keys(updateData).forEach((key) => {
-            if (updateData[key] !== undefined) {
+    
+        Object.entries(updateData).forEach(([key, value]) => {
+            if (value !== undefined) {
                 fields.push(`${key} = ?`);
-                values.push(updateData[key]);
+                values.push(value);
             }
         });
-
+    
         // Ensure we don't create an invalid SQL query
         if (fields.length === 0) {
             return callback('No valid fields provided for update.', null);
         }
-
+    
+        // Automatically update `updated_at` timestamp
         fields.push('updated_at = CURRENT_TIMESTAMP');
+    
+        // Add ID at the end for the WHERE clause
         values.push(id);
-
+    
         const query = `UPDATE products SET ${fields.join(', ')} WHERE id = ?`;
-        db.query(query, values, callback);
+    
+        db.query(query, values, (err, result) => {
+            if (err) {
+                return callback('Database error while updating product.', null);
+            }
+            if (result.affectedRows === 0) {
+                return callback('Product not found or no changes made.', null);
+            }
+            callback(null, result);
+        });
     },
+    
 
     // Delete a product by ID
     deleteById: (id, callback) => {

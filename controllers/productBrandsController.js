@@ -1,34 +1,4 @@
-const jwt = require('jsonwebtoken'); 
 const ProductBrand = require('../models/productBrandModel');
-
-// Middleware to check if the user is a manager
-const checkManagerRole = (req, res, next) => {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-
-    if (!token) {
-        return res.status(401).json({ message: 'Authorization token is missing.' });
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const loggedInUserRole = decoded.role_id;
-
-        if (!loggedInUserRole) {
-            return res.status(400).json({ success: false, message: 'Role ID is required.' });
-        }
-
-        if (loggedInUserRole !== 2) {
-            return res.status(403).json({ success: false, message: 'Access denied. Manager privileges required.' });
-        }
-
-        next();
-    } catch (error) {
-        return res.status(401).json({ 
-            success: false, 
-            message: error.name === 'TokenExpiredError' ? 'Token has expired. Please log in again.' : 'Invalid token. Please log in again.' 
-        });
-    }
-};
 
 // Create a new product brand
 const createProductBrand = (req, res) => {
@@ -59,25 +29,32 @@ const getProductBrandById = (req, res) => {
     });
 };
 
-// Update product brand by ID
+// Update product brand by ID (including status)
 const updateProductBrandById = (req, res) => {
-    const { id, name, description } = req.body;
+    const { id, name, description, status } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product brand ID is required.' });
     }
 
-    if (!name || !description) {
-        return res.status(400).json({ success: false, message: 'Both name and description are required.' });
+    const updateFields = {};
+    if (name !== undefined) updateFields.name = name;
+    if (description !== undefined) updateFields.description = description;
+    if (status !== undefined) updateFields.status = status;
+
+    if (Object.keys(updateFields).length === 0) {
+        return res.status(400).json({ success: false, message: 'At least one field is required to update.' });
     }
 
-    ProductBrand.update(id, name, description, (err, result) => {
+    ProductBrand.update(id, updateFields, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error updating product brand', error: err });
         }
         res.status(200).json({ success: true, message: 'Product brand updated successfully' });
     });
 };
+
+
 
 // Delete product brand by ID
 const deleteProductBrandById = (req, res) => {
@@ -92,7 +69,6 @@ const deleteProductBrandById = (req, res) => {
 };
 
 module.exports = {
-    checkManagerRole,
     createProductBrand,
     getAllProductBrands,
     getProductBrandById,

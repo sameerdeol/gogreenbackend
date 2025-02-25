@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const {checkManagerRole} = require('../controllers/productController');
 const {
-    checkManagerRole, // Role checking middleware
     createSubcategory,
     getSubcategoryById,
     updateSubcategoryById,

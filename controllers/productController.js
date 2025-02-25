@@ -129,7 +129,7 @@ const getProducts = (req, res) => {
 
 // Update product by ID
 const updateProductById = (req, res) => {
-    const { id, name, description, price, category, sub_category, stock, manufacturer_details } = req.body;
+    const { id, name, description, price, category, sub_category, stock, manufacturer_details, status } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required.' });
@@ -140,10 +140,15 @@ const updateProductById = (req, res) => {
         description,
         price,
         category,
-        sub_category, // Include sub_category
+        sub_category, 
         stock,
         manufacturer_details,
     };
+
+    // Include status only if it's provided (0 or 1)
+    if (status !== undefined) {
+        updatedData.status = parseInt(status, 10);
+    }
 
     // Safely check for files
     if (req.files && req.files['featuredImage'] && req.files['featuredImage'].length > 0) {
@@ -151,9 +156,7 @@ const updateProductById = (req, res) => {
     }
 
     // Check for galleryImages
-    const galleryImages = req.files && req.files['galleryImages']
-        ? req.files['galleryImages'].map(file => file.path)
-        : [];
+    const galleryImages = req.files?.['galleryImages']?.map(file => file.path) || [];
 
     // Update the product
     Product.updateById(id, updatedData, (err, result) => {
@@ -161,7 +164,7 @@ const updateProductById = (req, res) => {
             return res.status(500).json({ success: false, message: 'Error updating product', error: err });
         }
 
-        // Update gallery images
+        // Update gallery images only if new ones are uploaded
         if (galleryImages.length > 0) {
             // First, delete existing gallery images for the product
             GalleryImage.deleteByProductId(id, (deleteErr) => {
@@ -185,6 +188,7 @@ const updateProductById = (req, res) => {
         }
     });
 };
+
 
 // Delete product by ID
 const deleteProductById = (req, res) => {

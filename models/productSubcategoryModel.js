@@ -25,10 +25,15 @@ const ProductSubcategory = {
         db.query(query, [name, category_id, description], callback);
     },
 
-    update: (id, name, category_id, description, callback) => {
-        const query = 'UPDATE product_subcategories SET name = ?, category_id = ?, description = ? WHERE id = ?';
-        db.query(query, [name, category_id, description, id], callback);
-    },
+    update: (id, updateFields, callback) => {
+        const fields = Object.keys(updateFields).map(key => `${key} = ?`).join(', ');
+        const values = Object.values(updateFields);
+        values.push(id);
+    
+        const query = `UPDATE product_subcategories SET ${fields} WHERE id = ?`;
+        db.query(query, values, callback);
+    },    
+    
 
     delete: (id, callback) => {
         const query = 'DELETE FROM product_subcategories WHERE id = ?';

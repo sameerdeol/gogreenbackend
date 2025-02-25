@@ -1,20 +1,22 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const cors = require('cors');
 require('dotenv').config();
 
+// Import Routes
 const userRoutes = require('./routes/userRoutes');
-const productRoutes = require('./routes/productRoutes');  // Import the product routes
+const productRoutes = require('./routes/productRoutes');
 const productCategoryRoutes = require('./routes/productCategoryRoutes');
 const productSubcategoryRoutes = require('./routes/productSubcategoryRoutes');
 const productBrandsRoutes = require('./routes/productBrandsRoutes');
 
 const app = express();
 
-app.use(bodyParser.json());
+// Middleware
+app.use(express.json()); // Handles application/json (raw JSON)
+app.use(express.urlencoded({ extended: true })); // Handles form-data (x-www-form-urlencoded)
 app.use(cors());
 
-// Routes
+// Routes with Prefixes
 app.use('/', userRoutes);
 app.use('/', productRoutes);  // Product-related routes (Prefix with /api)
 app.use('/', productCategoryRoutes);  // Product-related routes (Prefix with /api)

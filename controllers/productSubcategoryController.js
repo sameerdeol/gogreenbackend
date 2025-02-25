@@ -1,35 +1,4 @@
-const jwt = require('jsonwebtoken'); 
 const ProductSubcategory = require('../models/productSubcategoryModel');
-
-// Middleware to check if the user is a manager
-const checkManagerRole = (req, res, next) => {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-
-    if (!token) {
-        return res.status(401).json({ message: 'Authorization token is missing.' });
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const loggedInUserRole = decoded.role_id;
-
-        if (!loggedInUserRole) {
-            return res.status(400).json({ success: false, message: 'Role ID is required.' });
-        }
-
-        if (loggedInUserRole !== 2) {
-            return res.status(403).json({ success: false, message: 'Access denied. Manager privileges required.' });
-        }
-
-        next();
-    } catch (error) {
-        if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({ success: false, message: 'Token has expired. Please log in again.' });
-        } else {
-            return res.status(401).json({ success: false, message: 'Invalid token. Please log in again.' });
-        }
-    }
-};
 
 // Create a new subcategory
 const createSubcategory = (req, res) => {
@@ -69,23 +38,32 @@ const getSubcategoriesByCategoryId = (req, res) => {
 
 // Update subcategory by ID
 const updateSubcategoryById = (req, res) => {
-    console.log(req.body)
-    const { id, name, category_id, description } = req.body;
+    console.log(req.body);
+    const { id, name, category_id, description, status } = req.body;
+
     if (!id) {
-        return res.status(400).json({ success: false, message: 'Category ID is required.' });
+        return res.status(400).json({ success: false, message: 'Subcategory ID is required.' });
     }
 
-    if (!name || !description || !category_id) {
-        return res.status(400).json({ success: false, message: 'Both name and description are required.' });
+    const updateFields = {};
+    if (name !== undefined) updateFields.name = name;
+    if (category_id !== undefined) updateFields.category_id = category_id;
+    if (description !== undefined) updateFields.description = description;
+    if (status !== undefined) updateFields.status = status;
+
+    if (Object.keys(updateFields).length === 0) {
+        return res.status(400).json({ success: false, message: 'At least one field is required to update.' });
     }
 
-    ProductSubcategory.update(id, name, category_id, description, (err, result) => {
+    ProductSubcategory.update(id, updateFields, (err, result) => {
         if (err) {
-            return res.status(500).json({ success: false, message: 'Error updating category', error: err });
+            return res.status(500).json({ success: false, message: 'Error updating subcategory', error: err });
         }
-        res.status(200).json({ success: true, message: 'Category updated successfully' });
+        res.status(200).json({ success: true, message: 'Subcategory updated successfully' });
     });
 };
+
+
 
 // Delete subcategory by ID
 const deleteSubcategoryById = (req, res) => {
@@ -100,7 +78,6 @@ const deleteSubcategoryById = (req, res) => {
 };
 
 module.exports = {
-    checkManagerRole,
     createSubcategory,
     getAllSubcategories,
     getSubcategoryById,

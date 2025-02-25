@@ -16,10 +16,14 @@ const ProductBrand = {
         db.query(query, [name, description], callback);
     },
 
-    update: (id, name, description, callback) => {
-        const query = 'UPDATE product_brands SET name = ?, description = ? WHERE id = ?';
-        db.query(query, [name, description, id], callback);
-    },
+    update: (id, updateFields, callback) => {
+        const fields = Object.keys(updateFields).map(key => `${key} = ?`).join(', ');
+        const values = Object.values(updateFields);
+        values.push(id);
+    
+        const query = `UPDATE product_brands SET ${fields} WHERE id = ?`;
+        db.query(query, values, callback);
+    },    
 
     delete: (id, callback) => {
         const query = 'DELETE FROM product_brands WHERE id = ?';
