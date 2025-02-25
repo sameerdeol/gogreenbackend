@@ -60,7 +60,8 @@ const storage = multer.diskStorage({
         cb(null, 'uploads/'); // Specify the folder for storing images
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname)); // Unique filename using timestamp
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9); // Adds randomness
+        cb(null, uniqueSuffix + path.extname(file.originalname)); // Unique filename
     }
 });
 
@@ -74,6 +75,7 @@ const uploadFields = upload.fields([
 
 // Create a new product
 const createProduct = (req, res) => {
+    console.log(req.files);
     const { name, description, price, category, stock, manufacturer_details } = req.body;
     const featuredImage = req.files['featuredImage'] ? req.files['featuredImage'][0].path : null;
 
