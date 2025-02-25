@@ -7,6 +7,7 @@ const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');  // Import the product routes
 const productCategoryRoutes = require('./routes/productCategoryRoutes');
 const productSubcategoryRoutes = require('./routes/productSubcategoryRoutes');
+const productBrandsRoutes = require('./routes/productBrandsRoutes');
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use('/', userRoutes);
 app.use('/', productRoutes);  // Product-related routes (Prefix with /api)
 app.use('/', productCategoryRoutes);  // Product-related routes (Prefix with /api)
 app.use('/', productSubcategoryRoutes);  // Product-related routes (Prefix with /api)
+app.use('/', productBrandsRoutes);  // Product-related routes (Prefix with /api)
 
 // Start Server
 const PORT = process.env.PORT || 3000;
