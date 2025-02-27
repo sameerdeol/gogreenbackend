@@ -11,7 +11,6 @@ const checkManagerRole = (req, res, next) => {
     try {
         // Verify and decode the token
         const decoded = jwt.verify(token, process.env.JWT_SECRET); // Replace with your JWT secret key
-
         // Check if the role ID exists and matches the required role (e.g., 2 for managers)
         const loggedInUserRole = decoded.role_id; // Ensure your token includes `role_id`
         if (!loggedInUserRole) {
@@ -21,7 +20,7 @@ const checkManagerRole = (req, res, next) => {
             });
         }
 
-        if (loggedInUserRole !== 2) {
+        if (loggedInUserRole !== 1 && loggedInUserRole !== 2) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied. You do not have manager privileges.',

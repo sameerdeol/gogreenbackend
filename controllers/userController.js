@@ -372,7 +372,6 @@ const updateUser = (req, res) => {
 };
 const fetchUser = (req, res) => {
     const { role_id } = req.user;
-    console.log(role_id);
 
     User.fetchUsersByCondition(role_id, (err, results) => {
         if (err) {
