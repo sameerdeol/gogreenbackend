@@ -20,9 +20,9 @@ const ProductSubcategory = {
         db.query(query, [categoryId], callback);
     },
 
-    create: (name, category_id, description, callback) => {
-        const query = 'INSERT INTO product_subcategories (name, category_id, description) VALUES (?, ?, ?)';
-        db.query(query, [name, category_id, description], callback);
+    create: (name, category_id, description, sub_category_logo, callback) => {
+        const query = 'INSERT INTO product_subcategories (name, category_id, description, subcategory_logo) VALUES (?, ?, ?, ?)';
+        db.query(query, [name, category_id, description, sub_category_logo], callback);
     },
 
     update: (id, updateFields, callback) => {
@@ -33,7 +33,6 @@ const ProductSubcategory = {
         const query = `UPDATE product_subcategories SET ${fields} WHERE id = ?`;
         db.query(query, values, callback);
     },    
-    
 
     delete: (id, callback) => {
         const query = 'DELETE FROM product_subcategories WHERE id = ?';

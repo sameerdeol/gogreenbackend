@@ -22,6 +22,10 @@ const storage = multer.diskStorage({
             uploadPath = 'uploads/gallery-images/';
         } else if (file.fieldname === 'brand_logo') {
             uploadPath = 'uploads/productBrand-logos/';
+        }else if (file.fieldname === 'category_logo') {
+            uploadPath = 'uploads/productCategory-images/';
+        } else if (file.fieldname === 'subcategory_logo') {
+            uploadPath = 'uploads/productsubCategory-logos/';
         }
 
         ensureDir(uploadPath); // Ensure folder exists
@@ -40,7 +44,9 @@ const upload = multer({ storage: storage });
 const uploadFields = upload.fields([
     { name: 'featuredImage', maxCount: 1 },
     { name: 'galleryImages', maxCount: 5 },
-    { name: 'brand_logo', maxCount: 1 }  // Added brandLogo field
+    { name: 'brand_logo', maxCount: 1 },  // Added brandLogo field
+    { name: 'category_logo', maxCount: 1 },  // Added brandLogo field
+    { name: 'subcategory_logo', maxCount: 1 }  // Added brandLogo field
 ]);
 
 module.exports = uploadFields;

@@ -11,9 +11,9 @@ const ProductCategory = {
         db.query(query, [id], callback);
     },
 
-    create: (name, description, callback) => {
-        const query = 'INSERT INTO product_categories (name, description) VALUES (?, ?)';
-        db.query(query, [name, description], callback);
+    create: (name, description, categoryLogo, callback) => {
+        const query = 'INSERT INTO product_categories (name, description, category_logo) VALUES (?, ?, ?)';
+        db.query(query, [name, description, categoryLogo], callback);
     },
 
     update: (id, updateFields, callback) => {

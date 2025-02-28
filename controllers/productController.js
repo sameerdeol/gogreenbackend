@@ -95,7 +95,7 @@ const updateProductById = (req, res) => {
     }
 
     // Safely check for files
-    if (req.files && req.files['featuredImage'] && req.files['featuredImage'].length > 0) {
+    if (req.files?.['featuredImage']?.length > 0) {
         updatedData.featured_image = req.files['featuredImage'][0].path; // New featured image
     }
 
@@ -122,17 +122,34 @@ const updateProductById = (req, res) => {
                         return res.status(500).json({ success: false, message: 'Error updating gallery images', error: createErr });
                     }
 
-                    // Respond with success
-                    res.status(200).json({ success: true, message: 'Product and gallery images updated successfully', product: result });
+                    // Fetch the updated product details before responding
+                    Product.findById(id, (findErr, updatedProduct) => {
+                        if (findErr) {
+                            return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
+                        }
+                        res.status(200).json({
+                            success: true,
+                            message: 'Product and gallery images updated successfully',
+                            data: updatedProduct
+                        });
+                    });
                 });
             });
         } else {
-            // No gallery images to update
-            res.status(200).json({ success: true, message: 'Product updated successfully', product: result });
+            // Fetch the updated product if no gallery images need updating
+            Product.findById(id, (findErr, updatedProduct) => {
+                if (findErr) {
+                    return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
+                }
+                res.status(200).json({
+                    success: true,
+                    message: 'Product updated successfully',
+                    product: updatedProduct
+                });
+            });
         }
     });
 };
-
 
 // Delete product by ID
 const deleteProductById = (req, res) => {
