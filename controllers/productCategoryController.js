@@ -51,42 +51,49 @@ const updateCategoryById = (req, res) => {
         return res.status(400).json({ success: false, message: 'Category ID is required.' });
     }
 
-    const updateFields = {};
-    if (name !== undefined) updateFields.name = name;
-    if (description !== undefined) updateFields.description = description;
-    if (status !== undefined) updateFields.status = status;
+    // Fetch existing category
+    ProductCategory.findById(id, (err, category) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error fetching category', error: err });
+        }
 
-    // Check if a new category logo was uploaded
-    if (req.files && req.files['category_logo']) {
-        console.log("aaya hai");
-        const newCategoryLogo = req.files['category_logo'][0].path;
-        updateFields.category_logo = newCategoryLogo;
+        if (!category) {
+            return res.status(404).json({ success: false, message: 'Category not found' });
+        }
 
-        // Optional: Delete old logo from server
-        ProductCategory.findById(id, (err, category) => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Error fetching category', error: err });
-            }
+        const updateFields = {
+            name: name !== undefined ? name : category.name,
+            description: description !== undefined ? description : category.description,
+            status: status !== undefined ? status : category.status,
+            category_logo: category.category_logo, // Keep existing logo by default
+        };
 
-            if (category.length && category[0].category_logo) {
-                const oldLogoPath = category[0].category_logo;
+        // Check if a new category logo was uploaded
+        if (req.files && req.files['category_logo']) {
+            console.log("✅ New category logo uploaded");
+            const newCategoryLogo = req.files['category_logo'][0].path;
+            updateFields.category_logo = newCategoryLogo;
+
+            // Delete old logo from server
+            if (category.category_logo) {
+                const oldLogoPath = category.category_logo;
                 fs.unlink(oldLogoPath, (err) => {
-                    if (err) console.error('Error deleting old category logo:', err);
-                    else console.log('Old category logo deleted successfully');
+                    if (err) console.error('❌ Error deleting old category logo:', err);
+                    else console.log('🗑️ Old category logo deleted successfully');
                 });
             }
+        }
+
+        // Update the category and return the full updated category
+        ProductCategory.update(id, updateFields, (err, updatedCategory) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Error updating category', error: err });
+            }
+            res.status(200).json({ success: true, message: 'Category updated successfully', category: updatedCategory });
         });
-    }
-
-    if (Object.keys(updateFields).length === 0) {
-        return res.status(400).json({ success: false, message: 'At least one field is required to update.' });
-    }
-
-    ProductCategory.update(id, updateFields, (err, result) => {
-        if (err) return res.status(500).json({ success: false, message: 'Error updating category', error: err });
-        res.status(200).json({ success: true, message: 'Category updated successfully',category: updateFields  });
     });
 };
+
 
 // Delete category by ID
 const deleteCategoryById = (req, res) => {
