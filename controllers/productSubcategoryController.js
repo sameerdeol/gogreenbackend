@@ -69,27 +69,31 @@ const updateSubcategoryById = (req, res) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching subcategory', error: err });
         }
-        if (!subcategory.length) {
+
+        // Ensure subcategory is an object, not an array
+        const subcategoryObject = Array.isArray(subcategory) ? subcategory[0] : subcategory;
+
+        if (!subcategoryObject) {
             return res.status(404).json({ success: false, message: 'Subcategory not found' });
         }
 
         const updateFields = {
-            name: name !== undefined ? name : subcategory[0].name,
-            category_id: category_id !== undefined ? category_id : subcategory[0].category_id,
-            description: description !== undefined ? description : subcategory[0].description,
-            status: status !== undefined ? status : subcategory[0].status,
-            sub_category_logo: subcategory[0].sub_category_logo,
+            name: name !== undefined ? name : subcategoryObject.name,
+            category_id: category_id !== undefined ? category_id : subcategoryObject.category_id,
+            description: description !== undefined ? description : subcategoryObject.description,
+            status: status !== undefined ? status : subcategoryObject.status,
+            subcategory_logo: subcategoryObject.subcategory_logo, // Keep existing logo
         };
 
         // Check if a new subcategory logo was uploaded
         if (req.files && req.files['subcategory_logo']) {
             console.log("✅ New subcategory logo uploaded");
             const newSubcategoryLogo = req.files['subcategory_logo'][0].path;
-            updateFields.sub_category_logo = newSubcategoryLogo;
+            updateFields.subcategory_logo = newSubcategoryLogo;
 
             // Delete old logo from server
-            if (subcategory[0].sub_category_logo) {
-                const oldLogoPath = subcategory[0].sub_category_logo;
+            if (subcategoryObject.subcategory_logo) {
+                const oldLogoPath = subcategoryObject.subcategory_logo;
                 fs.unlink(oldLogoPath, (err) => {
                     if (err) console.error('❌ Error deleting old subcategory logo:', err);
                     else console.log('🗑️ Old subcategory logo deleted successfully');
@@ -97,15 +101,20 @@ const updateSubcategoryById = (req, res) => {
             }
         }
 
-        // Update the subcategory
-        ProductSubcategory.update(id, updateFields, (err, result) => {
+        // Update the subcategory and return the full updated subcategory
+        ProductSubcategory.update(id, updateFields, (err, updatedSubcategory) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error updating subcategory', error: err });
             }
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ success: false, message: 'Subcategory not found.' });
-            }
-            res.status(200).json({ success: true, message: 'Subcategory updated successfully' });
+
+            // Ensure updatedSubcategory is an object, not an array
+            const updatedSubcategoryObject = Array.isArray(updatedSubcategory) ? updatedSubcategory[0] : updatedSubcategory;
+
+            res.status(200).json({
+                success: true,
+                message: 'Subcategory updated successfully',
+                subcategories: updatedSubcategoryObject, // ✅ Now returns an object
+            });
         });
     });
 };

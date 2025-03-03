@@ -6,7 +6,6 @@ const ProductSubcategory = {
             SELECT product_subcategories.*, product_categories.name AS category_name 
             FROM product_subcategories 
             JOIN product_categories ON product_subcategories.category_id = product_categories.id
-            WHERE product_subcategories.status = 1
         `;
         db.query(query, callback);
     },

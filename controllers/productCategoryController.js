@@ -57,15 +57,18 @@ const updateCategoryById = (req, res) => {
             return res.status(500).json({ success: false, message: 'Error fetching category', error: err });
         }
 
-        if (!category) {
+        // Ensure category is an object, not an array
+        const categoryObject = Array.isArray(category) ? category[0] : category;
+
+        if (!categoryObject) {
             return res.status(404).json({ success: false, message: 'Category not found' });
         }
 
         const updateFields = {
-            name: name !== undefined ? name : category.name,
-            description: description !== undefined ? description : category.description,
-            status: status !== undefined ? status : category.status,
-            category_logo: category.category_logo, // Keep existing logo by default
+            name: name !== undefined ? name : categoryObject.name,
+            description: description !== undefined ? description : categoryObject.description,
+            status: status !== undefined ? status : categoryObject.status,
+            category_logo: categoryObject.category_logo, // Keep existing logo by default
         };
 
         // Check if a new category logo was uploaded
@@ -75,8 +78,8 @@ const updateCategoryById = (req, res) => {
             updateFields.category_logo = newCategoryLogo;
 
             // Delete old logo from server
-            if (category.category_logo) {
-                const oldLogoPath = category.category_logo;
+            if (categoryObject.category_logo) {
+                const oldLogoPath = categoryObject.category_logo;
                 fs.unlink(oldLogoPath, (err) => {
                     if (err) console.error('❌ Error deleting old category logo:', err);
                     else console.log('🗑️ Old category logo deleted successfully');
@@ -89,10 +92,19 @@ const updateCategoryById = (req, res) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error updating category', error: err });
             }
-            res.status(200).json({ success: true, message: 'Category updated successfully', category: updatedCategory });
+
+            // Ensure updatedCategory is an object, not an array
+            const updatedCategoryObject = Array.isArray(updatedCategory) ? updatedCategory[0] : updatedCategory;
+
+            res.status(200).json({
+                success: true,
+                message: 'Category updated successfully',
+                category: updatedCategoryObject, // ✅ Now returns an object
+            });
         });
     });
 };
+
 
 
 // Delete category by ID

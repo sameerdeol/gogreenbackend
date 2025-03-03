@@ -34,9 +34,9 @@ const getProductBrandById = (req, res) => {
     });
 };
 
-// Update product brand by ID
 const updateProductBrandById = (req, res) => {
     const { id, name, description, status } = req.body;
+    
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product brand ID is required.' });
     }
@@ -51,15 +51,24 @@ const updateProductBrandById = (req, res) => {
         const newBrandLogo = req.files.brand_logo[0].path;
         updateFields.brand_logo = newBrandLogo;
 
-        // Delete the old logo if it exists
+        // Fetch existing brand to delete old logo
         ProductBrand.getById(id, (err, brand) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error fetching product brand', error: err });
             }
 
-            if (brand?.brand_logo) {
-                fs.unlink(brand.brand_logo, (err) => {
-                    if (err) console.error('Error deleting old brand logo:', err);
+            // Ensure brand is an object, not an array
+            const brandObject = Array.isArray(brand) ? brand[0] : brand;
+
+            if (!brandObject) {
+                return res.status(404).json({ success: false, message: 'Product brand not found' });
+            }
+
+            // Delete old logo if it exists
+            if (brandObject.brand_logo) {
+                fs.unlink(brandObject.brand_logo, (err) => {
+                    if (err) console.error('❌ Error deleting old brand logo:', err);
+                    else console.log('🗑️ Old brand logo deleted successfully');
                 });
             }
         });
@@ -69,13 +78,23 @@ const updateProductBrandById = (req, res) => {
         return res.status(400).json({ success: false, message: 'At least one field is required to update.' });
     }
 
+    // Update product brand
     ProductBrand.update(id, updateFields, (err, updatedBrand) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error updating product brand', error: err });
         }
-        res.status(200).json({ success: true, message: 'Product brand updated successfully', productBrand: updatedBrand });
+
+        // Ensure updatedBrand is an object, not an array
+        const updatedBrandObject = Array.isArray(updatedBrand) ? updatedBrand[0] : updatedBrand;
+
+        res.status(200).json({
+            success: true,
+            message: 'Product brand updated successfully',
+            productBrand: updatedBrandObject, // ✅ Now returns an object
+        });
     });
 };
+
 
 // Delete product brand by ID
 const deleteProductBrandById = (req, res) => {
