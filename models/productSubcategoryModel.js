@@ -1,6 +1,7 @@
 const db = require('../config/db');
 
 const ProductSubcategory = {
+    // Get all subcategories with category names
     findAll: (callback) => {
         const query = `
             SELECT product_subcategories.*, product_categories.name AS category_name 
@@ -10,26 +11,55 @@ const ProductSubcategory = {
         db.query(query, callback);
     },
 
+    // Get subcategory by ID with category name
     findById: (id, callback) => {
-        const query = 'SELECT * FROM product_subcategories WHERE id = ?';
-        db.query(query, [id], callback);
+        const query = `
+            SELECT product_subcategories.*, product_categories.name AS category_name 
+            FROM product_subcategories 
+            JOIN product_categories ON product_subcategories.category_id = product_categories.id
+            WHERE product_subcategories.id = ?
+        `;
+        db.query(query, [id], (err, results) => {
+            if (err) return callback(err);
+            if (results.length === 0) return callback(null, null); // If no subcategory found
+            callback(null, results[0]); // Return single subcategory
+        });
     },
-
+    findBycatId: (id, callback) => {
+        const query = `
+            SELECT product_subcategories.*, product_categories.name AS category_name 
+            FROM product_subcategories 
+            JOIN product_categories ON product_subcategories.category_id = product_categories.id
+            WHERE product_subcategories.category_id = ?;
+        `;
+        db.query(query, [id], (err, results) => {
+            if (err) return callback(err);
+            callback(null, results);  // ✅ Fix: Return all results, not just one
+        });
+    },
+    
+    
+    // Get subcategories by category ID with category name
     findByCategoryId: (categoryId, callback) => {
-        const query = 'SELECT * FROM product_subcategories WHERE category_id = ?';
+        const query = `
+            SELECT product_subcategories.*, product_categories.name AS category_name 
+            FROM product_subcategories 
+            JOIN product_categories ON product_subcategories.category_id = product_categories.id
+            WHERE product_subcategories.category_id = ?
+        `;
         db.query(query, [categoryId], callback);
     },
 
+    // Create a new subcategory
     create: (name, category_id, description, subcategory_logo, callback) => {
-        const query = 'INSERT INTO product_subcategories (name, category_id, description, subcategory_logo) VALUES (?, ?, ?, ?)';
+        const query = `
+            INSERT INTO product_subcategories (name, category_id, description, subcategory_logo) 
+            VALUES (?, ?, ?, ?)
+        `;
         db.query(query, [name, category_id, description, subcategory_logo], callback);
     },
 
-    getById: (id, callback) => {
-        const query = 'SELECT * FROM product_subcategories WHERE id = ?';
-        db.query(query, [id], callback);
-    },
-
+    // Update subcategory and return updated data with category name
     update: (id, updateFields, callback) => {
         if (Object.keys(updateFields).length === 0) {
             return callback(new Error("No fields provided to update"));
@@ -44,11 +74,12 @@ const ProductSubcategory = {
         db.query(query, values, (err, result) => {
             if (err) return callback(err);
 
-            // Fetch the updated subcategory after update
-            ProductSubcategory.getById(id, callback);
+            // Fetch updated subcategory with category name
+            ProductSubcategory.findById(id, callback);
         });
     },
 
+    // Delete subcategory
     delete: (id, callback) => {
         const query = 'DELETE FROM product_subcategories WHERE id = ?';
         db.query(query, [id], callback);
