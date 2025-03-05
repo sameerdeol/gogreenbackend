@@ -13,16 +13,22 @@ const ProductSubcategory = {
 
     // Get subcategory by ID with category name
     findById: (id, callback) => {
+        console.log("Finding subcategory with ID:", id); // Debugging log
+    
         const query = `
             SELECT product_subcategories.*, product_categories.name AS category_name 
             FROM product_subcategories 
             JOIN product_categories ON product_subcategories.category_id = product_categories.id
             WHERE product_subcategories.id = ?
         `;
+        
         db.query(query, [id], (err, results) => {
-            if (err) return callback(err);
-            if (results.length === 0) return callback(null, null); // If no subcategory found
-            callback(null, results[0]); // Return single subcategory
+            if (err) {
+                console.error("Database error in findById:", err); // Debugging log
+                return callback(err, null);
+            }
+    
+            callback(null, results.length > 0 ? results[0] : null); // Fix: Return single object or null
         });
     },
     findBycatId: (id, callback) => {

@@ -12,7 +12,6 @@ const ensureDir = (dir) => {
 // Configure Multer storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        console.log("hii",req.files)
         let uploadPath = 'uploads/';
 
         // Determine the destination folder based on the file fieldname

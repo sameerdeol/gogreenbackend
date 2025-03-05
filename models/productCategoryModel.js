@@ -7,12 +7,18 @@ const ProductCategory = {
     },
 
     findById: (id, callback) => {
+    
         const query = 'SELECT * FROM product_categories WHERE id = ?';
         db.query(query, [id], (err, results) => {
-            if (err) return callback(err, null);
-            callback(null, results.length > 0 ? results[0] : null); // Return the first result or null if not found
+            if (err) {
+                console.error("Database error in findById:", err); // 🔍 Log errors
+                return callback(err, null);
+            }
+    
+            callback(null, results.length > 0 ? results[0] : null);
         });
     },
+    
 
     create: (name, description, categoryLogo, callback) => {
         const query = 'INSERT INTO product_categories (name, description, category_logo) VALUES (?, ?, ?)';

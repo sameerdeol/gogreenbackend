@@ -113,23 +113,35 @@ const deleteCategoryById = (req, res) => {
     if (!id) return res.status(400).json({ success: false, message: 'Category ID is required.' });
 
     ProductCategory.findById(id, (err, category) => {
-        if (err) return res.status(500).json({ success: false, message: 'Error fetching category', error: err });
-        if (!category.length) return res.status(404).json({ success: false, message: 'Category not found.' });
+        if (err) {
+            console.error("Error fetching category:", err); // 🔍 Log errors
+            return res.status(500).json({ success: false, message: 'Error fetching category', error: err });
+        }
+
+        if (!category) {
+            console.log("Category not found in database"); // 🔍 Debugging log
+            return res.status(404).json({ success: false, message: 'Category not found.' });
+        }
 
         // Delete category logo from server before deleting the category
-        if (category[0].category_logo) {
-            fs.unlink(category[0].category_logo, (err) => {
+        if (category.category_logo) {
+            fs.unlink(category.category_logo, (err) => {
                 if (err) console.error('Error deleting category logo:', err);
                 else console.log('Category logo deleted successfully');
             });
         }
 
         ProductCategory.delete(id, (err, result) => {
-            if (err) return res.status(500).json({ success: false, message: 'Error deleting category', error: err });
+            if (err) {
+                console.error("Error deleting category:", err); // 🔍 Log errors
+                return res.status(500).json({ success: false, message: 'Error deleting category', error: err });
+            }
             res.status(200).json({ success: true, message: 'Category deleted successfully.' });
         });
     });
 };
+
+
 
 module.exports = {
     uploadFields,

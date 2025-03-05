@@ -146,19 +146,29 @@ const deleteSubcategoryById = (req, res) => {
     }
 
     ProductSubcategory.findById(id, (err, subcategory) => {
-        if (err) return res.status(500).json({ success: false, message: 'Error fetching subcategory', error: err });
-        if (!subcategory.length) return res.status(404).json({ success: false, message: 'Subcategory not found.' });
+        if (err) {
+            console.error("Error fetching subcategory:", err); // Debugging log
+            return res.status(500).json({ success: false, message: 'Error fetching subcategory', error: err });
+        }
+
+        if (!subcategory) {
+            console.log("Subcategory not found in database"); // Debugging log
+            return res.status(404).json({ success: false, message: 'Subcategory not found.' });
+        }
 
         // Delete subcategory logo from server before deleting the subcategory
-        if (subcategory[0].sub_category_logo) {
-            fs.unlink(subcategory[0].sub_category_logo, (err) => {
+        if (subcategory.subcategory_logo) {
+            fs.unlink(subcategory.subcategory_logo, (err) => {
                 if (err) console.error('Error deleting subcategory logo:', err);
                 else console.log('Subcategory logo deleted successfully');
             });
         }
 
         ProductSubcategory.delete(id, (err, result) => {
-            if (err) return res.status(500).json({ success: false, message: 'Error deleting subcategory', error: err });
+            if (err) {
+                console.error("Error deleting subcategory:", err); // Debugging log
+                return res.status(500).json({ success: false, message: 'Error deleting subcategory', error: err });
+            }
             res.status(200).json({ success: true, message: 'Subcategory deleted successfully.' });
         });
     });

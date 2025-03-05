@@ -99,14 +99,47 @@ const updateProductBrandById = (req, res) => {
 // Delete product brand by ID
 const deleteProductBrandById = (req, res) => {
     const { id } = req.body;
-    if (!id) return res.status(400).json({ success: false, message: 'Product brand ID is required.' });
 
-    ProductBrand.delete(id, (err, result) => {
-        if (err) return res.status(500).json({ success: false, message: 'Error deleting product brand', error: err });
-        if (result.affectedRows === 0) return res.status(404).json({ success: false, message: 'Product brand not found.' });
-        res.status(200).json({ success: true, message: 'Product brand deleted successfully.' });
+    if (!id) {
+        return res.status(400).json({ success: false, message: 'Product brand ID is required.' });
+    }
+
+    // Fetch existing product brand to delete old logo
+    ProductBrand.getById(id, (err, brand) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error fetching product brand', error: err });
+        }
+
+        // Ensure brand is an object, not an array
+        const brandObject = Array.isArray(brand) ? brand[0] : brand;
+
+        if (!brandObject) {
+            return res.status(404).json({ success: false, message: 'Product brand not found.' });
+        }
+
+        // Delete old brand logo if it exists
+        if (brandObject.brand_logo) {
+            fs.unlink(brandObject.brand_logo, (err) => {
+                if (err) console.error('❌ Error deleting old brand logo:', err);
+                else console.log('🗑️ Old brand logo deleted successfully');
+            });
+        }
+
+        // Now delete the product brand
+        ProductBrand.delete(id, (err, result) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Error deleting product brand', error: err });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, message: 'Product brand not found.' });
+            }
+
+            res.status(200).json({ success: true, message: 'Product brand deleted successfully.' });
+        });
     });
 };
+
 
 module.exports = {
     uploadFields,
