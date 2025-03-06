@@ -190,7 +190,6 @@ const deleteProductById = (req, res) => {
         if (findErr || !product) {
             return res.status(404).json({ success: false, message: 'Product not found.' });
         }
-
         // Delete the featured image
         if (product.featured_image) {
             fs.unlink(path.join(__dirname, '..', product.featured_image), (err) => {
