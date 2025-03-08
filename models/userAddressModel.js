@@ -22,13 +22,29 @@ const UserAddress = {
     },
 
     // Update an address by its ID
-    update: (id, address, city, province, postal_code, road_number, landmark, type, callback) => {
-        const sql = `
-            UPDATE user_addresses 
-            SET address = ?, city = ?, province = ?, postal_code = ?, road_number = ?, landmark = ?, type = ? 
-            WHERE id = ?`;
-        db.query(sql, [address, city, province, postal_code, road_number, landmark, type, id], callback);
+    update: (id, updateFields, callback) => {
+        let sql = 'UPDATE user_addresses SET ';
+        const updates = [];
+        const values = [];
+    
+        // Dynamically construct query based on provided fields
+        for (const [key, value] of Object.entries(updateFields)) {
+            if (value !== undefined) {
+                updates.push(`${key} = ?`);
+                values.push(value);
+            }
+        }
+    
+        if (updates.length === 0) {
+            return callback(new Error('No fields to update'), null);
+        }
+    
+        sql += updates.join(', ') + ' WHERE id = ?';
+        values.push(id);
+    
+        db.query(sql, values, callback);
     },
+    
 
     // Delete an address by its ID
     delete: (id, callback) => {

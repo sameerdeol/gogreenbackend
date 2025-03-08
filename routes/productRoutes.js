@@ -7,7 +7,12 @@ const {
     getProductById,
     updateProductById,
     deleteProductById,
-    getProducts
+    getProducts,
+    setProductTodayDeal,
+    setProductFeatured,
+    getFeaturedProducts,
+    getTodayDealProducts,
+    getproductbycatgeoryID
 } = require('../controllers/productController');
 
 // Route to create a new product - only managers can create products
@@ -23,5 +28,12 @@ router.put('/products', checkManagerRole, uploadFields, updateProductById);
 
 // Route to delete a product by ID - only managers can delete products
 router.delete('/products', checkManagerRole, deleteProductById);
+
+router.put('/products/set-featured', checkManagerRole, setProductFeatured);
+router.put('/products/set-today-deal', checkManagerRole, setProductTodayDeal);
+
+router.get('/featuredproducts', getFeaturedProducts);
+router.post('/productbycategoryid', getproductbycatgeoryID);
+router.get('/todaydealproducts', getTodayDealProducts);
 
 module.exports = router;

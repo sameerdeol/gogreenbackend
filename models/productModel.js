@@ -135,7 +135,46 @@ const Product = {
     // Get all products (Optimized duplicate function)
     findAll: (callback) => {
         Product.find(callback);  // Uses the same optimized `find()` function
+    },
+    setFeatured: (id, isFeatured, callback) => {
+        const sql = `UPDATE products SET is_featured = ? WHERE id = ?`;
+        db.query(sql, [isFeatured, id], callback);
+    },
+
+    setTodayDeal: (id, isTodayDeal, callback) => {
+        const sql = `UPDATE products SET is_today_deal = ? WHERE id = ?`;
+        db.query(sql, [isTodayDeal, id], callback);
+    },
+    // Fetch all featured products
+    getFeatured: (callback) => {
+        const sql = `SELECT p.*, c.name AS category_name, s.name AS sub_category_name 
+            FROM products p
+            LEFT JOIN product_categories c ON p.category = c.id
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id
+            WHERE p.is_featured = TRUE`;
+        db.query(sql, callback);
+    },
+
+    // Fetch all today’s deal products
+    getTodayDeal: (callback) => {
+        const sql = `SELECT p.*, c.name AS category_name, s.name AS sub_category_name 
+            FROM products p
+            LEFT JOIN product_categories c ON p.category = c.id
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id
+            WHERE p.is_today_deal = TRUE`;
+        db.query(sql, callback);
+    },
+
+    getbycategory: (id, callback) => {
+        const sql = `SELECT p.*, c.name AS category_name, s.name AS sub_category_name 
+                     FROM products p
+                     LEFT JOIN product_categories c ON p.category = c.id
+                     LEFT JOIN product_subcategories s ON p.sub_category = s.id
+                     WHERE p.category = ?;`;
+        
+        db.query(sql, [id], callback); // ✅ Pass id as an array element
     }
+    
 };
 
 module.exports = Product;

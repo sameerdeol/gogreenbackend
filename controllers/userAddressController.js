@@ -78,7 +78,7 @@ const updateAddressById = (req, res) => {
             landmark: landmark !== undefined ? landmark : existingAddress.landmark,
             type: type || existingAddress.type
         };
-
+        
         UserAddress.update(id, updateFields, (err) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error updating address', error: err });

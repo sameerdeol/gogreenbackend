@@ -227,6 +227,69 @@ const deleteProductById = (req, res) => {
         });
     });
 };
+const setProductFeatured = (req, res) => {
+    const { id, is_featured } = req.body;
+
+    if (!id || is_featured === undefined) {
+        return res.status(400).json({ success: false, message: 'Product ID and is_featured status are required' });
+    }
+
+    Product.setFeatured(id, is_featured, (err) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error updating featured status', error: err });
+        }
+        res.status(200).json({ success: true, message: 'Product featured status updated successfully' });
+    });
+};
+const setProductTodayDeal = (req, res) => {
+    const { id, is_today_deal } = req.body;
+
+    if (!id || is_today_deal === undefined) {
+        return res.status(400).json({ success: false, message: 'Product ID and is_today_deal status are required' });
+    }
+
+    Product.setTodayDeal(id, is_today_deal, (err) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error updating today deal status', error: err });
+        }
+        res.status(200).json({ success: true, message: 'Product today deal status updated successfully' });
+    });
+};
+// Get all Featured Products
+const getFeaturedProducts = (req, res) => {
+    Product.getFeatured((err, results) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error fetching featured products', error: err });
+        }
+        res.status(200).json({ success: true, data: results });
+    });
+};
+
+// Get all Today's Deal Products
+const getTodayDealProducts = (req, res) => {
+    Product.getTodayDeal((err, results) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error fetching today’s deal products', error: err });
+        }
+        res.status(200).json({ success: true, data: results });
+    });
+};
+
+const getproductbycatgeoryID = (req, res) => {
+    const { catID } = req.body; // Get catID from request body
+
+    if (!catID) {
+        return res.status(400).json({ success: false, message: 'Category ID is required' });
+    }
+
+    Product.getbycategory(catID, (err, results) => { // ✅ Pass catID as argument
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error fetching products by category', error: err });
+        }
+        res.status(200).json({ success: true, data: results });
+    });
+};
+
 
 
 
@@ -237,5 +300,10 @@ module.exports = {
     getProductById,
     updateProductById,
     deleteProductById,
-    getProducts
+    getProducts,
+    setProductFeatured,
+    setProductTodayDeal,
+    getTodayDealProducts,
+    getFeaturedProducts,
+    getproductbycatgeoryID
 };
