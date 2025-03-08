@@ -8,6 +8,7 @@ const productRoutes = require('./routes/productRoutes');
 const productCategoryRoutes = require('./routes/productCategoryRoutes');
 const productSubcategoryRoutes = require('./routes/productSubcategoryRoutes');
 const productBrandsRoutes = require('./routes/productBrandsRoutes');
+const app_banners = require('./routes/appBannerRoutes');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use('/', productRoutes);  // Product-related routes (Prefix with /api)
 app.use('/', productCategoryRoutes);  // Product-related routes (Prefix with /api)
 app.use('/', productSubcategoryRoutes);  // Product-related routes (Prefix with /api)
 app.use('/', productBrandsRoutes);  // Product-related routes (Prefix with /api)
+app.use('/', app_banners);  // Product-related routes (Prefix with /api)
 
 // Start Server
 const PORT = process.env.PORT || 3000;
