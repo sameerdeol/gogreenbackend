@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
 const {checkManagerRole} = require('../middleware/checkManagerRoll');
+const multer = require('multer');
+const upload = multer(); // No storage, just parsing
 const {
     createProduct,
     getProductById,
@@ -19,7 +21,7 @@ const {
 router.post('/products', checkManagerRole, uploadFields, createProduct);
 
 // Route to get a product by ID
-router.post('/productbyid/', getProductById);
+router.post('/productbyid/', upload.none(), getProductById);
 // get list of products
 router.get('/products/', getProducts);
 
