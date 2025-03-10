@@ -10,7 +10,7 @@ const productSubcategoryRoutes = require('./routes/productSubcategoryRoutes');
 const productBrandsRoutes = require('./routes/productBrandsRoutes');
 const appBanners = require('./routes/appBannerRoutes');
 const userAddress = require('./routes/userAdressRoutes');
-
+const dynamicCategory = require('./routes//displayCategory');
 const app = express();
 
 // Middleware
@@ -26,6 +26,8 @@ app.use('/', productSubcategoryRoutes);  // Product-related routes (Prefix with 
 app.use('/', productBrandsRoutes);  // Product-related routes (Prefix with /api)
 app.use('/', appBanners);  // Product-related routes (Prefix with /api)
 app.use('/', userAddress);
+app.use('/', dynamicCategory);
+
 
 // Start Server
 const PORT = process.env.PORT || 3000;
