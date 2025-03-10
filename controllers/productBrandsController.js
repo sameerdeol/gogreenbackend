@@ -5,10 +5,10 @@ const fs = require('fs');
 // Create a new product brand
 const createProductBrand = (req, res) => {
     console.log(req.files);
-    const { name, description } = req.body;
+    const { name, description,category_id } = req.body;
     const brandLogo = req.files?.brand_logo?.[0]?.path || null;
 
-    ProductBrand.create(name, description, brandLogo, (err, result) => {
+    ProductBrand.create(name, description,category_id, brandLogo, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error creating product brand', error: err });
         }
@@ -25,6 +25,15 @@ const getAllProductBrands = (req, res) => {
     });
 };
 
+const fetchbrandbycatID = (req, res) => {
+    const {catID } = req.body;
+    ProductBrand.findbycatID(catID,(err, results) => {
+        if (err) return res.status(500).json({ success: false, message: 'Error fetching product brands', error: err });
+        if (!results.length) return res.status(200).json({ success: true, message: 'No product brands found' });
+        res.status(200).json({ success: true, productBrands: results });
+    });
+};
+
 // Get product brand by ID
 const getProductBrandById = (req, res) => {
     ProductBrand.findById(req.params.id, (err, result) => {
@@ -35,7 +44,7 @@ const getProductBrandById = (req, res) => {
 };
 
 const updateProductBrandById = (req, res) => {
-    const { id, name, description, status } = req.body;
+    const { id, name, description, categoryid, status } = req.body;
     
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product brand ID is required.' });
@@ -44,6 +53,7 @@ const updateProductBrandById = (req, res) => {
     const updateFields = {};
     if (name !== undefined) updateFields.name = name;
     if (description !== undefined) updateFields.description = description;
+    if (categoryid !== undefined) updateFields.categoryid = categoryid;
     if (status !== undefined) updateFields.status = status;
 
     // Check if a new brand logo was uploaded
@@ -52,7 +62,7 @@ const updateProductBrandById = (req, res) => {
         updateFields.brand_logo = newBrandLogo;
 
         // Fetch existing brand to delete old logo
-        ProductBrand.getById(id, (err, brand) => {
+        ProductBrand.findById(id, (err, brand) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error fetching product brand', error: err });
             }
@@ -105,7 +115,7 @@ const deleteProductBrandById = (req, res) => {
     }
 
     // Fetch existing product brand to delete old logo
-    ProductBrand.getById(id, (err, brand) => {
+    ProductBrand.findById(id, (err, brand) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching product brand', error: err });
         }
@@ -147,5 +157,6 @@ module.exports = {
     getAllProductBrands,
     getProductBrandById,
     updateProductBrandById,
-    deleteProductBrandById
+    deleteProductBrandById,
+    fetchbrandbycatID
 };

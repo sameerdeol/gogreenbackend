@@ -7,11 +7,15 @@ const {
     getProductBrandById,
     updateProductBrandById,
     deleteProductBrandById,
-    getAllProductBrands
+    getAllProductBrands,
+    fetchbrandbycatID
 } = require('../controllers/productBrandsController');
 
 // Route to create a new product brand - only managers can create brands
 router.post('/product-brands', checkManagerRole, uploadFields, createProductBrand);
+
+// fetch brands by product category
+router.post('/product-brandsbyCategory',fetchbrandbycatID);
 
 // Route to get a product brand by ID
 router.get('/product-brands', getProductBrandById);
