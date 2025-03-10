@@ -19,7 +19,7 @@ const {
 router.post('/products', checkManagerRole, uploadFields, createProduct);
 
 // Route to get a product by ID
-router.get('/products/:id', getProductById);
+router.post('/productbyid/', getProductById);
 // get list of products
 router.get('/products/', getProducts);
 

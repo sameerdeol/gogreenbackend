@@ -49,7 +49,8 @@ const createProduct = (req, res) => {
 
 // Get product by ID
 const getProductById = (req, res) => {
-    const productId = req.params.id;
+    const {id} = req.body;
+    const productId = id;
 
     Product.findById(productId, (err, product) => {
         if (err || !product) {
