@@ -30,122 +30,6 @@ const User = {
 
         db.query(query, params, callback);
     },
-    // updateUser: (user_id, role_id, userData, callback) => {
-    //     // Step 1: Get the role_id from the users table
-    //     // const getUserRoleQuery = `SELECT role_id FROM users WHERE id = ?`;
-        
-    //     // db.query(getUserRoleQuery, [user_id], (err, result) => {
-    //     //     if (err) return callback(err, null);
-    
-    //     //     if (result.length === 0) {
-    //     //         return callback(new Error('User not found'), null);
-    //     //     }
-    
-    //         // const userRoleId = result[0].role_id;
-            
-    //         // Log the role_id
-    //         // console.log(`User with id ${user_id} has role_id: ${userRoleId}`);
-    
-    //         // Step 2: Allow updates only for certain roles (1, 2)
-    //         if (![1, 2].includes(role_id)) {
-    //             return callback(new Error('Permission denied: Only role_id 1, 2 can update details'), null);
-    //         }
-    
-    //         // // Step 3: Determine the appropriate table name
-    //         // const roleTables = {
-    //         //     1: 'superadmins',
-    //         //     2: 'managers',
-    //         //     3: 'vendors',
-    //         //     4: 'delivery_partners'
-    //         // };
-    
-    //         // const tableName = roleTables[userRoleId];
-    
-    //         // if (!tableName) {
-    //         //     return callback(new Error('Invalid role_id'), null);
-    //         // }
-    
-    //         // Start a transaction
-    //         db.beginTransaction((err) => {
-    //             if (err) return callback(err, null);
-    
-    //             const updateFields = (data, tableFields) => {
-    //                 const fieldsToUpdate = Object.keys(data)
-    //                     .filter(key => tableFields.includes(key)) // Ensure only allowed fields are updated
-    //                     .map(key => `\`${key}\` = ?`);
-    //                 return {
-    //                     queryPart: fieldsToUpdate.join(', '),
-    //                     values: Object.values(data)
-    //                 };
-    //             };
-    
-    //             // Define allowed fields for each table
-    //             // const userTableFields = ['username', 'email', 'role_id'];
-    //             const userTableFields = ['username', 'email', 'role_id', 'firstname', 'lastname', 'phonenumber'];
-    
-    //             // Update `users` table if relevant fields exist in `userData`
-    //             const { queryPart: userQueryPart, values: userValues } = updateFields(userData, userTableFields);
-                
-    //             if (userQueryPart) {
-    //                 const userQuery = `UPDATE users SET ${userQueryPart} WHERE id = ?`;
-    //                 userValues.push(user_id);
-    
-    //                 console.log(userQuery, userValues);
-    
-    //                 db.query(userQuery, userValues, (err) => {
-    //                     if (err) {
-    //                         return db.rollback(() => {
-    //                             callback(err, null);
-    //                         });
-    //                     }
-    
-    //                     // Update role-specific table if relevant fields exist in `userData`
-    //                     // const { queryPart: positionQueryPart, values: positionValues } = updateFields(userData, positionTableFields);
-    
-    //                     // if (positionQueryPart) {
-    //                     //     const positionQuery = `UPDATE ${tableName} SET ${positionQueryPart} WHERE user_id = ?`;
-    //                     //     positionValues.push(user_id);
-    
-    //                         // console.log(positionQuery, positionValues);
-    
-    //                         // db.query(positionQuery, positionValues, (err) => {
-    //                         //     if (err) {
-    //                         //         return db.rollback(() => {
-    //                         //             callback(err, null);
-    //                         //         });
-    //                         //     }
-    
-    //                         //     db.commit((err) => {
-    //                         //         if (err) {
-    //                         //             return db.rollback(() => {
-    //                         //                 callback(err, null);
-    //                         //             });
-    //                         //         }
-    //                         //         callback(null, { message: 'User and position updated successfully' });
-    //                         //     });
-    //                         // });
-    //                     // } else {
-    //                     //     // If no position fields were updated, commit after updating `users`
-    //                     //     db.commit((err) => {
-    //                     //         if (err) {
-    //                     //             return db.rollback(() => {
-    //                     //                 callback(err, null);
-    //                     //             });
-    //                     //         }
-    //                     //         callback(null, { message: 'User updated successfully' });
-    //                     //     });
-    //                     // }
-    //                 });
-    //             } else {
-    //                 callback(null, { message: 'No updates provided' });
-    //             }
-    //         });
-    //     // });
-    // } 
-
-    
-
-
     updateUser: (user_id, role_id, userData, callback) => {
         // Step 1: Allow updates only for certain roles (1, 2)
         if (![1, 2].includes(role_id)) {
@@ -199,7 +83,15 @@ const User = {
                 callback(null, { message: 'No updates provided' });
             }
         });
-    }    
+    },
+    findUserByPhone: (phonenumber, callback) => {
+        const query = "SELECT * FROM users WHERE phonenumber = ?";
+        db.query(query, [phonenumber], callback);
+    },
+    createUser:(phonenumber,role_id, callback) => {
+        const query = `INSERT INTO users (phonenumber, role_id) VALUES (?, ?)`;
+        db.query(query, [phonenumber, role_id], callback);
+    }   
 };
 
 module.exports = User;

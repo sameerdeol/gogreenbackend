@@ -1,6 +1,6 @@
 const express = require('express');
 // const { allowRoles } = require('../middleware/roleMiddleware');
-const { signup, loginUser, getDashboard, getuserDetails, fetchUser, updateUser } = require('../controllers/userController');
+const { signup, loginUser, getDashboard, getuserDetails, fetchUser, updateUser,appsignup } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
 
@@ -24,6 +24,23 @@ router.post('/signup', (req, res, next) => {
     authenticateToken(req, res, next);
 }, signup);
 
+
+router.post('/appsignup', (req, res, next) => {
+    let { role_id } = req.body; // Assuming role_id is in the request body for signup
+
+    // If role_id is null or undefined, assume it's 5 (Customer)
+    if (role_id === null || role_id === undefined) {
+        role_id = 5;
+    }
+
+    // If role_id is 5 (Customer), bypass authenticateToken
+    if (role_id === 5) {
+        return appsignup(req, res);  // Call the signup directly without authentication
+    }
+
+    // For other roles, apply authenticateToken
+    authenticateToken(req, res, next);
+}, appsignup);
 
 router.post('/login', loginUser);
 router.put('/update-user', authenticateToken,updateUser);
