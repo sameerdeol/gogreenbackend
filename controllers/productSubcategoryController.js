@@ -42,9 +42,25 @@ const getAllSubcategories = (req, res) => {
         res.status(200).json({ success: true, subcategories: results });
     });
 };
-const getAllSubcategoriesbycatID = (req, res) => {
+const getAllBeautysubcat = (req, res) => {
     const  catID  =18;
 
+    ProductSubcategory.findBycatId(catID, (err, result) => {
+        if (err) {
+            console.error("Error fetching subcategory:", err);
+            return res.status(500).json({ success: false, message: 'Error fetching subcategory', error: err });
+        }
+
+        if (!result || result.length === 0) {  // Fix: Ensure result is valid
+            return res.status(404).json({ success: false, message: 'Subcategory not found' });
+        }
+
+        res.status(200).json({ success: true, subcategories: result }); // Fix: Use "subcategories"
+    });
+};
+const getAllSubcategoriesbycatID = (req, res) => {
+    const  {catID}  =req.body;
+    console.log(catID)
     ProductSubcategory.findBycatId(catID, (err, result) => {
         if (err) {
             console.error("Error fetching subcategory:", err);
@@ -180,5 +196,6 @@ module.exports = {
     getSubcategoryById,
     updateSubcategoryById,
     deleteSubcategoryById,
-    getAllSubcategoriesbycatID
+    getAllSubcategoriesbycatID,
+    getAllBeautysubcat
 };

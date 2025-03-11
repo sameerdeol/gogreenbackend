@@ -3,14 +3,14 @@ const sqlString = require('sqlstring');
 
 const Product = {
     // Create a new product (Uses sub_category instead of name)
-    create: (name, description, price, category, sub_category, stock, featured_image, manufacturer_details, callback) => {
+    create: (name, description, price, category, sub_category, stock, featured_image, manufacturer_details,title ,subtitle ,size ,fast_delivery_available , callback) => {
         // Ensure featured_image is a valid string or set to null
         featured_image = featured_image && typeof featured_image === 'string' ? featured_image : null;
     
         const query = sqlString.format(
             `INSERT INTO products 
-            (name, description, price, category, sub_category, stock, featured_image, manufacturer_details) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            (name, description, price, category, sub_category, stock, featured_image, manufacturer_details,title ,subtitle ,size ,fast_delivery_available) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?)`,
             [
                 String(name),
                 String(description),
@@ -19,7 +19,11 @@ const Product = {
                 sub_category ? parseInt(sub_category, 10) : null,  // Avoid NaN errors
                 parseInt(stock, 10) || 0,  // Ensure stock is an integer
                 featured_image,
-                String(manufacturer_details)
+                String(manufacturer_details),
+                String(title),
+                String(subtitle),
+                size,
+                fast_delivery_available
             ]
         );
     

@@ -11,11 +11,12 @@ const createProduct = (req, res) => {
     // console.log("Request Body:", req.body);products
 
     // Extract values from req.body
-    let { name, description, price, category, sub_category, stock, manufacturer_details } = req.body;
+    let { name, description, price, category, sub_category, stock, manufacturer_details,title ,subtitle ,size ,fast_delivery_available  } = req.body;
 
     // Convert numeric values safely
     price = parseFloat(price) || 0; // Ensure price is a valid float
     stock = parseInt(stock) || 0; // Ensure stock is a valid integer
+    size =  parseInt(size) || 0; // Ensure stock is a valid integer
     sub_category = sub_category && !isNaN(sub_category) ? parseInt(sub_category) : null; // Fix NaN issue
 
     // Image paths
@@ -23,7 +24,7 @@ const createProduct = (req, res) => {
     const galleryImages = req.files['galleryImages'] ? req.files['galleryImages'].map(file => `uploads/gallery-images/${file.filename}`) : [];
 
     // Insert product into database
-    Product.create(name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, (err, productResult) => {
+    Product.create(name, description, price, category, sub_category, stock, featuredImage, manufacturer_details,title ,subtitle ,size ,fast_delivery_available, (err, productResult) => {
         if (err) {
             console.error("Database Error:", err);
             return res.status(500).json({ success: false, message: 'Error creating product', error: err });
@@ -77,7 +78,7 @@ const getProducts = (req, res) => {
 
 // Update product by ID
 const updateProductById = (req, res) => {
-    const { id, name, description, price, category, sub_category, stock, manufacturer_details, status } = req.body;
+    const { id, name, description, price, category, sub_category, stock, manufacturer_details,title ,subtitle ,size ,fast_delivery_available, status } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required.' });
@@ -97,6 +98,10 @@ const updateProductById = (req, res) => {
             sub_category, 
             stock,
             manufacturer_details,
+            title,
+            subtitle,
+            size,
+            fast_delivery_available
         };
 
         if (status !== undefined) {

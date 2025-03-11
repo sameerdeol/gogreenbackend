@@ -8,7 +8,8 @@ const {
     updateSubcategoryById,
     deleteSubcategoryById,
     getAllSubcategories,
-    getAllSubcategoriesbycatID
+    getAllSubcategoriesbycatID,
+    getAllBeautysubcat
 } = require('../controllers/productSubcategoryController');
 
 // Route to create a new subcategory - only managers can create subcategories
@@ -20,7 +21,8 @@ router.get('/subcategories/:id', getSubcategoryById);
 // Route to get the list of subcategories
 router.get('/subcategories', getAllSubcategories);
 
-router.get('/beautysubcategories', getAllSubcategoriesbycatID);
+router.get('/beautysubcategories', getAllBeautysubcat);
+router.post('/subcategoriesbycatID', getAllSubcategoriesbycatID);
 // Route to update a subcategory - only managers can update subcategories
 router.put('/subcategories', checkManagerRole,uploadFields, updateSubcategoryById);
 
