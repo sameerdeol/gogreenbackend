@@ -8,7 +8,7 @@ const path = require('path');
 // Create a new product
 const createProduct = (req, res) => {
     // console.log("Uploaded Files:", req.files);
-    // console.log("Request Body:", req.body);
+    // console.log("Request Body:", req.body);products
 
     // Extract values from req.body
     let { name, description, price, category, sub_category, stock, manufacturer_details } = req.body;

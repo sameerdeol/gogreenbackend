@@ -43,14 +43,13 @@ const getAllSubcategories = (req, res) => {
     });
 };
 const getAllSubcategoriesbycatID = (req, res) => {
-    console.log("Category ID received:", req.params.id); // Debugging
+    const  catID  =18;
 
-    ProductSubcategory.findBycatId(req.params.id, (err, result) => {
+    ProductSubcategory.findBycatId(catID, (err, result) => {
         if (err) {
             console.error("Error fetching subcategory:", err);
             return res.status(500).json({ success: false, message: 'Error fetching subcategory', error: err });
         }
-        console.log("Query Result:", result); // Debugging
 
         if (!result || result.length === 0) {  // Fix: Ensure result is valid
             return res.status(404).json({ success: false, message: 'Subcategory not found' });

@@ -20,7 +20,7 @@ router.get('/subcategories/:id', getSubcategoryById);
 // Route to get the list of subcategories
 router.get('/subcategories', getAllSubcategories);
 
-router.get('/subcategoriesbycatID/:id', getAllSubcategoriesbycatID);
+router.get('/beautysubcategories', getAllSubcategoriesbycatID);
 // Route to update a subcategory - only managers can update subcategories
 router.put('/subcategories', checkManagerRole,uploadFields, updateSubcategoryById);
 
