@@ -101,12 +101,12 @@ const signup = async (req, res) => {
 // app signup
 const appsignup = async (req, res) => {
     try {
-        const { phonenumber, otp } = req.body;
+        const { phonenumber, otp , prefix } = req.body;
 
-        if (!phonenumber) {
+        if (!phonenumber & !prefix) {
             return res.status(400).json({
                 success: false,
-                message: "Phone number is required",
+                message: "Phone number and prefix is required",
             });
         }
 
@@ -143,7 +143,7 @@ const appsignup = async (req, res) => {
             let role_id = req.body.role_id ?? 5;
 
             // If user doesn't exist, create new user
-            User.createUser(phonenumber, role_id, (err, newUserResult) => {
+            User.createUser(phonenumber, role_id,prefix, (err, newUserResult) => {
                 if (err) {
                     return res.status(500).json({
                         success: false,

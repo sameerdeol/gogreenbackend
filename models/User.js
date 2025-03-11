@@ -88,9 +88,9 @@ const User = {
         const query = "SELECT * FROM users WHERE phonenumber = ?";
         db.query(query, [phonenumber], callback);
     },
-    createUser:(phonenumber,role_id, callback) => {
-        const query = `INSERT INTO users (phonenumber, role_id) VALUES (?, ?)`;
-        db.query(query, [phonenumber, role_id], callback);
+    createUser:(phonenumber,role_id,prefix, callback) => {
+        const query = `INSERT INTO users (phonenumber, role_id ,prefix) VALUES (?, ? ,?)`;
+        db.query(query, [phonenumber, role_id,prefix], callback);
     }   
 };
 
