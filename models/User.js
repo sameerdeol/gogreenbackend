@@ -18,7 +18,7 @@ const User = {
         let params = [];
 
         if (user_id === 1) {
-            query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id';
+            query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id !=5';
         } else if (user_id === 2) {
             query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id IN (3, 4)';
         } else if (user_id === 3) {
