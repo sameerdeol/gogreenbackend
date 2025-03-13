@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const {addFavourite,getUserFavourites,removeFavourite} = require('../controllers/favouriteController');
+const {addFavourite,getUserFavouritesdetails,removeFavourite} = require('../controllers/favouriteController');
 
 router.post('/addfavourite', addFavourite);
-router.post('/getfavouritebyuserid', getUserFavourites);
+router.post('/getfavouritebyuserid', getUserFavouritesdetails);
 router.delete('/removefavoruite', removeFavourite);
 
 module.exports = router;

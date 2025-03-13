@@ -16,7 +16,7 @@ const addFavourite = (req, res) => {
     });
 };
 
-getUserFavourites = (req, res) => {
+const getUserFavouritesdetails = (req, res) => {
     const { user_id } = req.body;
 
     if (!user_id) {
@@ -72,6 +72,6 @@ const removeFavourite = (req, res) => {
 
 module.exports = {
     removeFavourite,
-    getUserFavourites, // ✅ New function added here
+    getUserFavouritesdetails, // ✅ New function added here
     addFavourite
 };
