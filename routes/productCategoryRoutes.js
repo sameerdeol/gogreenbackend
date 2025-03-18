@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {checkManagerRole} = require('../middleware/checkManagerRoll');
 const uploadFields = require('../middleware/multerConfig');  // Import your uploadFields middleware
+const { verifyToken } = require('../middleware/authroization');
 const {
     createCategory,
     getCategoryById,
@@ -14,10 +15,10 @@ const {
 router.post('/categories', checkManagerRole,uploadFields, createCategory);
 
 // Route to get a category by ID
-router.get('/categories/:id', getCategoryById);
+router.get('/categories/:id', verifyToken,getCategoryById);
 
 // Route to get the list of categories
-router.get('/categories', getAllCategories);
+router.get('/categories', verifyToken,getAllCategories);
 
 // Route to update a category - only managers can update categories
 router.put('/categories', checkManagerRole,uploadFields, updateCategoryById);

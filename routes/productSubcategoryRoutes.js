@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {checkManagerRole} = require('../middleware/checkManagerRoll');
 const uploadFields = require('../middleware/multerConfig');  // Import your uploadFields middleware
+const { verifyToken } = require('../middleware/authroization');
 const {
     createSubcategory,
     getSubcategoryById,
@@ -16,13 +17,14 @@ const {
 router.post('/subcategories', checkManagerRole,uploadFields, createSubcategory);
 
 // Route to get a subcategory by ID
-router.get('/subcategories/:id', getSubcategoryById);
+router.get('/subcategories/:id', verifyToken,getSubcategoryById);
 
 // Route to get the list of subcategories
-router.get('/subcategories', getAllSubcategories);
+router.get('/subcategories',verifyToken, getAllSubcategories);
 
-router.get('/beautysubcategories', getAllBeautysubcat);
-router.post('/subcategoriesbycatID', getAllSubcategoriesbycatID);
+router.get('/beautysubcategories', verifyToken,getAllBeautysubcat);
+
+router.post('/subcategoriesbycatID', verifyToken,getAllSubcategoriesbycatID);
 // Route to update a subcategory - only managers can update subcategories
 router.put('/subcategories', checkManagerRole,uploadFields, updateSubcategoryById);
 

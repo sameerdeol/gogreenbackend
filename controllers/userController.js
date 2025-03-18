@@ -97,16 +97,13 @@ const signup = async (req, res) => {
     }
 };
 
-
-// app signup
 const appsignup = async (req, res) => {
     try {
-        const { phonenumber, otp , prefix } = req.body;
-
-        if (!phonenumber & !prefix) {
+        const { phonenumber, otp, prefix } = req.body;
+        if (!phonenumber || !prefix) {
             return res.status(400).json({
                 success: false,
-                message: "Phone number and prefix is required",
+                message: "Phone number and prefix are required",
             });
         }
 
@@ -131,11 +128,19 @@ const appsignup = async (req, res) => {
             }
 
             if (result.length > 0) {
-                // User exists, proceed to login
+                // User exists, generate token and return login response
+                const user = result[0];
+                console.log("user is",user)
+                const token = jwt.sign(
+                    { id: user.id, role_id: user.role_id, role: user.role_name, username: user.username },
+                    process.env.JWT_SECRET
+                );
+
                 return res.status(200).json({
                     success: true,
                     message: "Login successful",
-                    user: result[0],
+                    user,
+                    token, // Include token in response
                 });
             }
 
@@ -143,7 +148,7 @@ const appsignup = async (req, res) => {
             let role_id = req.body.role_id ?? 5;
 
             // If user doesn't exist, create new user
-            User.createUser(phonenumber, role_id,prefix, (err, newUserResult) => {
+            User.createUser(phonenumber, role_id, prefix, (err, newUserResult) => {
                 if (err) {
                     return res.status(500).json({
                         success: false,
@@ -152,14 +157,26 @@ const appsignup = async (req, res) => {
                     });
                 }
 
+                const newUser = {
+                    id: newUserResult.insertId,
+                    phonenumber,
+                    role_id,
+                    role_name: "Customer", // Default role
+                    username: "", // Assuming no username provided at signup
+                };
+
+                // Generate token for new user
+                const token = jwt.sign(
+                    { id: newUser.id, role_id: newUser.role_id, role: newUser.role_name, username: newUser.username },
+                    process.env.JWT_SECRET,
+                    { expiresIn: "7d" }
+                );
+
                 res.status(201).json({
                     success: true,
                     message: "User created and logged in successfully",
-                    user: {
-                        id: newUserResult.insertId,
-                        phonenumber,
-                        role_id, // Include role_id in the response
-                    },
+                    user: newUser,
+                    token,
                 });
             });
         });
@@ -171,6 +188,7 @@ const appsignup = async (req, res) => {
         });
     }
 };
+
 
 
 // login user api
