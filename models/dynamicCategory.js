@@ -45,7 +45,7 @@ const ProductCategory = {
     
         db.query(sql, params, callback);
     },    
-    getshowselectedcategory: (index, callback) => {  // ✅ Added callback as a parameter
+    getshowselectedcategory: (index, callback) => {
         const sql = `
             SELECT 
                 cs.*, 
@@ -56,8 +56,14 @@ const ProductCategory = {
             WHERE cs.index_no = ?;
         `;
     
-        return db.query(sql, [index], callback);  // ✅ Return query execution
+        db.query(sql, [index], (err, results) => {
+            if (err) {
+                return callback(err, null);
+            }
+            callback(null, results[0] || null);  // ✅ Return only the first object
+        });
     },
+    
     
 };
 
