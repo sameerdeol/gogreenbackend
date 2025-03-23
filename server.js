@@ -12,6 +12,7 @@ const appBanners = require('./routes/appBannerRoutes');
 const userAddress = require('./routes/userAdressRoutes');
 const dynamicCategory = require('./routes//displayCategory');
 const favouriteRoutes = require('./routes/favouriteRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const app = express();
 
 // Middleware
@@ -29,9 +30,6 @@ app.use('/', appBanners);  // Product-related routes (Prefix with /api)
 app.use('/', userAddress);
 app.use('/', dynamicCategory);
 app.use('/', favouriteRoutes);
-app.get('/test', (req, res) => {
-    res.status(200).json({ message: "🚀 API is Running Successfully!" });
-});
 
 
 // Start Server
