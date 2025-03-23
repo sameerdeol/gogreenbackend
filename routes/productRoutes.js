@@ -24,7 +24,7 @@ router.post('/products', checkManagerRole, uploadFields, createProduct);
 // Route to get a product by ID
 router.post('/productbyid/', upload.none(), verifyToken,getProductById);
 // get list of products
-router.post('/products/', verifyToken,getProducts);
+router.post('/getproducts/', verifyToken,getProducts);
 
 // Route to update a product by ID - only managers can update products
 router.put('/products', checkManagerRole, uploadFields, updateProductById);

@@ -10,11 +10,10 @@ const ProductCategory = {
     },
     getProductsByIndex: (index, categoryset, userID, callback) => {
         let sql;
-        let params = [index];
-        let categorcheck = categoryset;
+        let params;
     
-        if (categorcheck == 1) {
-            // ✅ Fetch subcategories related to the index
+        if (categoryset == 1) {
+            // ✅ Fetch subcategories related to the index (No need for userID here)
             sql = `
                 SELECT ps.*, pc.name AS category_name 
                 FROM product_subcategories ps
@@ -22,6 +21,7 @@ const ProductCategory = {
                 JOIN product_categories pc ON ps.category_id = pc.id
                 WHERE cs.index_no = ?;
             `;
+            params = [index];
         } else {
             // ✅ Fetch products related to the index, including is_favourite status
             sql = `
@@ -29,19 +29,22 @@ const ProductCategory = {
                     p.*, 
                     c.name AS category_name, 
                     s.name AS sub_category_name, 
-                    CASE WHEN f.product_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_favourite
+                    CASE 
+                        WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
+                        ELSE FALSE 
+                    END AS is_favourite
                 FROM products p
                 LEFT JOIN category_selection cs ON p.category = cs.product_categories
                 LEFT JOIN product_categories c ON cs.product_categories = c.id
                 LEFT JOIN product_subcategories s ON p.sub_category = s.id
-                LEFT JOIN favourite_products f ON p.id = f.product_id AND f.user_id = ?
+                LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
                 WHERE cs.index_no = ?;
             `;
-            params = [userID, index]; // ✅ Include userID for is_favourite check
+            params = [userID, userID, userID, index]; // ✅ Ensure userID is properly handled
         }
     
         db.query(sql, params, callback);
-    },
+    },    
     getshowselectedcategory: (index) => {
         const sql = `UPDATE category_selection 
                      SET product_categories = ? 
