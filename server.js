@@ -29,6 +29,9 @@ app.use('/', appBanners);  // Product-related routes (Prefix with /api)
 app.use('/', userAddress);
 app.use('/', dynamicCategory);
 app.use('/', favouriteRoutes);
+app.get('/test', (req, res) => {
+    res.status(200).json({ message: "🚀 API is Running Successfully!" });
+});
 
 
 // Start Server
