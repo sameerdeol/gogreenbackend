@@ -33,7 +33,14 @@ const ProductCategory = {
             `;
         }
         db.query(sql, params, callback);
-    }
+    },
+    getshowselectedcategory: (index) => {
+        const sql = `UPDATE category_selection 
+                     SET product_categories = ? 
+                     WHERE index_no = ?;`;
+    
+        db.query(sql, [catid, index], callback);
+    },
         
 };
 

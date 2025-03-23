@@ -88,10 +88,10 @@ const createProduct = (req, res) => {
 
 // Get product by ID
 const getProductById = (req, res) => {
-    const {id} = req.body;
+    const {id,userID} = req.body;
     const productId = id;
 
-    Product.findById(productId, (err, product) => {
+    Product.findById(productId,userID, (err, product) => {
         if (err || !product) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
@@ -99,7 +99,8 @@ const getProductById = (req, res) => {
     });
 };
 const getProducts = (req, res) => {
-    Product.find((err, products) => {
+    const { userID } = req.body;
+    Product.find(userID,(err, products) => {
         if (err) {
             // Handle database errors
             console.error(err);
@@ -355,7 +356,8 @@ const setProductTodayDeal = (req, res) => {
 };
 // Get all Featured Products
 const getFeaturedProducts = (req, res) => {
-    Product.getFeatured((err, results) => {
+    const { userID } = req.body;
+    Product.getFeatured(userID,(err, results) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching featured products', error: err });
         }
@@ -365,7 +367,8 @@ const getFeaturedProducts = (req, res) => {
 
 // Get all Today's Deal Products
 const getTodayDealProducts = (req, res) => {
-    Product.getTodayDeal((err, results) => {
+    const { userID } = req.body;
+    Product.getTodayDeal(userID,(err, results) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching today’s deal products', error: err });
         }
@@ -374,13 +377,13 @@ const getTodayDealProducts = (req, res) => {
 };
 
 const getproductbycatgeoryID = (req, res) => {
-    const { catID } = req.body; // Get catID from request body
+    const { catID,userID } = req.body; // Get catID from request body
 
     if (!catID) {
         return res.status(400).json({ success: false, message: 'Category ID is required' });
     }
 
-    Product.getbycategory(catID, (err, results) => { // ✅ Pass catID as argument
+    Product.getbycategory(userID,catID, (err, results) => { // ✅ Pass catID as argument
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching products by category', error: err });
         }

@@ -6,12 +6,12 @@ const { verifyToken } = require('../middleware/authroization');
 const {
     selectProductcategoryfirst,
     dynamicCategoryData,
-    dynamicCategoryData2
+    showselectedcategory
 } = require('../controllers/dynamicCategory');
 
 // Route to create a new product brand - only managers can create brands
 router.put('/save-categories', checkManagerRole, selectProductcategoryfirst);
 router.post('/dynamicCategory', verifyToken,dynamicCategoryData);
-// router.get('/dynamicCategoryDatatwo', verifyToken,dynamicCategoryData2);
+// router.post('/showselectedcategory', verifyToken,showselectedcategory);
 
 module.exports = router;

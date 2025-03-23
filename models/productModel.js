@@ -40,94 +40,105 @@ const Product = {
         },
         
 
-    // Get a product by ID
-  // Find Product by ID (Include Attributes and Gallery)
-  findById: (id, callback) => {
-    const query = `
-            SELECT p.*, c.name AS category_name, s.name AS sub_category_name 
-            FROM products p
-            LEFT JOIN product_categories c ON p.category = c.id
-            LEFT JOIN product_subcategories s ON p.sub_category = s.id
-            WHERE p.id = ?`;
-
-    db.query(query, [id], (err, productResult) => {
-      if (err || !productResult.length) {
-        return callback(err || "Product not found", null);
-      }
-
-      const product = productResult[0];
-
-      // Fetch gallery images for this product
-      const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
-      const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
-
-      Promise.all([
-        new Promise((resolve, reject) => {
-          db.query(galleryQuery, [id], (imgErr, images) => {
-            if (imgErr) reject(imgErr);
-            product.gallery_images = images;
-            resolve();
-          });
-        }),
-        new Promise((resolve, reject) => {
-          db.query(attributesQuery, [id], (attrErr, attributes) => {
-            if (attrErr) reject(attrErr);
-            product.attributes = attributes;
-            resolve();
-          });
-        }),
-      ])
-        .then(() => callback(null, product))
-        .catch((error) => callback(error, null));
-    });
-  },
-
-    // Get all products (Optimized with Promise.all)
-  // Find All Products (Include Attributes and Gallery)
-  find: (callback) => {
-    const query = `
-            SELECT p.*, c.name AS category_name, s.name AS sub_category_name 
-            FROM products p
-            LEFT JOIN product_categories c ON p.category = c.id
-            LEFT JOIN product_subcategories s ON p.sub_category = s.id
+    // Get a product by ID Find Product by ID (Include Attributes and Gallery)
+  findById: (id, userID, callback) => {
+        const query = `
+            SELECT 
+                p.*, 
+                c.name AS category_name, 
+                s.name AS sub_category_name, 
+                CASE WHEN f.product_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_favourite 
+            FROM products p 
+            LEFT JOIN product_categories c ON p.category = c.id 
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id 
+            LEFT JOIN favourite_products f ON p.id = f.product_id AND f.user_id = ? 
+            WHERE p.id = ?;
         `;
 
-    db.query(query, (err, results) => {
-      if (err) {
-        return callback(err, null);
-      }
+        db.query(query, [userID, id], (err, productResult) => { // ✅ Pass both userID and id
+            if (err || !productResult.length) {
+                return callback(err || "Product not found", null);
+            }
 
-      const productPromises = results.map((product) => {
-        return new Promise((resolve, reject) => {
-          const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
-          const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
+            const product = productResult[0];
 
-          Promise.all([
-            new Promise((resolveGallery, rejectGallery) => {
-              db.query(galleryQuery, [product.id], (imgErr, images) => {
-                if (imgErr) rejectGallery(imgErr);
-                product.gallery_images = images;
-                resolveGallery();
-              });
-            }),
-            new Promise((resolveAttributes, rejectAttributes) => {
-              db.query(attributesQuery, [product.id], (attrErr, attributes) => {
-                if (attrErr) rejectAttributes(attrErr);
-                product.attributes = attributes;
-                resolveAttributes();
-              });
-            }),
-          ])
-            .then(() => resolve(product))
-            .catch((error) => reject(error));
+            // Fetch gallery images & attributes for this product
+            const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
+            const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
+
+            Promise.all([
+                new Promise((resolve, reject) => {
+                    db.query(galleryQuery, [id], (imgErr, images) => {
+                        if (imgErr) reject(imgErr);
+                        product.gallery_images = images;
+                        resolve();
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    db.query(attributesQuery, [id], (attrErr, attributes) => {
+                        if (attrErr) reject(attrErr);
+                        product.attributes = attributes;
+                        resolve();
+                    });
+                }),
+            ])
+                .then(() => callback(null, product))
+                .catch((error) => callback(error, null));
         });
-      });
+    },
 
-      Promise.all(productPromises)
-        .then((productsWithImages) => callback(null, productsWithImages))
-        .catch((error) => callback(error, null));
-    });
-  },
+
+    // Get all products (Optimized with Promise.all) Find All Products (Include Attributes and Gallery)
+  find: (userID, callback) => {
+        const query = `
+            SELECT 
+                p.*, 
+                c.name AS category_name, 
+                s.name AS sub_category_name, 
+                CASE WHEN f.product_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_favourite 
+            FROM products p 
+            LEFT JOIN product_categories c ON p.category = c.id 
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id 
+            LEFT JOIN favourite_products f ON p.id = f.product_id AND f.user_id = ?;
+        `;
+
+        db.query(query, [userID], (err, results) => { // ✅ Passed `userID` as a parameter
+            if (err) {
+                return callback(err, null);
+            }
+
+            const productPromises = results.map((product) => {
+                return new Promise((resolve, reject) => {
+                    const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
+                    const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
+
+                    Promise.all([
+                        new Promise((resolveGallery, rejectGallery) => {
+                            db.query(galleryQuery, [product.id], (imgErr, images) => {
+                                if (imgErr) rejectGallery(imgErr);
+                                product.gallery_images = images;
+                                resolveGallery();
+                            });
+                        }),
+                        new Promise((resolveAttributes, rejectAttributes) => {
+                            db.query(attributesQuery, [product.id], (attrErr, attributes) => {
+                                if (attrErr) rejectAttributes(attrErr);
+                                product.attributes = attributes;
+                                resolveAttributes();
+                            });
+                        }),
+                    ])
+                        .then(() => resolve(product))
+                        .catch((error) => reject(error));
+                });
+            });
+
+            Promise.all(productPromises)
+                .then((productsWithImages) => callback(null, productsWithImages))
+                .catch((error) => callback(error, null));
+        });
+    },
+
 
     // Update a product by ID (Includes sub_category)
     updateById: (id, updateData, callback) => {
@@ -178,6 +189,7 @@ const Product = {
     findAll: (callback) => {
         Product.find(callback);  // Uses the same optimized `find()` function
     },
+    
     setFeatured: (id, isFeatured, callback) => {
         const sql = `UPDATE products SET is_featured = ? WHERE id = ?`;
         db.query(sql, [isFeatured, id], callback);
@@ -188,35 +200,52 @@ const Product = {
         db.query(sql, [isTodayDeal, id], callback);
     },
     // Fetch all featured products
-    getFeatured: (callback) => {
-        const sql = `SELECT p.*, c.name AS category_name, s.name AS sub_category_name 
-            FROM products p
-            LEFT JOIN product_categories c ON p.category = c.id
-            LEFT JOIN product_subcategories s ON p.sub_category = s.id
-            WHERE p.is_featured = TRUE`;
-        db.query(sql, callback);
-    },
+    getFeatured: (userId, callback) => {
+      const sql = `SELECT p.*, 
+                          c.name AS category_name, 
+                          s.name AS sub_category_name, 
+                          CASE WHEN f.product_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_favourite 
+                   FROM products p
+                   LEFT JOIN product_categories c ON p.category = c.id
+                   LEFT JOIN product_subcategories s ON p.sub_category = s.id
+                   LEFT JOIN favourite_products f ON p.id = f.product_id AND f.user_id = ?
+                   WHERE p.is_featured = TRUE`;
+  
+      db.query(sql, [userId], callback);
+  },
+  
 
     // Fetch all today’s deal products
-    getTodayDeal: (callback) => {
-        const sql = `SELECT p.*, c.name AS category_name, s.name AS sub_category_name 
-            FROM products p
-            LEFT JOIN product_categories c ON p.category = c.id
-            LEFT JOIN product_subcategories s ON p.sub_category = s.id
-            WHERE p.is_today_deal = TRUE`;
-        db.query(sql, callback);
-    },
+    getTodayDeal: (userId, callback) => {
+      const sql = `SELECT p.*, 
+                          c.name AS category_name, 
+                          s.name AS sub_category_name, 
+                          CASE WHEN f.product_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_favourite 
+                   FROM products p
+                   LEFT JOIN product_categories c ON p.category = c.id
+                   LEFT JOIN product_subcategories s ON p.sub_category = s.id
+                   LEFT JOIN favourite_products f ON p.id = f.product_id AND f.user_id = ?
+                   WHERE p.is_today_deal = TRUE`;
+  
+      db.query(sql, [userId], callback);
+  },
+  
+  getbycategory: (userId, categoryId, callback) => {
+    const sql = `SELECT p.*, 
+                        c.name AS category_name, 
+                        s.name AS sub_category_name, 
+                        CASE WHEN f.product_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_favourite 
+                 FROM products p
+                 LEFT JOIN product_categories c ON p.category = c.id
+                 LEFT JOIN product_subcategories s ON p.sub_category = s.id
+                 LEFT JOIN favourite_products f ON p.id = f.product_id AND f.user_id = ?
+                 WHERE p.category = ?;`;
 
-    getbycategory: (id, callback) => {
-        const sql = `SELECT p.*, c.name AS category_name, s.name AS sub_category_name 
-                     FROM products p
-                     LEFT JOIN product_categories c ON p.category = c.id
-                     LEFT JOIN product_subcategories s ON p.sub_category = s.id
-                     WHERE p.category = ?;`;
-        
-        db.query(sql, [id], callback); // ✅ Pass id as an array element
-    }
+    db.query(sql, [userId, categoryId], callback);
+}
+
     
 };
 
 module.exports = Product;
+

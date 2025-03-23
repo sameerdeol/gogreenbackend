@@ -24,7 +24,7 @@ router.post('/products', checkManagerRole, uploadFields, createProduct);
 // Route to get a product by ID
 router.post('/productbyid/', upload.none(), verifyToken,getProductById);
 // get list of products
-router.get('/products/', verifyToken,getProducts);
+router.post('/products/', verifyToken,getProducts);
 
 // Route to update a product by ID - only managers can update products
 router.put('/products', checkManagerRole, uploadFields, updateProductById);
@@ -35,8 +35,8 @@ router.delete('/products', checkManagerRole, deleteProductById);
 router.put('/makeproductfeatures', checkManagerRole, setProductFeatured);
 router.put('/makeproductweeklydeal', checkManagerRole, setProductTodayDeal);
 
-router.get('/featuredproducts', verifyToken,getFeaturedProducts);
+router.post('/featuredproducts', verifyToken,getFeaturedProducts);
 router.post('/productbycategoryid', verifyToken,getproductbycatgeoryID);
-router.get('/weeklydealproducts', verifyToken,getTodayDealProducts);
+router.post('/weeklydealproducts', verifyToken,getTodayDealProducts);
 
 module.exports = router;
