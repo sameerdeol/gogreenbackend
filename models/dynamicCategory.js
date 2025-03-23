@@ -15,10 +15,10 @@ const ProductCategory = {
         
         if (categorcheck == 1) {
             // If categoryset is present, fetch subcategories related to the index
-            sql = `SELECT ps.* 
+            sql = `SELECT ps.*, pc.name AS category_name 
                     FROM product_subcategories ps
-                    JOIN category_selection cs 
-                    ON cs.product_categories = ps.category_id
+                    JOIN category_selection cs ON cs.product_categories = ps.category_id
+                    JOIN product_categories pc ON ps.category_id = pc.id
                     WHERE cs.index_no = ?;`;
             params = [index];  // Using categoryset and index both
         } else {
