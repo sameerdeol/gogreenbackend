@@ -45,14 +45,20 @@ const ProductCategory = {
     
         db.query(sql, params, callback);
     },    
-    getshowselectedcategory: (index) => {
-        const sql = `UPDATE category_selection 
-                     SET product_categories = ? 
-                     WHERE index_no = ?;`;
+    getshowselectedcategory: (index, callback) => {  // ✅ Added callback as a parameter
+        const sql = `
+            SELECT 
+                cs.*, 
+                pc.*  
+            FROM category_selection cs 
+            JOIN product_categories pc 
+                ON cs.product_categories = pc.id 
+            WHERE cs.index_no = ?;
+        `;
     
-        db.query(sql, [catid, index], callback);
+        return db.query(sql, [index], callback);  // ✅ Return query execution
     },
-        
+    
 };
 
 module.exports = ProductCategory;

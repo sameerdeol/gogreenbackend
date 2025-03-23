@@ -12,6 +12,6 @@ const {
 // Route to create a new product brand - only managers can create brands
 router.put('/save-categories', checkManagerRole, selectProductcategoryfirst);
 router.post('/dynamicCategory', verifyToken,dynamicCategoryData);
-// router.post('/showselectedcategory', verifyToken,showselectedcategory);
+router.post('/showselectedcategory', verifyToken,showselectedcategory);
 
 module.exports = router;

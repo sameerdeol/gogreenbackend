@@ -60,7 +60,7 @@ const showselectedcategory = (req, res) => {
             return res.status(404).json({ success: false, message: 'No products found for this index' });
         }
 
-        res.status(200).json({ success: true, message: 'Products fetched successfully', products: result });
+        res.status(200).json({ success: true, message: 'category fetched successfully', products: result });
     });
 };
 
