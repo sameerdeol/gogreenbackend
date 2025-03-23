@@ -11,8 +11,9 @@ const ProductCategory = {
     getProductsByIndex: (index, categoryset, callback) => {
         let sql;
         let params = [index];
+        let categorcheck=categoryset;
         
-        if (categoryset) {
+        if (categorcheck == 1) {
             // If categoryset is present, fetch subcategories related to the index
             sql = `SELECT ps.* 
                     FROM product_subcategories ps
