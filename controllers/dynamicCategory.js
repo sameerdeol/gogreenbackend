@@ -23,13 +23,13 @@ const selectProductcategoryfirst = (req, res) => {
 
 // **New Function** to fetch products based on dynamic index
 const dynamicCategoryData = (req, res) => {
-    const  {index,categoryset}  = req.body;  // Getting index from request body
+    const  {index,categoryset,userID}  = req.body;  // Getting index from request body
 
     if (!index) {
         return res.status(400).json({ success: false, message: 'Index is required.' });
     }
 
-    dynamicCategory.getProductsByIndex(index,categoryset, (err, result) => {
+    dynamicCategory.getProductsByIndex(index,categoryset,userID, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching products', error: err });
         }
