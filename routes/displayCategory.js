@@ -5,13 +5,13 @@ const uploadFields = require('../middleware/multerConfig');  // Import your uplo
 const { verifyToken } = require('../middleware/authroization');
 const {
     selectProductcategoryfirst,
-    dynamicCategoryData1,
+    dynamicCategoryData,
     dynamicCategoryData2
 } = require('../controllers/dynamicCategory');
 
 // Route to create a new product brand - only managers can create brands
 router.put('/save-categories', checkManagerRole, selectProductcategoryfirst);
-router.get('/dynamicCategoryDataone', verifyToken,dynamicCategoryData1);
-router.get('/dynamicCategoryDatatwo', verifyToken,dynamicCategoryData2);
+router.post('/dynamicCategory', verifyToken,dynamicCategoryData);
+// router.get('/dynamicCategoryDatatwo', verifyToken,dynamicCategoryData2);
 
 module.exports = router;
