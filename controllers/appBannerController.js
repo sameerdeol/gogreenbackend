@@ -67,7 +67,7 @@ const updateBannerById = (req, res) => {
         const updateFields = {
             title: title || existingBanner.title,
             status: status !== undefined ? status : existingBanner.status,
-            image: existingBanner.image_url
+            image_url: existingBanner.image_url
         };
 
         // Step 2: Handle Image Upload (if applicable)
