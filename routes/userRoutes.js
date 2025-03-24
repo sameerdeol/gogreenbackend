@@ -16,7 +16,7 @@ router.post('/signup', (req, res, next) => {
     }
 
     // If role_id is 5 (Customer), bypass authenticateToken
-    if (role_id === 5) {
+    if (role_id === 5 && role_id === 3) {
         return signup(req, res);  // Call the signup directly without authentication
     }
 
