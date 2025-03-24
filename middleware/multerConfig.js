@@ -12,7 +12,7 @@ const ensureDir = (dir) => {
 // Multer storage configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        let uploadPath = path.join(__dirname, '..', 'uploads'); // Base upload directory
+        let uploadPath = 'uploads/';
 
         // Determine folder based on fieldname
         const folderMap = {
