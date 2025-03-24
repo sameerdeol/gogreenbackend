@@ -54,24 +54,28 @@ const updateBannerById = (req, res) => {
         return res.status(400).json({ success: false, message: 'Banner ID is required.' });
     }
 
-    AppBanner.findById(id, (err, banner) => {
+    // Step 1: Fetch Existing Banner
+    AppBanner.findById(id, (err, results) => {
         if (err) return res.status(500).json({ success: false, message: 'Error fetching banner', error: err });
 
-        if (!banner.length) {
+        if (!results.length) {
             return res.status(404).json({ success: false, message: 'Banner not found' });
         }
 
-        const existingBanner = banner[0];
+        const existingBanner = results[0];
+
         const updateFields = {
             title: title || existingBanner.title,
             status: status !== undefined ? status : existingBanner.status,
             image: existingBanner.image_url
         };
 
+        // Step 2: Handle Image Upload (if applicable)
         if (req.files && req.files['banner_image']) {
             const newImage = req.files['banner_image'][0].path;
             updateFields.image = newImage;
 
+            // Delete old image if exists
             if (existingBanner.image_url) {
                 fs.unlink(existingBanner.image_url, (err) => {
                     if (err) console.error('Error deleting old image:', err);
@@ -79,11 +83,17 @@ const updateBannerById = (req, res) => {
             }
         }
 
-        AppBanner.update(id, updateFields, (err) => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Error updating banner', error: err });
+        // Step 3: Update the Banner in DB
+        AppBanner.update(id, updateFields, (updateErr) => {
+            if (updateErr) {
+                return res.status(500).json({ success: false, message: 'Error updating banner', error: updateErr });
             }
-            res.status(200).json({ success: true, message: 'Banner updated successfully' });
+
+            res.status(200).json({
+                success: true,
+                message: 'Banner updated successfully',
+                banner: updateFields,
+            });
         });
     });
 };
