@@ -2,51 +2,30 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const db = require('../config/db'); // Import the existing connection
+const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
+const fs = require('fs');
 
 require('dotenv').config();
 
 const signup = async (req, res) => {
     try {
-        const { username, email, password, role_id, firstname, lastname, phonenumber } = req.body;
-        const loggedInUserRole = req.user ? req.user.role_id : null; // Get the role of the logged-in user
+        const { username, email, password, role_id, firstname, lastname, phonenumber, identity_type, prefix } = req.body;
+        const identity_proof = req.file ? req.file.filename : null; // Get uploaded file
 
-        // If no user is logged in, restrict user creation
-        if (!loggedInUserRole) {
-            return res.status(401).send('Authentication required');
-        }
-
-        // Restrict user creation based on roles
-        if (loggedInUserRole === 1) {  // SuperAdmin
-            if (![1, 2, 3, 4, 5].includes(role_id)) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'SuperAdmin can only create users with valid roles.'
-                });
-            }
-        } else if (loggedInUserRole === 2) {  // Manager
-            if (![3, 4, 5].includes(role_id)) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Manager can only create vendors and delivery partners.'
-                });
-            }
-        } else if (loggedInUserRole === 3) {  // Vendor
-            if (![4, 5].includes(role_id)) {
-                return res.status(403).json({
-                    success: false,
-                    message: 'Vendor can only create delivery partners.'
-                });
-            }
-        } else if (loggedInUserRole === 4) {  // Delivery Partner
+        if ([1, 2].includes(parseInt(role_id))) {
             return res.status(403).json({
                 success: false,
-                message: 'Delivery partner cannot create any users.'
+                message: 'You are not allowed to create an account with this role.'
             });
-        } else {
-            return res.status(403).send('You do not have permission to create this role');
         }
 
-        // Check if the user already exists with the same phone
+        if ([3, 4].includes(parseInt(role_id)) && !identity_proof) {
+            return res.status(400).json({
+                success: false,
+                message: 'Identity proof is required for this role.'
+            });
+        }
+
         const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
         db.query(checkUserQuery, [email], async (err, result) => {
             if (err) {
@@ -64,15 +43,15 @@ const signup = async (req, res) => {
                 });
             }
 
-            // Hash the password
             const hashedPassword = await bcrypt.hash(password, 10);
+            const is_verified = ([3, 4].includes(parseInt(role_id))) ? 0 : 1;
 
-            // Insert user into users table
             const insertUserQuery = `
-                INSERT INTO users (username, email, password, role_id, firstname, lastname, phonenumber) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)`;
+                INSERT INTO users (username, email, password, role_id, firstname, lastname, phonenumber, is_verified,prefix) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
+            `;
 
-            db.query(insertUserQuery, [username, email, hashedPassword, role_id, firstname, lastname, phonenumber], (err) => {
+            db.query(insertUserQuery, [username, email, hashedPassword, role_id, firstname, lastname, phonenumber, is_verified,prefix], (err, result) => {
                 if (err) {
                     return res.status(500).json({
                         success: false,
@@ -81,21 +60,57 @@ const signup = async (req, res) => {
                     });
                 }
 
-                res.status(201).json({
-                    success: true,
-                    message: 'User created successfully'
-                });
+                const user_id = result.insertId; // Get the newly inserted user's ID
+
+                if (identity_proof) {
+                    const identity_proof_path = identity_proof 
+                        ? `uploads/identity_proof/${identity_proof}` 
+                        : null;
+                    const insertIdentityQuery = `
+                        INSERT INTO user_verifications (user_id, identity_proof, identity_type) 
+                        VALUES (?, ?, ?)
+                    `;
+
+                    db.query(insertIdentityQuery, [user_id, identity_proof_path, identity_type], (err) => {
+                        if (err) {
+                            return res.status(500).json({
+                                success: false,
+                                message: 'Server error while inserting identity proof',
+                                error: err
+                            });
+                        }
+
+                        return res.status(201).json({
+                            success: true,
+                            message: is_verified
+                                ? 'User created successfully'
+                                : 'User created successfully, pending admin approval'
+                        });
+                    });
+                } else {
+                    return res.status(201).json({
+                        success: true,
+                        message: is_verified
+                            ? 'User created successfully'
+                            : 'User created successfully, pending admin approval'
+                    });
+                }
             });
         });
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({
-            success: false,
-            message: 'Server Error'
-        });
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                message: 'Server Error'
+            });
+        }
     }
 };
+
+
+
 
 const appsignup = async (req, res) => {
     try {
@@ -128,9 +143,7 @@ const appsignup = async (req, res) => {
             }
 
             if (result.length > 0) {
-                // User exists, generate token and return login response
                 const user = result[0];
-                console.log("user is",user)
                 const token = jwt.sign(
                     { id: user.id, role_id: user.role_id, role: user.role_name, username: user.username },
                     process.env.JWT_SECRET
@@ -207,8 +220,14 @@ const loginUser = (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        // 🚀 Role-based verification check
+        if ([3, 4].includes(user.role_id) && user.is_verified === 0) {
+            return res.status(403).json({ message: 'Your account is pending admin approval.' });
+        }
+
+        // ✅ Generate JWT token
         const token = jwt.sign(
-            { id: user.id, role_id: user.role_id, role: user.role_name ,username:user.username },
+            { id: user.id, role_id: user.role_id, role: user.role_name, username: user.username },
             process.env.JWT_SECRET
         );
 
@@ -283,4 +302,35 @@ const fetchUser = (req, res) => {
         res.json(results);
     });
 };
-module.exports = { signup, loginUser, getDashboard, getuserDetails , fetchUser, updateUser,appsignup};
+
+const getUnverifiedVendors = (req, res) => {
+    User.getUnverifiedUsersByRole(3, (err, users) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+        res.json({ success: true, users });
+    });
+};
+
+const getUnverifiedDeliveryPartners = (req, res) => {
+    User.getUnverifiedUsersByRole(4, (err, users) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+        res.json({ success: true, users });
+    });
+};
+const verifyUser = (req, res) => {
+    const userId = req.body.id;
+
+    User.verifyUser(userId, (err, result) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'User not found or already verified' });
+        }
+        res.json({ success: true, message: 'User verified successfully' });
+    });
+};
+module.exports = { uploadFields, signup, loginUser, getDashboard, getuserDetails , fetchUser, updateUser,appsignup, getUnverifiedVendors, getUnverifiedDeliveryPartners,verifyUser};

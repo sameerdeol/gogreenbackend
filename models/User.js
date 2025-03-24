@@ -91,7 +91,22 @@ const User = {
     createUser:(phonenumber,role_id,prefix, callback) => {
         const query = `INSERT INTO users (phonenumber, role_id ,prefix) VALUES (?, ? ,?)`;
         db.query(query, [phonenumber, role_id,prefix], callback);
-    }   
+    },
+    
+    getUnverifiedUsersByRole: (roleId, callback) => {
+        const query = `SELECT *
+                       FROM users u
+                       LEFT JOIN user_verifications uv ON u.id = uv.user_id
+                       WHERE u.role_id = ? 
+                       AND u.is_verified = 0`;
+        db.query(query, [roleId], callback);
+    },
+
+    // Approve verification for a specific user
+    verifyUser: (userId, callback) => {
+        const query = `UPDATE users SET is_verified = 1 WHERE id = ? AND is_verified = 0`;
+        db.query(query, [userId], callback);
+    }
 };
 
 module.exports = User;
