@@ -56,7 +56,9 @@ const updateBannerById = (req, res) => {
 
     // Step 1: Fetch Existing Banner
     AppBanner.findById(id, (err, results) => {
-        if (err) return res.status(500).json({ success: false, message: 'Error fetching banner', error: err });
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error fetching banner', error: err });
+        }
 
         if (!results.length) {
             return res.status(404).json({ success: false, message: 'Banner not found' });
@@ -67,23 +69,27 @@ const updateBannerById = (req, res) => {
         const updateFields = {
             title: title || existingBanner.title,
             status: status !== undefined ? status : existingBanner.status,
-            image_url: existingBanner.image_url
+            image_url: existingBanner.image_url // ✅ Ensure 'image_url' is returned
         };
 
         // Step 2: Handle Image Upload (if applicable)
         if (req.files && req.files['banner_image']) {
             const newImage = req.files['banner_image'][0].path;
-            updateFields.image = newImage;
+            const oldImagePath = existingBanner.image_url; // ✅ Store old image path
 
-            // Delete old image if exists
-            if (existingBanner.image_url) {
-                fs.unlink(existingBanner.image_url, (err) => {
-                    if (err) console.error('Error deleting old image:', err);
-                });
+            updateFields.image_url = newImage; // ✅ Update new image URL
+
+            // Step 3: Delete Old Image (if exists)
+            if (oldImagePath && fs.existsSync(oldImagePath)) {
+                try {
+                    fs.unlinkSync(oldImagePath); // ✅ Ensures synchronous deletion
+                } catch (unlinkError) {
+                    console.error('Error deleting old image:', unlinkError);
+                }
             }
         }
 
-        // Step 3: Update the Banner in DB
+        // Step 4: Update the Banner in DB
         AppBanner.update(id, updateFields, (updateErr) => {
             if (updateErr) {
                 return res.status(500).json({ success: false, message: 'Error updating banner', error: updateErr });
@@ -92,11 +98,12 @@ const updateBannerById = (req, res) => {
             res.status(200).json({
                 success: true,
                 message: 'Banner updated successfully',
-                banner: updateFields,
+                banner: updateFields, // ✅ Ensure response returns 'image_url'
             });
         });
     });
 };
+
 
 // Delete banner by ID
 const deleteBannerById = (req, res) => {

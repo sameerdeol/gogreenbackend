@@ -16,7 +16,7 @@ const AppBanner = {
 
     update: (id, data, callback) => {
         const query = 'UPDATE app_banners SET title = ?, image_url = ?, status = ? WHERE id = ?';
-        db.query(query, [data.title, data.image, data.status, id], callback);
+        db.query(query, [data.title, data.image_url, data.status, id], callback);
     },
 
     delete: (id, callback) => {
