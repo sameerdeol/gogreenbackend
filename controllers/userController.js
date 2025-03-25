@@ -9,20 +9,13 @@ require('dotenv').config();
 
 const signup = async (req, res) => {
     try {
-        const { username, email, password, role_id, firstname, lastname, phonenumber, identity_type, prefix } = req.body;
-        const identity_proof = req.file ? req.file.filename : null; // Get uploaded file
+        const { username, email, password, role_id, firstname, lastname, phonenumber, prefix } = req.body;
 
+        // Restrict role_id 1 (Superadmin) & 2 (Manager)
         if ([1, 2].includes(parseInt(role_id))) {
             return res.status(403).json({
                 success: false,
                 message: 'You are not allowed to create an account with this role.'
-            });
-        }
-
-        if ([3, 4].includes(parseInt(role_id)) && !identity_proof) {
-            return res.status(400).json({
-                success: false,
-                message: 'Identity proof is required for this role.'
             });
         }
 
@@ -44,14 +37,10 @@ const signup = async (req, res) => {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
-            const is_verified = ([3, 4].includes(parseInt(role_id))) ? 0 : 1;
 
-            const insertUserQuery = `
-                INSERT INTO users (username, email, password, role_id, firstname, lastname, phonenumber, is_verified,prefix) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)
-            `;
-
-            db.query(insertUserQuery, [username, email, hashedPassword, role_id, firstname, lastname, phonenumber, is_verified,prefix], (err, result) => {
+            // Insert into `users` table (only ID & role_id)
+            const insertUserQuery = `INSERT INTO users (role_id) VALUES (?)`;
+            db.query(insertUserQuery, [role_id], (err, userResult) => {
                 if (err) {
                     return res.status(500).json({
                         success: false,
@@ -60,41 +49,40 @@ const signup = async (req, res) => {
                     });
                 }
 
-                const user_id = result.insertId; // Get the newly inserted user's ID
+                const user_id = userResult.insertId; // Get inserted user's ID
 
-                if (identity_proof) {
-                    const identity_proof_path = identity_proof 
-                        ? `uploads/identity_proof/${identity_proof}` 
-                        : null;
-                    const insertIdentityQuery = `
-                        INSERT INTO user_verifications (user_id, identity_proof, identity_type) 
-                        VALUES (?, ?, ?)
-                    `;
-
-                    db.query(insertIdentityQuery, [user_id, identity_proof_path, identity_type], (err) => {
-                        if (err) {
-                            return res.status(500).json({
-                                success: false,
-                                message: 'Server error while inserting identity proof',
-                                error: err
-                            });
-                        }
-
-                        return res.status(201).json({
-                            success: true,
-                            message: is_verified
-                                ? 'User created successfully'
-                                : 'User created successfully, pending admin approval'
-                        });
-                    });
+                // Insert into respective role table
+                let insertRoleQuery, roleData;
+                if (role_id == 3) { // Vendors
+                    insertRoleQuery = `INSERT INTO vendors (user_id, username, email, password, firstname, lastname, phonenumber, prefix) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+                    roleData = [user_id, username, email, hashedPassword, firstname, lastname, phonenumber, prefix];
+                } else if (role_id == 4) { // Delivery Partners
+                    insertRoleQuery = `INSERT INTO delivery_partners (user_id, username, email, password, firstname, lastname, phonenumber, prefix) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+                    roleData = [user_id, username, email, hashedPassword, firstname, lastname, phonenumber, prefix];
+                } else if (role_id == 5) { // Customers
+                    insertRoleQuery = `INSERT INTO customers (user_id, username, email, password, firstname, lastname, phonenumber, prefix) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+                    roleData = [user_id, username, email, hashedPassword, firstname, lastname, phonenumber, prefix];
                 } else {
-                    return res.status(201).json({
-                        success: true,
-                        message: is_verified
-                            ? 'User created successfully'
-                            : 'User created successfully, pending admin approval'
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid role_id'
                     });
                 }
+
+                db.query(insertRoleQuery, roleData, (err) => {
+                    if (err) {
+                        return res.status(500).json({
+                            success: false,
+                            message: `Server error while inserting into role-specific table`,
+                            error: err
+                        });
+                    }
+
+                    return res.status(201).json({
+                        success: true,
+                        message: 'User created successfully'
+                    });
+                });
             });
         });
 
@@ -109,22 +97,17 @@ const signup = async (req, res) => {
     }
 };
 
-
-
-
 const appsignup = async (req, res) => {
     try {
-        const { phonenumber, otp, prefix } = req.body;
+        const { phonenumber, otp, prefix} = req.body;
         if (!phonenumber || !prefix) {
             return res.status(400).json({
                 success: false,
-                message: "Phone number and prefix are required",
+                message: "Phone number, prefix, and firstname are required",
             });
         }
 
-        // Static OTP for login
-        const STATIC_OTP = "1234";
-
+        const STATIC_OTP = 1234;
         if (otp && otp !== STATIC_OTP) {
             return res.status(401).json({
                 success: false,
@@ -133,7 +116,7 @@ const appsignup = async (req, res) => {
         }
 
         // Check if user exists
-        User.findUserByPhone(phonenumber, (err, result) => {
+        User.findCustomerByPhone(phonenumber, (err, result) => {
             if (err) {
                 return res.status(500).json({
                     success: false,
@@ -153,15 +136,14 @@ const appsignup = async (req, res) => {
                     success: true,
                     message: "Login successful",
                     user,
-                    token, // Include token in response
+                    token,
                 });
             }
 
-            // Assign default role_id = 5 (Customer)
             let role_id = req.body.role_id ?? 5;
 
-            // If user doesn't exist, create new user
-            User.createUser(phonenumber, role_id, prefix, (err, newUserResult) => {
+            // Insert into `users` table
+            User.createUser(role_id, (err, newUserResult) => {
                 if (err) {
                     return res.status(500).json({
                         success: false,
@@ -170,26 +152,36 @@ const appsignup = async (req, res) => {
                     });
                 }
 
-                const newUser = {
-                    id: newUserResult.insertId,
-                    phonenumber,
-                    role_id,
-                    role_name: "Customer", // Default role
-                    username: "", // Assuming no username provided at signup
-                };
+                const newUserId = newUserResult.insertId;
 
-                // Generate token for new user
-                const token = jwt.sign(
-                    { id: newUser.id, role_id: newUser.role_id, role: newUser.role_name, username: newUser.username },
-                    process.env.JWT_SECRET,
-                    { expiresIn: "7d" }
-                );
+                // Insert into `customers` table
+                User.createCustomer(newUserId,phonenumber, prefix, (err) => {
+                    if (err) {
+                        return res.status(500).json({
+                            success: false,
+                            message: "Server error while creating customer",
+                            error: err,
+                        });
+                    }
 
-                res.status(201).json({
-                    success: true,
-                    message: "User created and logged in successfully",
-                    user: newUser,
-                    token,
+                    const newUser = {
+                        id: newUserId,
+                        phonenumber,
+                        role_id,
+                    };
+
+                    const token = jwt.sign(
+                        { id: newUser.id, role_id: newUser.role_id},
+                        process.env.JWT_SECRET,
+                        { expiresIn: "7d" }
+                    );
+
+                    res.status(201).json({
+                        success: true,
+                        message: "User created and logged in successfully",
+                        user: newUser,
+                        token,
+                    });
                 });
             });
         });
@@ -205,61 +197,41 @@ const appsignup = async (req, res) => {
 
 
 // login user api
-const loginUser = (req, res) => {
-    const { email, password } = req.body;
+const loginadmin = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        console.log(email,password)
 
-    User.findByEmail(email, async (err, results) => {
-        if (err) return res.status(500).json({ message: 'Internal server error', error: err });
-        if (results.length === 0) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+        User.findByEmail(email, async (err, results) => {
+            if (err) {
+                return res.status(500).json({ message: 'Internal server error', error: err });
+            }
 
-        const user = results[0];
-        const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
+            if (!results || results.length === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
 
-        // 🚀 Role-based verification check
-        if ([3, 4].includes(user.role_id) && user.is_verified === 0) {
-            return res.status(403).json({ message: 'Your account is pending admin approval.' });
-        }
+            const user = results[0];
 
-        // ✅ Generate JWT token
-        const token = jwt.sign(
-            { id: user.id, role_id: user.role_id, role: user.role_name, username: user.username },
-            process.env.JWT_SECRET
-        );
+            // ✅ Validate password
+            const isValid = await bcrypt.compare(password, user.password);
+            if (!isValid) {
+                return res.status(401).json({ message: 'Invalid credentials' });
+            }
 
-        res.json({ message: 'Login successful', token });
-    });
-};
+            // ✅ Generate JWT token with expiration
+            const token = jwt.sign(
+                { id: user.id, role_id: user.role_id, role: user.role_name, username: user.username },
+                process.env.JWT_SECRET,
+            );
 
-
-// dashboard accorsing to roleid
-const getDashboard = (req, res) => {
-    const { role_id } = req.user;
-
-    switch (role_id) {
-        case 1:
-            res.json({ message: 'Super Admin Dashboard' });
-            break;
-        case 2:
-            res.json({ message: 'Vendor Dashboard' });
-            break;
-        case 3:
-            res.json({ message: 'Delivery Partner Dashboard' });
-            break;
-        case 4:
-            res.json({ message: 'Customer Dashboard' });
-            break;
-        case 5:
-            res.json({ message: 'Manager Dashboard' });
-            break;    
-        default:
-            res.status(403).send('Access Denied');
+            return res.json({ message: 'Login successful', token });
+        });
+    } catch (error) {
+        return res.status(500).json({ message: 'Authentication error', error });
     }
 };
+
 const getuserDetails = (req, res) => {
     const { id } = req.user;  // Get the user_id from the authenticated user (assumes JWT token contains id)
 
@@ -333,4 +305,144 @@ const verifyUser = (req, res) => {
         res.json({ success: true, message: 'User verified successfully' });
     });
 };
-module.exports = { uploadFields, signup, loginUser, getDashboard, getuserDetails , fetchUser, updateUser,appsignup, getUnverifiedVendors, getUnverifiedDeliveryPartners,verifyUser};
+
+const vendorRiderSignup = (req, res) => {
+    try {
+        const { username, email, password, role_id, phonenumber, prefix } = req.body;
+
+        // Check if email exists in any role table
+        const checkUserQuery = `
+            SELECT * FROM vendors WHERE email = ?
+            UNION 
+            SELECT * FROM delivery_partners WHERE email = ?
+        `;
+
+        db.query(checkUserQuery, [email, email], async (err, result) => {
+            if (err) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Server error while checking existing user',
+                    error: err
+                });
+            }
+
+            if (result.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'A user with this email already exists'
+                });
+            }
+
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Insert into `users` table (only ID & role_id)
+            const insertUserQuery = `INSERT INTO users (role_id) VALUES (?)`;
+            db.query(insertUserQuery, [role_id], (err, userResult) => {
+                if (err) {
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Server error while inserting user',
+                        error: err
+                    });
+                }
+
+                const user_id = userResult.insertId; // Get inserted user's ID
+
+                // Insert into respective role table
+                let insertRoleQuery, roleData;
+                if (role_id == 3) { // Vendors
+                    insertRoleQuery = `INSERT INTO vendors (user_id, username, email, password, phonenumber, prefix) VALUES (?, ?, ?, ?, ?, ?)`;
+                    roleData = [user_id, username, email, hashedPassword, phonenumber, prefix];
+                } else if (role_id == 4) { // Delivery Partners
+                    insertRoleQuery = `INSERT INTO delivery_partners (user_id, username, email, password, phonenumber, prefix) VALUES (?, ?, ?, ?, ?, ?)`;
+                    roleData = [user_id, username, email, hashedPassword, phonenumber, prefix];
+                } else {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid role_id'
+                    });
+                }
+
+                db.query(insertRoleQuery, roleData, (err) => {
+                    if (err) {
+                        return res.status(500).json({
+                            success: false,
+                            message: `Server error while inserting into role-specific table`,
+                            error: err
+                        });
+                    }
+
+                    return res.status(201).json({
+                        success: true,
+                        message: 'User created successfully'
+                    });
+                });
+            });
+        });
+
+    } catch (error) {
+        console.error(error);
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                message: 'Server Error'
+            });
+        }
+    }
+};
+
+const createSuperadminManagers = async (req, res) => {
+    try {
+        const { username, email, password, firstName, lastName, prefix, phonenumber, role_id } = req.body;
+
+        if (!username || !email || !password || !firstName || !lastName || !phonenumber || !role_id) {
+            return res.status(400).json({ error: "All fields are required" });
+        }
+
+        let checkUserSQL;
+        if (role_id === 1) {
+            checkUserSQL = `SELECT * FROM superadmin WHERE email = ? OR username = ?`;
+        } else if (role_id === 2) {
+            checkUserSQL = `SELECT * FROM managers WHERE email = ? OR username = ?`;
+        } else {
+            return res.status(400).json({ error: "Invalid role_id" });
+        }
+
+        // Check if user already exists in the respective table
+        const [existingUser] = await db.promise().query(checkUserSQL, [email, username]);
+        if (existingUser.length > 0) {
+            return res.status(400).json({ error: "User with this email or username already exists" });
+        }
+
+        const hashedPassword = bcrypt.hashSync(password, 10); // Hash password before storing
+
+        // Insert user into 'users' table
+        const sqlUser = `INSERT INTO users (role_id) VALUES (?)`;
+        const [userResult] = await db.promise().query(sqlUser, [role_id]);
+
+        const userId = userResult.insertId;
+        let sqlInsert;
+        let tableName;
+
+        if (role_id === 1) {
+            sqlInsert = `INSERT INTO superadmin (username, user_id, firstname, lastname, prefix, phone, email, password, role_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            tableName = "superadmin";
+        } else {
+            sqlInsert = `INSERT INTO managers (username, user_id, firstname, lastname, prefix, phone, email, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            tableName = "managers";
+        }
+
+        // Insert into the correct table based on role
+        await db.promise().query(sqlInsert, [username, userId, firstName, lastName, prefix, phonenumber, email, hashedPassword, role_id]);
+
+        res.status(201).json({ message: `${tableName} created successfully`, userId });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+
+
+module.exports = { uploadFields, signup, loginadmin, getuserDetails , fetchUser, updateUser,appsignup, getUnverifiedVendors, getUnverifiedDeliveryPartners,verifyUser,vendorRiderSignup,createSuperadminManagers};

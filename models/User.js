@@ -5,14 +5,51 @@ const User = {
         const query = 'INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, ?)';
         db.query(query, [username, email, password, role_id], callback);
     },
+
+    // findByEmail: (email, callback) => {
+    //     const query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE email = ?';
+    //     db.query(query, [email], callback);
+    // },
     findByEmail: (email, callback) => {
-        const query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE email = ?';
-        db.query(query, [email], callback);
+        // First, check if email exists in superadmin or managers table
+        const checkQuery = `
+            SELECT 'superadmin' AS source, role_id FROM superadmin WHERE email = ?
+            UNION 
+            SELECT 'managers' AS source, role_id FROM managers WHERE email = ?`;
+    
+        db.query(checkQuery, [email, email], (err, results) => {
+            if (err) {
+                console.error('Error checking user role:', err);
+                return callback(err, null);
+            }
+    
+            if (results.length === 0) {
+                return callback(null, null); // No user found
+            }
+    
+            const roleId = results[0].role_id;
+            const sourceTable = roleId === 1 ? 'superadmin' : 'managers';
+    
+            // Fetch user details from the determined table
+            const finalQuery = `SELECT * FROM ${sourceTable} WHERE email = ?`;
+    
+            db.query(finalQuery, [email], (err, userResults) => {
+                if (err) {
+                    console.error(`Error fetching user from ${sourceTable}:`, err);
+                    return callback(err, null);
+                }
+    
+                return callback(null, userResults);
+            });
+        });
     },
+    
+    
     findById: (user_id, callback) => {
         const query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.id = ?';
         db.query(query, [user_id], callback);
     },
+
     fetchUsersByCondition: (user_id, callback) => {
         let query = '';
         let params = [];
@@ -30,6 +67,7 @@ const User = {
 
         db.query(query, params, callback);
     },
+
     updateUser: (user_id, role_id, userData, callback) => {
         // Step 1: Allow updates only for certain roles (1, 2)
         if (![1, 2].includes(role_id)) {
@@ -84,13 +122,37 @@ const User = {
             }
         });
     },
-    findUserByPhone: (phonenumber, callback) => {
-        const query = "SELECT * FROM users WHERE phonenumber = ?";
-        db.query(query, [phonenumber], callback);
+
+    findCustomerByPhone : (phonenumber, callback) => {
+        const sql = `SELECT * FROM customers WHERE phonenumber = ?`;
+        db.query(sql, [phonenumber], (err, result) => {
+            if (err) {
+                return callback(err, null);
+            }
+            return callback(null, result);
+        });
     },
-    createUser:(phonenumber,role_id,prefix, callback) => {
-        const query = `INSERT INTO users (phonenumber, role_id ,prefix) VALUES (?, ? ,?)`;
-        db.query(query, [phonenumber, role_id,prefix], callback);
+    
+    // Insert new user into `users` table (without storing phone number)
+    createUser : (role_id, callback) => {
+        const sql = `INSERT INTO users (role_id) VALUES (?)`; // Removed `phonenumber`
+        db.query(sql, [role_id], (err, result) => {
+            if (err) {
+                return callback(err, null);
+            }
+            return callback(null, result);
+        });
+    },
+    
+    // Insert phone number into `customers` table
+    createCustomer : (user_id, phonenumber, prefix, callback) => {
+        const sql = `INSERT INTO customers (user_id, phonenumber, prefix) VALUES (?, ?, ?)`;
+        db.query(sql, [user_id, phonenumber, prefix], (err, result) => {
+            if (err) {
+                return callback(err, null);
+            }
+            return callback(null, result);
+        });
     },
     
     getUnverifiedUsersByRole: (roleId, callback) => {
@@ -106,7 +168,7 @@ const User = {
     verifyUser: (userId, callback) => {
         const query = `UPDATE users SET is_verified = 1 WHERE id = ? AND is_verified = 0`;
         db.query(query, [userId], callback);
-    }
+    },
 };
 
 module.exports = User;
