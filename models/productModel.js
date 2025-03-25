@@ -41,24 +41,24 @@ const Product = {
         
 
     // Get a product by ID Find Product by ID (Include Attributes and Gallery)
-    findById: (id, userID, callback) => {
+    findById: (id, callback) => {
         const query = `
             SELECT 
                 p.*, 
                 c.name AS category_name, 
                 s.name AS sub_category_name, 
                 CASE 
-                    WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
+                    WHEN f.product_id IS NOT NULL THEN TRUE 
                     ELSE FALSE 
                 END AS is_favourite 
             FROM products p 
             LEFT JOIN product_categories c ON p.category = c.id 
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
-            LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
+            LEFT JOIN favourite_products f ON p.id = f.product_id
             WHERE p.id = ?;
         `;
     
-        db.query(query, [userID, userID, userID, id], (err, productResult) => { // ✅ Handles `userID` properly
+        db.query(query, [id], (err, productResult) => { // ✅ Handles `userID` properly
             if (err || !productResult.length) {
                 return callback(err || "Product not found", null);
             }
@@ -147,6 +147,7 @@ const Product = {
     
     // Update a product by ID (Includes sub_category)
     updateById: (id, updateData, callback) => {
+        console.log("yhat")
         if (!id) return callback('Product ID is required.', null);
     
         const fields = [];
