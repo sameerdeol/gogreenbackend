@@ -130,7 +130,7 @@ const updateProductById = (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid attributes format" });
         }
     }
-    Product.findById(id, (findErr, existingProduct) => {
+    Product.findByIdwithoutuserID(id, (findErr, existingProduct) => {
         if (findErr || !existingProduct) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
