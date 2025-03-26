@@ -200,7 +200,6 @@ const appsignup = async (req, res) => {
 const loginadmin = async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log(email,password)
 
         User.findByEmail(email, async (err, results) => {
             if (err) {

@@ -22,21 +22,21 @@ const router = express.Router();
 /**
  * Signup route (role_id 5 does not require authentication)
  */
-router.post('/signup', uploadFields, (req, res, next) => {
-    let { role_id } = req.body;
-    role_id = parseInt(role_id) || 5;
+// router.post('/signup', uploadFields, (req, res, next) => {
+//     let { role_id } = req.body;
+//     role_id = parseInt(role_id) || 5;
 
-    // Safely handle identity proof file
-    if (req.files?.identity_proof?.[0]) {
-        req.file = req.files.identity_proof[0]; 
-    }
+//     // Safely handle identity proof file
+//     if (req.files?.identity_proof?.[0]) {
+//         req.file = req.files.identity_proof[0]; 
+//     }
 
-    if ([3, 4, 5].includes(role_id)) {
-        return signup(req, res);
-    }
+//     if ([3, 4, 5].includes(role_id)) {
+//         return signup(req, res);
+//     }
 
-    authenticateToken(req, res, () => signup(req, res));
-});
+//     authenticateToken(req, res, () => signup(req, res));
+// });
 
 /**
  * Vendor & Rider Signup
@@ -75,7 +75,7 @@ router.put('/verify-user', authenticateToken, verifyUser);
 /**
  * Create Superadmins & Managers
  */
-router.post('/createadmins',(req, res) => {
+router.post('/createadmins', (req, res) => {
     let { role_id } = req.body;
     role_id = parseInt(role_id);
 
@@ -85,5 +85,6 @@ router.post('/createadmins',(req, res) => {
 
     createSuperadminManagers(req, res);
 });
+
 
 module.exports = router;
