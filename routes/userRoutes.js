@@ -48,13 +48,14 @@ router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
 
  * Vendor & Rider verification
  */
-router.post(['/vendor-verification', '/rider-verification'], uploadFields, (req, res, next) => {
+router.post(['/vendor-verification', '/rider-verification'], verifyToken, uploadFields, (req, res, next) => {
     if (req.files?.identity_proof?.[0]) {
-        req.body.identity_proof = req.files.identity_proof[0].path; // ✅ Automatically get full path
+        req.body.identity_proof = `${req.protocol}://${req.get('host')}/${req.files.identity_proof[0].path}`; // ✅ Full URL
     }
 
     vendorRiderVerification(req, res);
 });
+
 
 
 /**
@@ -86,7 +87,7 @@ router.put('/verify-user', authenticateToken, verifyUser);
 /**
  * Create Superadmins & Managers
  */
-router.post('/createadmins', verifyToken, (req, res) => {
+router.post('/createadmins', authenticateToken, (req, res) => {
     let { role_id } = req.body;
     role_id = parseInt(role_id);
 
@@ -96,5 +97,7 @@ router.post('/createadmins', verifyToken, (req, res) => {
 
     createSuperadminManagers(req, res);
 });
+
+
 
 module.exports = router;
