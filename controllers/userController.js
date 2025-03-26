@@ -155,7 +155,7 @@ const appsignup = async (req, res) => {
                 const newUserId = newUserResult.insertId;
 
                 // Insert into `customers` table
-                User.createCustomer(newUserId,phonenumber, prefix, (err) => {
+                User.createCustomer(newUserId,phonenumber,prefix, role_id,(err) => {
                     if (err) {
                         return res.status(500).json({
                             success: false,

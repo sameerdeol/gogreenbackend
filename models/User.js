@@ -145,9 +145,9 @@ const User = {
     },
     
     // Insert phone number into `customers` table
-    createCustomer : (user_id, phonenumber, prefix, callback) => {
-        const sql = `INSERT INTO customers (user_id, phonenumber, prefix) VALUES (?, ?, ?)`;
-        db.query(sql, [user_id, phonenumber, prefix], (err, result) => {
+    createCustomer : (user_id, phonenumber, prefix,role_id, callback) => {
+        const sql = `INSERT INTO customers (user_id, phonenumber, prefix,role_id) VALUES (?, ?, ?, ?)`;
+        db.query(sql, [user_id, phonenumber, prefix, role_id], (err, result) => {
             if (err) {
                 return callback(err, null);
             }

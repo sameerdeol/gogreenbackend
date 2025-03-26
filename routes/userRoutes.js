@@ -50,12 +50,9 @@ router.post('/appsignup', (req, res) => {
     let { role_id } = req.body;
     role_id = role_id ?? 5; 
 
-    if (role_id === 5) {
-        return appsignup(req, res);
-    }
-
-    authenticateToken(req, res, () => appsignup(req, res));
+    return appsignup(req, res);
 });
+
 
 /**
  * Admin Login
