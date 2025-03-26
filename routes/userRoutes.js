@@ -10,12 +10,14 @@ const {
     getUnverifiedDeliveryPartners, 
     getUnverifiedVendors, 
     vendorRiderSignup, 
-    createSuperadminManagers 
+    createSuperadminManagers,
+    vendorRiderVerification 
 } = require('../controllers/userController');
 
 const { authenticateToken } = require('../middleware/authMiddleware');
 const uploadFields = require('../middleware/multerConfig'); 
 const { allowRoles } = require('../middleware/roleMiddleware');  // Uncommented if needed
+const { verifyToken } = require('../middleware/authroization');
 
 const router = express.Router();
 
@@ -42,8 +44,25 @@ const router = express.Router();
  * Vendor & Rider Signup
  */
 router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
-
 /**
+
+ * Vendor & Rider verification
+ */
+router.post(['/vendor-verification', '/rider-verification'], uploadFields, (req, res, next) => {
+    let { role_id } = req.body;
+
+    // Safely handle identity proof file
+    if (req.files?.identity_proof?.[0]) {
+        req.file = req.files.identity_proof[0]; 
+    }
+    verifyToken(req, res, () => vendorRiderVerification(req, res));
+});
+/**
+
+
+
+
+
  * App Signup - Customer (role_id 5) doesn't need authentication
  */
 router.post('/appsignup', (req, res) => {
@@ -63,8 +82,8 @@ router.post('/adminlogin', loginadmin);
  * User Management Routes (Protected)
  */
 router.put('/update-user', authenticateToken, updateUser);
-router.get('/get-userDetails', authenticateToken, getuserDetails);
-router.get('/fetchuser', authenticateToken, fetchUser);
+// router.get('/get-userDetails', authenticateToken, getuserDetails);
+// router.get('/fetchuser', authenticateToken, fetchUser);
 router.get('/unverifiedVendors', authenticateToken, getUnverifiedVendors);
 router.get('/unverifieddeliverypartners', authenticateToken, getUnverifiedDeliveryPartners);
 router.put('/verify-user', authenticateToken, verifyUser);
