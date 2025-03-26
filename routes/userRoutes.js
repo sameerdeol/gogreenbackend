@@ -58,11 +58,6 @@ router.post(['/vendor-verification', '/rider-verification'], uploadFields, (req,
 
 
 /**
-
-
-
-
-
  * App Signup - Customer (role_id 5) doesn't need authentication
  */
 router.post('/appsignup', (req, res) => {
@@ -91,7 +86,7 @@ router.put('/verify-user', authenticateToken, verifyUser);
 /**
  * Create Superadmins & Managers
  */
-router.post('/createadmins', (req, res) => {
+router.post('/createadmins', verifyToken, (req, res) => {
     let { role_id } = req.body;
     role_id = parseInt(role_id);
 
@@ -101,6 +96,5 @@ router.post('/createadmins', (req, res) => {
 
     createSuperadminManagers(req, res);
 });
-
 
 module.exports = router;
