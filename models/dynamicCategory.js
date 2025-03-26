@@ -34,7 +34,7 @@ const ProductCategory = {
                         ELSE FALSE 
                     END AS is_favourite
                 FROM products p
-                LEFT JOIN category_selection cs ON p.category = cs.product_categories
+                LEFT JOIN category_selection cs ON p.category_id = cs.product_categories
                 LEFT JOIN product_categories c ON cs.product_categories = c.id
                 LEFT JOIN product_subcategories s ON p.sub_category = s.id
                 LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
