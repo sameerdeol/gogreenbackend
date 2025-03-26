@@ -350,11 +350,11 @@ const vendorRiderSignup = (req, res) => {
                 // Insert into respective role table
                 let insertRoleQuery, roleData;
                 if (role_id == 3) { // Vendors
-                    insertRoleQuery = `INSERT INTO vendors (user_id, username, email, password, phonenumber, prefix) VALUES (?, ?, ?, ?, ?, ?)`;
-                    roleData = [user_id, username, email, hashedPassword, phonenumber, prefix];
+                    insertRoleQuery = `INSERT INTO vendors (user_id, username, email, password, phonenumber, prefix, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+                    roleData = [user_id, username, email, hashedPassword, phonenumber, prefix, role_id];
                 } else if (role_id == 4) { // Delivery Partners
-                    insertRoleQuery = `INSERT INTO delivery_partners (user_id, username, email, password, phonenumber, prefix) VALUES (?, ?, ?, ?, ?, ?)`;
-                    roleData = [user_id, username, email, hashedPassword, phonenumber, prefix];
+                    insertRoleQuery = `INSERT INTO delivery_partners (user_id, username, email, password, phonenumber, prefix, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+                    roleData = [user_id, username, email, hashedPassword, phonenumber, prefix, role_id];
                 } else {
                     return res.status(400).json({
                         success: false,
@@ -443,7 +443,7 @@ const createSuperadminManagers = async (req, res) => {
 
 const vendorRiderVerification = async (req, res) => {
 //     try {
-//         const { storename, storeaddress, sincode, countrystatus, identity_proof, user_id } = req.body;
+//         const { firstname,lastnamestorename, storeaddress, sincode, countrystatus, identity_proof, user_id } = req.body;
 
 //         // Restrict role_id 1 (Superadmin) & 2 (Manager)
 //         if ([1, 2].includes(parseInt(role_id))) {
