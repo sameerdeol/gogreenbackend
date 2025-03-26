@@ -1,109 +1,22 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const {generateUniqueUsername} = require('../middleware/username');
 const db = require('../config/db'); // Import the existing connection
 const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
 const fs = require('fs');
 
 require('dotenv').config();
 
-// const signup = async (req, res) => {
-//     try {
-//         const { username, email, password, role_id, firstname, lastname, phonenumber, prefix } = req.body;
-
-//         // Restrict role_id 1 (Superadmin) & 2 (Manager)
-//         if ([1, 2].includes(parseInt(role_id))) {
-//             return res.status(403).json({
-//                 success: false,
-//                 message: 'You are not allowed to create an account with this role.'
-//             });
-//         }
-
-//         const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
-//         db.query(checkUserQuery, [email], async (err, result) => {
-//             if (err) {
-//                 return res.status(500).json({
-//                     success: false,
-//                     message: 'Server error while checking existing user',
-//                     error: err
-//                 });
-//             }
-
-//             if (result.length > 0) {
-//                 return res.status(400).json({
-//                     success: false,
-//                     message: 'A user with this email already exists'
-//                 });
-//             }
-
-//             const hashedPassword = await bcrypt.hash(password, 10);
-
-//             // Insert into `users` table (only ID & role_id)
-//             const insertUserQuery = `INSERT INTO users (role_id) VALUES (?)`;
-//             db.query(insertUserQuery, [role_id], (err, userResult) => {
-//                 if (err) {
-//                     return res.status(500).json({
-//                         success: false,
-//                         message: 'Server error while inserting user',
-//                         error: err
-//                     });
-//                 }
-
-//                 const user_id = userResult.insertId; // Get inserted user's ID
-
-//                 // Insert into respective role table
-//                 let insertRoleQuery, roleData;
-//                 if (role_id == 3) { // Vendors
-//                     insertRoleQuery = `INSERT INTO vendors (user_id, username, email, password, firstname, lastname, phonenumber, prefix) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-//                     roleData = [user_id, username, email, hashedPassword, firstname, lastname, phonenumber, prefix];
-//                 } else if (role_id == 4) { // Delivery Partners
-//                     insertRoleQuery = `INSERT INTO delivery_partners (user_id, username, email, password, firstname, lastname, phonenumber, prefix) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-//                     roleData = [user_id, username, email, hashedPassword, firstname, lastname, phonenumber, prefix];
-//                 } else if (role_id == 5) { // Customers
-//                     insertRoleQuery = `INSERT INTO customers (user_id, username, email, password, firstname, lastname, phonenumber, prefix) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-//                     roleData = [user_id, username, email, hashedPassword, firstname, lastname, phonenumber, prefix];
-//                 } else {
-//                     return res.status(400).json({
-//                         success: false,
-//                         message: 'Invalid role_id'
-//                     });
-//                 }
-
-//                 db.query(insertRoleQuery, roleData, (err) => {
-//                     if (err) {
-//                         return res.status(500).json({
-//                             success: false,
-//                             message: `Server error while inserting into role-specific table`,
-//                             error: err
-//                         });
-//                     }
-
-//                     return res.status(201).json({
-//                         success: true,
-//                         message: 'User created successfully'
-//                     });
-//                 });
-//             });
-//         });
-
-//     } catch (error) {
-//         console.error(error);
-//         if (!res.headersSent) {
-//             res.status(500).json({
-//                 success: false,
-//                 message: 'Server Error'
-//             });
-//         }
-//     }
-// };
-
 const appsignup = async (req, res) => {
     try {
-        const { phonenumber, otp, prefix} = req.body;
+        const { phonenumber, otp, prefix, role_id } = req.body;
+
+        // Validate required fields
         if (!phonenumber || !prefix) {
             return res.status(400).json({
                 success: false,
-                message: "Phone number, prefix, and firstname are required",
+                message: "Phone number and prefix are required",
             });
         }
 
@@ -114,10 +27,16 @@ const appsignup = async (req, res) => {
                 message: "Invalid OTP",
             });
         }
-
-        // Check if user exists
-        User.findCustomerByPhone(phonenumber, (err, result) => {
+        const userData = {
+            prefix: prefix,
+            phonenumber: phonenumber,
+            role_id: role_id,
+            is_verified:1
+        };
+        // Check if user already exists
+        User.findCustomerByPhone(userData, (err, result) => {
             if (err) {
+                console.error("Error checking user:", err);
                 return res.status(500).json({
                     success: false,
                     message: "Server error while checking user",
@@ -135,16 +54,16 @@ const appsignup = async (req, res) => {
                 return res.status(200).json({
                     success: true,
                     message: "Login successful",
-                    user,
                     token,
                 });
             }
 
-            let role_id = req.body.role_id ?? 5;
+            // User does not exist, insert new user
+            const newUser = { prefix, phonenumber, role_id };
 
-            // Insert into `users` table
-            User.createUser(role_id, (err, newUserResult) => {
+            User.insertUser(newUser, (err, newUserResult) => {
                 if (err) {
+                    console.error("Error inserting user:", err);
                     return res.status(500).json({
                         success: false,
                         message: "Server error while creating user",
@@ -152,44 +71,26 @@ const appsignup = async (req, res) => {
                     });
                 }
 
-                const newUserId = newUserResult.insertId;
+                const newUserId = newUserResult.insertId; // Get new user ID
+                const token = jwt.sign(
+                    { id: newUserId, role_id: role_id, phonenumber: phonenumber},
+                    process.env.JWT_SECRET
+                );
 
-                // Insert into `customers` table
-                User.createCustomer(newUserId,phonenumber,prefix, role_id,(err) => {
-                    if (err) {
-                        return res.status(500).json({
-                            success: false,
-                            message: "Server error while creating customer",
-                            error: err,
-                        });
-                    }
-
-                    const newUser = {
-                        id: newUserId,
-                        phonenumber,
-                        role_id,
-                    };
-
-                    const token = jwt.sign(
-                        { id: newUser.id, role_id: newUser.role_id},
-                        process.env.JWT_SECRET,
-                        { expiresIn: "7d" }
-                    );
-
-                    res.status(201).json({
-                        success: true,
-                        message: "User created and logged in successfully",
-                        user: newUser,
-                        token,
-                    });
+                return res.status(201).json({
+                    success: true,
+                    message: "User created and logged in successfully",
+                    user: { id: newUserId, phonenumber, role_id },
+                    token,
                 });
             });
         });
     } catch (error) {
-        console.error(error);
+        console.error("Unexpected Error:", error);
         res.status(500).json({
             success: false,
             message: "Server Error",
+            error: error.message,
         });
     }
 };
@@ -316,22 +217,17 @@ const verifyUser = (req, res) => {
 
 const vendorRiderSignup = async (req, res) => {
     try {
-        const { username, email, password, role_id, phonenumber, prefix } = req.body;
+        const { firstname, lastname, email, password, role_id, phonenumber, prefix } = req.body;
         const is_verified = 0;
+        const { username } = generateUniqueUsername(firstname, phonenumber); // Generate unique username
 
         // 1️⃣ Check if email already exists
-        const checkUserQuery = `
-            SELECT * FROM vendors WHERE email = ?
-            UNION 
-            SELECT * FROM delivery_partners WHERE email = ?
-        `;
-
-        db.query(checkUserQuery, [email, email], async (err, result) => {
+        User.findByEmail(email, async (err, result) => {
             if (err) {
                 return res.status(500).json({
                     success: false,
                     message: 'Server error while checking existing user',
-                    error: err
+                    error: err.message
                 });
             }
 
@@ -345,56 +241,38 @@ const vendorRiderSignup = async (req, res) => {
             // 2️⃣ Hash password before storing
             const hashedPassword = await bcrypt.hash(password, 10);
 
-            // 3️⃣ Insert into `users` table
-            const insertUserQuery = `INSERT INTO users (role_id, is_verified) VALUES (?,?)`;
-            db.query(insertUserQuery, [role_id, is_verified], (err, userResult) => {
+            // 3️⃣ Insert into `users` table (No `user_roles`)
+            const userData = {
+                username: username,
+                firstname: firstname,
+                lastname: lastname,
+                password: hashedPassword, // Make sure password is hashed before passing
+                prefix: prefix,
+                phonenumber: phonenumber,
+                email: email,
+                role_id: role_id,
+                is_verified:is_verified
+            };
+
+            User.insertUser(userData, (err, userResult) => {
                 if (err) {
                     return res.status(500).json({
                         success: false,
                         message: 'Server error while inserting user',
-                        error: err
+                        error: err.message
                     });
                 }
 
-                const user_id = userResult.insertId; // Get inserted user's ID
+                // 4️⃣ Generate JWT Token
+                const token = jwt.sign(
+                    { user_id: userResult.insertId, username, email, role_id },
+                    process.env.JWT_SECRET,
+                );
 
-                // 4️⃣ Insert into respective role table
-                let insertRoleQuery, roleData, userRoleTable;
-                if (role_id == 3) { // Vendors
-                    userRoleTable = 'vendors';
-                    insertRoleQuery = `INSERT INTO vendors (user_id, username, email, password, phonenumber, prefix, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-                    roleData = [user_id, username, email, hashedPassword, phonenumber, prefix, role_id];
-                } else if (role_id == 4) { // Delivery Partners
-                    userRoleTable = 'delivery_partners';
-                    insertRoleQuery = `INSERT INTO delivery_partners (user_id, username, email, password, phonenumber, prefix, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-                    roleData = [user_id, username, email, hashedPassword, phonenumber, prefix, role_id];
-                } else {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Invalid role_id'
-                    });
-                }
-
-                db.query(insertRoleQuery, roleData, (err) => {
-                    if (err) {
-                        return res.status(500).json({
-                            success: false,
-                            message: `Server error while inserting into ${userRoleTable}`,
-                            error: err
-                        });
-                    }
-
-                    // 5️⃣ Generate JWT Token
-                    const token = jwt.sign(
-                        { user_id:user_id, username:username, email:email, role_id:role_id},
-                        process.env.JWT_SECRET,
-                    );
-
-                    return res.status(201).json({
-                        success: true,
-                        message: 'User created successfully',
-                        token
-                    });
+                return res.status(201).json({
+                    success: true,
+                    message: 'User created successfully',
+                    token
                 });
             });
         });
@@ -421,7 +299,7 @@ const vendorRiderLogin = async (req, res) => {
             }
 
             const user = results.user;
-
+            console.log("user",user)
             // ✅ Validate password
             const isValid = await bcrypt.compare(password, user.password);
             if (!isValid) {
@@ -443,66 +321,81 @@ const vendorRiderLogin = async (req, res) => {
 
 
 
-const createSuperadminManagers = async (req, res) => {
+const createSuperadminManagers = (req, res) => {
     try {
-        const { username, email, password, firstName, lastName, prefix, phonenumber, role_id } = req.body;
+        const { email, password, firstname, lastname, prefix, phonenumber, role_id } = req.body;
+        console.log(role_id);
 
-        if (!username || !email || !password || !firstName || !lastName || !phonenumber || !role_id) {
-            return res.status(400).json({ error: "All fields are required" });
+        // Generate unique username
+        const { username } = generateUniqueUsername(firstname, phonenumber); 
+
+        if (!email || !password || !firstname || !lastname || !phonenumber || !role_id) {
+            return res.status(400).json({ success: false, message: "All fields are required" });
         }
 
-        let checkUserSQL;
-        if (role_id === 1) {
-            checkUserSQL = `SELECT * FROM superadmin WHERE email = ? OR username = ?`;
-        } else if (role_id === 2) {
-            checkUserSQL = `SELECT * FROM managers WHERE email = ? OR username = ?`;
-        } else {
-            return res.status(400).json({ error: "Invalid role_id" });
-        }
+        // Check if user exists
+        User.findByEmail(email, (err, existingUser) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: "Server error", error: err });
+            }
 
-        // Check if user already exists in the respective table
-        const [existingUser] = await db.promise().query(checkUserSQL, [email, username]);
-        if (existingUser.length > 0) {
-            return res.status(400).json({ error: "User with this email or username already exists" });
-        }
+            if (existingUser.length > 0) {
+                return res.status(400).json({ success: false, message: "User with this email already exists" });
+            }
 
-        const hashedPassword = bcrypt.hashSync(password, 10); // Hash password before storing
+            // Hash password before inserting
+            const hashedPassword = bcrypt.hashSync(password, 10);
+            const userData = {
+                username: username,
+                firstname: firstname,
+                lastname: lastname,
+                password: hashedPassword, // Make sure password is hashed before passing
+                prefix: prefix,
+                phonenumber: phonenumber,
+                email: email,
+                role_id: role_id,
+                is_verified: 1
+            };
 
-        // Insert user into 'users' table
-        const sqlUser = `INSERT INTO users (role_id) VALUES (?)`;
-        const [userResult] = await db.promise().query(sqlUser, [role_id]);
+            // Insert user and get user ID
+            User.insertUser(userData, (insertErr, userResult) => {
+                if (insertErr) {
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Server error while inserting user',
+                        error: insertErr.message
+                    });
+                }
 
-        const userId = userResult.insertId;
-        let sqlInsert;
-        let tableName;
+                // Generate JWT token
+                const token = jwt.sign(
+                    { user_id: userResult.insertId, username, email, role_id },
+                    process.env.JWT_SECRET
+                );
 
-        if (role_id === 1) {
-            sqlInsert = `INSERT INTO superadmin (username, user_id, firstname, lastname, prefix, phone, email, password, role_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-            tableName = "superadmin";
-        } else {
-            sqlInsert = `INSERT INTO managers (username, user_id, firstname, lastname, prefix, phone, email, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-            tableName = "managers";
-        }
-
-        // Insert into the correct table based on role
-        await db.promise().query(sqlInsert, [username, userId, firstName, lastName, prefix, phonenumber, email, hashedPassword, role_id]);
-
-        res.status(201).json({ message: `${tableName} created successfully`, userId });
+                return res.status(201).json({
+                    success: true,
+                    message: "User created successfully",
+                    token
+                });
+            });
+        });
 
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error in createSuperadminManagers:", error);
+        res.status(500).json({ success: false, message: "Server Error", error: error.message });
     }
 };
 
 const vendorRiderVerification = async (req, res) => {
     try {
-        const { role_id, firstname, lastname, email, storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number } = req.body;
+        const { role_id,storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number } = req.body;
 
         if ([1, 2].includes(parseInt(role_id))) {
             return res.status(403).json({ success: false, message: 'You are not allowed to create an account with this role.' });
         }
 
-        const userData = { user_id, firstname, lastname, email, storename, storeaddress, sincode, countrystatus, identity_proof, license_number };
+        const userData = { user_id,storename, storeaddress, sincode, countrystatus, identity_proof, license_number };
 
         User.insertUserVerification(role_id, userData, (err, result) => {
             if (err) {

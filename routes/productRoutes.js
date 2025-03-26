@@ -37,6 +37,7 @@ router.put('/makeproductweeklydeal', checkManagerRole, setProductTodayDeal);
 
 router.post('/featuredproducts', verifyToken,getFeaturedProducts);
 router.post('/productbycategoryid', verifyToken,getproductbycatgeoryID);
+router.post('/productbysubcategoryid', verifyToken,getproductbycatgeoryID);
 router.post('/weeklydealproducts', verifyToken,getTodayDealProducts);
 
 module.exports = router;

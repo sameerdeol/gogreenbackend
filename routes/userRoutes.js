@@ -48,9 +48,9 @@ router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
 
  * Vendor & Rider verification
  */
-router.post(['/vendor-verification', '/rider-verification'], verifyToken, uploadFields, (req, res, next) => {
+router.post(['/vendor-verification', '/rider-verification'], uploadFields, (req, res, next) => {
     if (req.files?.identity_proof?.[0]) {
-        req.body.identity_proof = `${req.protocol}://${req.get('host')}/${req.files.identity_proof[0].path}`; // ✅ Full URL
+        req.body.identity_proof = req.files.identity_proof[0].path || null; // ✅ Full URL
     }
 
     vendorRiderVerification(req, res);
@@ -59,14 +59,11 @@ router.post(['/vendor-verification', '/rider-verification'], verifyToken, upload
 router.post(['/vendor-login', '/rider-login'], vendorRiderLogin);
 
 
-
 /**
  * App Signup - Customer (role_id 5) doesn't need authentication
  */
 router.post('/appsignup', (req, res) => {
-    let { role_id } = req.body;
-    role_id = role_id ?? 5; 
-
+    req.body.role_id = req.body.role_id ?? 5; // Default role_id to 5 if not provided
     return appsignup(req, res);
 });
 
@@ -90,7 +87,7 @@ router.put('/verify-user', authenticateToken, verifyUser);
 /**
  * Create Superadmins & Managers
  */
-router.post('/createadmins', authenticateToken, (req, res) => {
+router.post('/createadmins', (req, res) => {
     let { role_id } = req.body;
     role_id = parseInt(role_id);
 

@@ -6,73 +6,70 @@ const User = {
     //     db.query(query, [username, email, password, role_id], callback);
     // },
 
-    // findByEmail: (email, callback) => {
-    //     const query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE email = ?';
-    //     db.query(query, [email], callback);
-    // },
     findByEmail: (email, callback) => {
-        // First, check if email exists in superadmin or managers table
-        const checkQuery = `
-            SELECT 'superadmin' AS source, role_id FROM superadmin WHERE email = ?
-            UNION 
-            SELECT 'managers' AS source, role_id FROM managers WHERE email = ?`;
-    
-        db.query(checkQuery, [email, email], (err, results) => {
+        const query = 'SELECT * FROM users WHERE email = ?';
+        db.query(query, [email], (err, results) => {
             if (err) {
-                console.error('Error checking user role:', err);
                 return callback(err, null);
             }
-    
-            if (results.length === 0) {
-                return callback(null, null); // No user found
-            }
-    
-            const roleId = results[0].role_id;
-            const sourceTable = roleId === 1 ? 'superadmin' : 'managers';
-    
-            // Fetch user details from the determined table
-            const finalQuery = `SELECT * FROM ${sourceTable} WHERE email = ?`;
-    
-            db.query(finalQuery, [email], (err, userResults) => {
-                if (err) {
-                    console.error(`Error fetching user from ${sourceTable}:`, err);
-                    return callback(err, null);
-                }
-    
-                return callback(null, userResults);
-            });
+            callback(null, results);
         });
     },
+    insertUser: (userData, callback) => {
+        console.log(userData);
+        const allowedFields = ["username", "firstname", "lastname", "password", "prefix", "phonenumber", "email", "role_id", "is_verified"];
+        
+        // Filter only available fields
+        const fields = Object.keys(userData).filter(key => allowedFields.includes(key) && userData[key] !== undefined);
+        
+        if (fields.length === 0) {
+            return callback(new Error("No valid fields provided"), null);
+        }
+    
+        const placeholders = fields.map(() => "?").join(", ");
+        const query = `INSERT INTO users (${fields.join(", ")}) VALUES (${placeholders})`;
+        const values = fields.map(field => userData[field]);
+    
+        db.query(query, values, callback);
+    },
+    
+    // findByEmail: (email, callback) => {
+    //     // First, check if email exists in superadmin or managers table
+    //     const checkQuery = `
+    //         SELECT 'superadmin' AS source, role_id FROM superadmin WHERE email = ?
+    //         UNION 
+    //         SELECT 'managers' AS source, role_id FROM managers WHERE email = ?`;
+    
+    //     db.query(checkQuery, [email, email], (err, results) => {
+    //         if (err) {
+    //             console.error('Error checking user role:', err);
+    //             return callback(err, null);
+    //         }
+    
+    //         if (results.length === 0) {
+    //             return callback(null, null); // No user found
+    //         }
+    
+    //         const roleId = results[0].role_id;
+    //         const sourceTable = roleId === 1 ? 'superadmin' : 'managers';
+    
+    //         // Fetch user details from the determined table
+    //         const finalQuery = `SELECT * FROM ${sourceTable} WHERE email = ?`;
+    
+    //         db.query(finalQuery, [email], (err, userResults) => {
+    //             if (err) {
+    //                 console.error(`Error fetching user from ${sourceTable}:`, err);
+    //                 return callback(err, null);
+    //             }
+    
+    //             return callback(null, userResults);
+    //         });
+    //     });
+    // },
     findByEmailForVendorRider: (email, callback) => {
-        const checkQuery = `
-            SELECT 
-                u.id AS user_id, 
-                u.is_verified, 
-                v.role_id, 
-                v.username, 
-                v.email, 
-                v.password, 
-                'vendors' AS source 
-            FROM vendors v
-            JOIN users u ON u.id = v.user_id
-            WHERE v.email = ?
+        const checkQuery = `SELECT * FROM users WHERE email = ?`;  // ✅ Fixed SQL syntax
     
-            UNION 
-    
-            SELECT 
-                u.id AS user_id, 
-                u.is_verified, 
-                dp.role_id, 
-                dp.username, 
-                dp.email, 
-                dp.password, 
-                'delivery_partners' AS source 
-            FROM delivery_partners dp
-            JOIN users u ON u.id = dp.user_id
-            WHERE dp.email = ?
-        `;
-    
-        db.query(checkQuery, [email, email], (err, results) => {
+        db.query(checkQuery, [email], (err, results) => {
             if (err) {
                 console.error('Error checking user role:', err);
                 return callback(err, null);
@@ -83,11 +80,12 @@ const User = {
             }
     
             const user = results[0];
-            const isVerified = Boolean(Number(user.is_verified)); // ✅ Explicit boolean conversion
+            const isVerified = !!user.is_verified; // ✅ Cleaner boolean conversion
     
             if (!isVerified) {
                 return callback(null, { success: false, message: "Your application is under review" });
             }
+    
             return callback(null, { success: true, user });
         });
     },
@@ -170,9 +168,9 @@ const User = {
         });
     },
 
-    findCustomerByPhone : (phonenumber, callback) => {
-        const sql = `SELECT * FROM customers WHERE phonenumber = ?`;
-        db.query(sql, [phonenumber], (err, result) => {
+    findCustomerByPhone : (phonenumber,role_id, callback) => {
+        const sql = `SELECT * FROM users WHERE phonenumber = ? and role_id= ?`;
+        db.query(sql, [phonenumber,role_id], (err, result) => {
             if (err) {
                 return callback(err, null);
             }
@@ -228,19 +226,19 @@ const User = {
     
         if (role_id == 3) { // Vendor
             insertQuery = `
-                INSERT INTO user_verifications 
-                (user_id, firstname, lastname, email, storename, storeaddress, sincode, countrystatus, identity_proof, role_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO vendors 
+                (user_id,store_name, store_address, sin_code, country_status, identity_proof) 
+                VALUES (?, ?, ?, ?, ?, ?)
             `;
-            values = [data.user_id, data.firstname, data.lastname, data.email, data.storename, data.storeaddress, data.sincode, data.countrystatus, data.identity_proof, role_id];
+            values = [data.user_id, data.storename, data.storeaddress, data.sincode, data.countrystatus, data.identity_proof];
     
         } else if (role_id == 4) { // Delivery Partner
             insertQuery = `
-                INSERT INTO user_verifications 
-                (user_id, firstname, lastname, email, license_number, sincode, countrystatus, identity_proof, role_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO delivery_partners 
+                (user_id, license_number, sin_code, country_status, identity_proof) 
+                VALUES (?, ?, ?, ?, ?)
             `;
-            values = [data.user_id, data.firstname, data.lastname, data.email, data.license_number, data.sincode, data.countrystatus, data.identity_proof, role_id];
+            values = [data.user_id, data.license_number, data.sincode, data.countrystatus, data.identity_proof];
         } else {
             return callback(new Error('Invalid role_id'), null);
         }
