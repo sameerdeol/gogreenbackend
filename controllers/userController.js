@@ -442,32 +442,31 @@ const createSuperadminManagers = async (req, res) => {
 };
 
 const vendorRiderVerification = async (req, res) => {
-//     try {
-//         const { firstname,lastnamestorename, storeaddress, sincode, countrystatus, identity_proof, user_id } = req.body;
+    try {
+        const { role_id, firstname, lastname, email, storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number } = req.body;
 
-//         // Restrict role_id 1 (Superadmin) & 2 (Manager)
-//         if ([1, 2].includes(parseInt(role_id))) {
-//             return res.status(403).json({
-//                 success: false,
-//                 message: 'You are not allowed to create an account with this role.'
-//             });
-//         }
+        if ([1, 2].includes(parseInt(role_id))) {
+            return res.status(403).json({ success: false, message: 'You are not allowed to create an account with this role.' });
+        }
 
-//             });
-//         });
+        const userData = { user_id, firstname, lastname, email, storename, storeaddress, sincode, countrystatus, identity_proof, license_number };
 
-//     } catch (error) {
-//         console.error(error);
-//         if (!res.headersSent) {
-//             res.status(500).json({
-//                 success: false,
-//                 message: 'Server Error'
-//             });
-//         }
-//     }
+        User.insertUserVerification(role_id, userData, (err, result) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Error saving verification details', error: err });
+            }
+            res.status(201).json({ success: true, message: 'Verification details stored successfully' });
+        });
+
+    } catch (error) {
+        console.error(error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Server Error' });
+        }
+    }
 };
 
 
 
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedVendors, getUnverifiedDeliveryPartners,verifyUser,vendorRiderSignup,createSuperadminManagers};
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedVendors, getUnverifiedDeliveryPartners,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification};

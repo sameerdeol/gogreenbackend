@@ -49,14 +49,14 @@ router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
  * Vendor & Rider verification
  */
 router.post(['/vendor-verification', '/rider-verification'], uploadFields, (req, res, next) => {
-    let { role_id } = req.body;
-
-    // Safely handle identity proof file
     if (req.files?.identity_proof?.[0]) {
-        req.file = req.files.identity_proof[0]; 
+        req.body.identity_proof = req.files.identity_proof[0].path; // ✅ Automatically get full path
     }
-    verifyToken(req, res, () => vendorRiderVerification(req, res));
+
+    vendorRiderVerification(req, res);
 });
+
+
 /**
 
 

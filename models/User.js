@@ -1,10 +1,10 @@
 const db = require('../config/db');
 
 const User = {
-    create: (username, email, password, role_id, callback) => {
-        const query = 'INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, ?)';
-        db.query(query, [username, email, password, role_id], callback);
-    },
+    // create: (username, email, password, role_id, callback) => {
+    //     const query = 'INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, ?)';
+    //     db.query(query, [username, email, password, role_id], callback);
+    // },
 
     // findByEmail: (email, callback) => {
     //     const query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE email = ?';
@@ -50,23 +50,23 @@ const User = {
         db.query(query, [user_id], callback);
     },
 
-    fetchUsersByCondition: (user_id, callback) => {
-        let query = '';
-        let params = [];
+    // fetchUsersByCondition: (user_id, callback) => {
+    //     let query = '';
+    //     let params = [];
 
-        if (user_id === 1) {
-            query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id !=5';
-        } else if (user_id === 2) {
-            query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id IN (3, 4)';
-        } else if (user_id === 3) {
-            query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id IN (4)';
-        } else {
-            // Handle other cases or return an empty result
-            return callback(null, []);
-        }
+    //     if (user_id === 1) {
+    //         query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id !=5';
+    //     } else if (user_id === 2) {
+    //         query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id IN (3, 4)';
+    //     } else if (user_id === 3) {
+    //         query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id IN (4)';
+    //     } else {
+    //         // Handle other cases or return an empty result
+    //         return callback(null, []);
+    //     }
 
-        db.query(query, params, callback);
-    },
+    //     db.query(query, params, callback);
+    // },
 
     updateUser: (user_id, role_id, userData, callback) => {
         // Step 1: Allow updates only for certain roles (1, 2)
@@ -169,6 +169,38 @@ const User = {
         const query = `UPDATE users SET is_verified = 1 WHERE id = ? AND is_verified = 0`;
         db.query(query, [userId], callback);
     },
+
+    insertUserVerification : (role_id, data, callback) => {
+        let insertQuery;
+        let values;
+    
+        if (role_id == 3) { // Vendor
+            insertQuery = `
+                INSERT INTO user_verifications 
+                (user_id, firstname, lastname, email, storename, storeaddress, sincode, countrystatus, identity_proof, role_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            values = [data.user_id, data.firstname, data.lastname, data.email, data.storename, data.storeaddress, data.sincode, data.countrystatus, data.identity_proof, role_id];
+    
+        } else if (role_id == 4) { // Delivery Partner
+            insertQuery = `
+                INSERT INTO user_verifications 
+                (user_id, firstname, lastname, email, license_number, sincode, countrystatus, identity_proof, role_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            values = [data.user_id, data.firstname, data.lastname, data.email, data.license_number, data.sincode, data.countrystatus, data.identity_proof, role_id];
+        } else {
+            return callback(new Error('Invalid role_id'), null);
+        }
+    
+        db.query(insertQuery, values, (err, result) => {
+            if (err) {
+                return callback(err, null);
+            }
+            callback(null, result);
+        });
+    }
+
 };
 
 module.exports = User;
