@@ -305,11 +305,12 @@ const verifyUser = (req, res) => {
     });
 };
 
-const vendorRiderSignup = (req, res) => {
+const vendorRiderSignup = async (req, res) => {
     try {
         const { username, email, password, role_id, phonenumber, prefix } = req.body;
         const is_verified = 0;
-        // Check if email exists in any role table
+
+        // 1️⃣ Check if email already exists
         const checkUserQuery = `
             SELECT * FROM vendors WHERE email = ?
             UNION 
@@ -332,9 +333,10 @@ const vendorRiderSignup = (req, res) => {
                 });
             }
 
+            // 2️⃣ Hash password before storing
             const hashedPassword = await bcrypt.hash(password, 10);
 
-            // Insert into `users` table (only ID & role_id)
+            // 3️⃣ Insert into `users` table
             const insertUserQuery = `INSERT INTO users (role_id, is_verified) VALUES (?,?)`;
             db.query(insertUserQuery, [role_id, is_verified], (err, userResult) => {
                 if (err) {
@@ -347,12 +349,14 @@ const vendorRiderSignup = (req, res) => {
 
                 const user_id = userResult.insertId; // Get inserted user's ID
 
-                // Insert into respective role table
-                let insertRoleQuery, roleData;
+                // 4️⃣ Insert into respective role table
+                let insertRoleQuery, roleData, userRoleTable;
                 if (role_id == 3) { // Vendors
+                    userRoleTable = 'vendors';
                     insertRoleQuery = `INSERT INTO vendors (user_id, username, email, password, phonenumber, prefix, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
                     roleData = [user_id, username, email, hashedPassword, phonenumber, prefix, role_id];
                 } else if (role_id == 4) { // Delivery Partners
+                    userRoleTable = 'delivery_partners';
                     insertRoleQuery = `INSERT INTO delivery_partners (user_id, username, email, password, phonenumber, prefix, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
                     roleData = [user_id, username, email, hashedPassword, phonenumber, prefix, role_id];
                 } else {
@@ -366,27 +370,31 @@ const vendorRiderSignup = (req, res) => {
                     if (err) {
                         return res.status(500).json({
                             success: false,
-                            message: `Server error while inserting into role-specific table`,
+                            message: `Server error while inserting into ${userRoleTable}`,
                             error: err
                         });
                     }
 
+                    // 5️⃣ Generate JWT Token
+                    const token = jwt.sign(
+                        { user_id, username, email, role_id, is_verified },
+                        process.env.JWT_SECRET,
+                    );
+
                     return res.status(201).json({
                         success: true,
-                        message: 'User created successfully'
+                        message: 'User created successfully',
+                        token
                     });
                 });
             });
         });
-
     } catch (error) {
-        console.error(error);
-        if (!res.headersSent) {
-            res.status(500).json({
-                success: false,
-                message: 'Server Error'
-            });
-        }
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
     }
 };
 
