@@ -377,7 +377,7 @@ const vendorRiderSignup = async (req, res) => {
 
                     // 5️⃣ Generate JWT Token
                     const token = jwt.sign(
-                        { user_id, username, email, role_id, is_verified },
+                        { user_id:user_id, username:username, email:email, role_id:role_id},
                         process.env.JWT_SECRET,
                     );
 
