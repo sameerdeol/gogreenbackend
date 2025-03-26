@@ -7,7 +7,7 @@ const Product = {
     
             const query = sqlString.format(
                 `INSERT INTO products 
-                (name, description, price, category, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available) 
+                (name, description, price, category_id, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     String(name),
@@ -52,7 +52,7 @@ const Product = {
                     ELSE FALSE 
                 END AS is_favourite 
             FROM products p 
-            LEFT JOIN product_categories c ON p.category = c.id 
+            LEFT JOIN product_categories c ON p.category_id = c.id 
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
             LEFT JOIN favourite_products f ON p.id = f.product_id
             WHERE p.id = ?;
@@ -101,7 +101,7 @@ const Product = {
                     ELSE FALSE 
                 END AS is_favourite 
             FROM products p 
-            LEFT JOIN product_categories c ON p.category = c.id 
+            LEFT JOIN product_categories c ON p.category_id = c.id 
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
             LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
             WHERE p.id = ?;
@@ -152,7 +152,7 @@ const Product = {
                     ELSE FALSE 
                 END AS is_favourite 
             FROM products p 
-            LEFT JOIN product_categories c ON p.category = c.id 
+            LEFT JOIN product_categories c ON p.category_id = c.id 
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
             LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL);
         `;
@@ -264,7 +264,7 @@ const Product = {
                                 ELSE FALSE 
                             END AS is_favourite 
                      FROM products p
-                     LEFT JOIN product_categories c ON p.category = c.id
+                     LEFT JOIN product_categories c ON p.category_id = c.id
                      LEFT JOIN product_subcategories s ON p.sub_category = s.id
                      LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
                      WHERE p.is_featured = TRUE;`;
@@ -283,7 +283,7 @@ const Product = {
                                 ELSE FALSE 
                             END AS is_favourite 
                      FROM products p
-                     LEFT JOIN product_categories c ON p.category = c.id
+                     LEFT JOIN product_categories c ON p.category_id = c.id
                      LEFT JOIN product_subcategories s ON p.sub_category = s.id
                      LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
                      WHERE p.is_today_deal = TRUE;`;
@@ -300,10 +300,10 @@ const Product = {
                             ELSE FALSE 
                         END AS is_favourite 
                  FROM products p
-                 LEFT JOIN product_categories c ON p.category = c.id
+                 LEFT JOIN product_categories c ON p.category_id = c.id
                  LEFT JOIN product_subcategories s ON p.sub_category = s.id
                  LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
-                 WHERE p.category = ?;`;
+                 WHERE p.category_id = ?;`;
 
     db.query(sql, [userId, userId, userId, categoryId], callback);
 }
