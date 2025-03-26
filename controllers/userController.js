@@ -390,6 +390,42 @@ const vendorRiderSignup = (req, res) => {
     }
 };
 
+const vendorRiderLogin = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        User.findByEmailForVendorRider(email, async (err, results) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Internal server error', error: err });
+            }
+
+            if (!results || !results.success) {
+                return res.status(404).json({ success: false, message: results?.message || 'User not found' });
+            }
+
+            const user = results.user;
+
+            // ✅ Validate password
+            const isValid = await bcrypt.compare(password, user.password);
+            if (!isValid) {
+                return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            }
+
+            // ✅ Generate JWT token with expiration
+            const token = jwt.sign(
+                { id: user.user_id, role_id: user.role_id, username: user.username },
+                process.env.JWT_SECRET
+            );
+
+            return res.json({ success: true, message: 'Login successful', token });
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Authentication error', error });
+    }
+};
+
+
+
 const createSuperadminManagers = async (req, res) => {
     try {
         const { username, email, password, firstName, lastName, prefix, phonenumber, role_id } = req.body;
@@ -469,4 +505,4 @@ const vendorRiderVerification = async (req, res) => {
 
 
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedVendors, getUnverifiedDeliveryPartners,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification};
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedVendors, getUnverifiedDeliveryPartners,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin};

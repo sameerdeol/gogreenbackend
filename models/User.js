@@ -43,7 +43,54 @@ const User = {
             });
         });
     },
+    findByEmailForVendorRider: (email, callback) => {
+        const checkQuery = `
+            SELECT 
+                u.id AS user_id, 
+                u.is_verified, 
+                v.role_id, 
+                v.username, 
+                v.email, 
+                v.password, 
+                'vendors' AS source 
+            FROM vendors v
+            JOIN users u ON u.id = v.user_id
+            WHERE v.email = ?
     
+            UNION 
+    
+            SELECT 
+                u.id AS user_id, 
+                u.is_verified, 
+                dp.role_id, 
+                dp.username, 
+                dp.email, 
+                dp.password, 
+                'delivery_partners' AS source 
+            FROM delivery_partners dp
+            JOIN users u ON u.id = dp.user_id
+            WHERE dp.email = ?
+        `;
+    
+        db.query(checkQuery, [email, email], (err, results) => {
+            if (err) {
+                console.error('Error checking user role:', err);
+                return callback(err, null);
+            }
+    
+            if (results.length === 0) {
+                return callback(null, { success: false, message: "User not found" });
+            }
+    
+            const user = results[0];
+            const isVerified = Boolean(Number(user.is_verified)); // ✅ Explicit boolean conversion
+    
+            if (!isVerified) {
+                return callback(null, { success: false, message: "Your application is under review" });
+            }
+            return callback(null, { success: true, user });
+        });
+    },
     
     findById: (user_id, callback) => {
         const query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.id = ?';

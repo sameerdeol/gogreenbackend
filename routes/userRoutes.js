@@ -11,7 +11,8 @@ const {
     getUnverifiedVendors, 
     vendorRiderSignup, 
     createSuperadminManagers,
-    vendorRiderVerification 
+    vendorRiderVerification,
+    vendorRiderLogin
 } = require('../controllers/userController');
 
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -55,6 +56,8 @@ router.post(['/vendor-verification', '/rider-verification'], verifyToken, upload
 
     vendorRiderVerification(req, res);
 });
+
+router.post(['/vendor-login', '/rider-login'], vendorRiderLogin);
 
 
 
