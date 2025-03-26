@@ -27,6 +27,7 @@ const ProductCategory = {
             sql = `
                 SELECT 
                     p.*, 
+                    p.category AS category_id, 
                     c.name AS category_name, 
                     s.name AS sub_category_name, 
                     CASE 

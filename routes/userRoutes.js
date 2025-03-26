@@ -6,9 +6,8 @@ const {
     fetchUser, 
     updateUser, 
     appsignup, 
-    verifyUser, 
-    getUnverifiedDeliveryPartners, 
-    getUnverifiedVendors, 
+    verifyUser,
+    getUnverifiedUsers,
     vendorRiderSignup, 
     createSuperadminManagers,
     vendorRiderVerification,
@@ -83,8 +82,9 @@ router.post('/adminlogin', loginadmin);
 router.put('/update-user', authenticateToken, updateUser);
 // router.get('/get-userDetails', authenticateToken, getuserDetails);
 // router.get('/fetchuser', authenticateToken, fetchUser);
-router.get('/unverifiedVendors', authenticateToken, getUnverifiedVendors);
-router.get('/unverifieddeliverypartners', authenticateToken, getUnverifiedDeliveryPartners);
+// router.get('/unverifiedVendors', authenticateToken, getUnverifiedVendors);
+// router.get('/unverifieddeliverypartners', authenticateToken, getUnverifiedDeliveryPartners);
+router.get('/unverifiedUsers', getUnverifiedUsers);
 router.put('/verify-user', authenticateToken, verifyUser);
 
 /**

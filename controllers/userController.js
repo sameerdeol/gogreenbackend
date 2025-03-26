@@ -274,8 +274,25 @@ const updateUser = (req, res) => {
 //     });
 // };
 
-const getUnverifiedVendors = (req, res) => {
-    User.getUnverifiedUsersByRole(3, (err, users) => {
+// const getUnverifiedVendors = (req, res) => {
+//     User.getUnverifiedUsersByRole(3, (err, users) => {
+//         if (err) {
+//             return res.status(500).json({ success: false, message: 'Database error', error: err });
+//         }
+//         res.json({ success: true, users });
+//     });
+// };
+
+// const getUnverifiedDeliveryPartners = (req, res) => {
+//     User.getUnverifiedUsersByRole(4, (err, users) => {
+//         if (err) {
+//             return res.status(500).json({ success: false, message: 'Database error', error: err });
+//         }
+//         res.json({ success: true, users });
+//     });
+// };
+const getUnverifiedUsers = (req, res) => {
+    User.getUnverifiedUsers((err, users) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
@@ -283,14 +300,6 @@ const getUnverifiedVendors = (req, res) => {
     });
 };
 
-const getUnverifiedDeliveryPartners = (req, res) => {
-    User.getUnverifiedUsersByRole(4, (err, users) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: 'Database error', error: err });
-        }
-        res.json({ success: true, users });
-    });
-};
 const verifyUser = (req, res) => {
     const userId = req.body.id;
 
@@ -513,4 +522,4 @@ const vendorRiderVerification = async (req, res) => {
 
 
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedVendors, getUnverifiedDeliveryPartners,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin};
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin};

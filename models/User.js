@@ -202,13 +202,18 @@ const User = {
         });
     },
     
-    getUnverifiedUsersByRole: (roleId, callback) => {
-        const query = `SELECT *
-                       FROM users u
-                       LEFT JOIN user_verifications uv ON u.id = uv.user_id
-                       WHERE u.role_id = ? 
-                       AND u.is_verified = 0`;
-        db.query(query, [roleId], callback);
+    getUnverifiedUsers: (callback) => {
+        const query = `
+            SELECT * FROM users u
+            LEFT JOIN vendors v ON u.id = v.user_id
+            WHERE u.role_id = 3 AND u.is_verified = 0
+            UNION 
+            SELECT * FROM users u
+            LEFT JOIN delivery_partners dp ON u.id = dp.user_id
+            WHERE u.role_id = 4 AND u.is_verified = 0;
+        `;
+    
+        db.query(query, callback);
     },
 
     // Approve verification for a specific user
