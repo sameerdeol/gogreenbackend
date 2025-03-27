@@ -1,10 +1,7 @@
 const db = require('../config/db');
+const bcrypt = require('bcryptjs');
 
 const User = {
-    // create: (username, email, password, role_id, callback) => {
-    //     const query = 'INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, ?)';
-    //     db.query(query, [username, email, password, role_id], callback);
-    // },
 
     findByEmail: (email, callback) => {
         const query = 'SELECT * FROM users WHERE email = ?';
@@ -32,40 +29,6 @@ const User = {
     
         db.query(query, values, callback);
     },
-    
-    // findByEmail: (email, callback) => {
-    //     // First, check if email exists in superadmin or managers table
-    //     const checkQuery = `
-    //         SELECT 'superadmin' AS source, role_id FROM superadmin WHERE email = ?
-    //         UNION 
-    //         SELECT 'managers' AS source, role_id FROM managers WHERE email = ?`;
-    
-    //     db.query(checkQuery, [email, email], (err, results) => {
-    //         if (err) {
-    //             console.error('Error checking user role:', err);
-    //             return callback(err, null);
-    //         }
-    
-    //         if (results.length === 0) {
-    //             return callback(null, null); // No user found
-    //         }
-    
-    //         const roleId = results[0].role_id;
-    //         const sourceTable = roleId === 1 ? 'superadmin' : 'managers';
-    
-    //         // Fetch user details from the determined table
-    //         const finalQuery = `SELECT * FROM ${sourceTable} WHERE email = ?`;
-    
-    //         db.query(finalQuery, [email], (err, userResults) => {
-    //             if (err) {
-    //                 console.error(`Error fetching user from ${sourceTable}:`, err);
-    //                 return callback(err, null);
-    //             }
-    
-    //             return callback(null, userResults);
-    //         });
-    //     });
-    // },
     findByEmailForVendorRider: (email, callback) => {
         const checkQuery = `SELECT * FROM users WHERE email = ?`;  // ✅ Fixed SQL syntax
     
@@ -91,27 +54,24 @@ const User = {
     },
     
     findById: (user_id, callback) => {
-        const query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.id = ?';
-        db.query(query, [user_id], callback);
+        const query = 'SELECT * FROM users WHERE id = ?';
+        db.query(query, [user_id], (err, results) => {
+            if (err) return callback(err, null);
+            if (results.length === 0) return callback(null, null);
+            callback(null, results[0]);
+        });
     },
+    updatePassword: (user_id, new_password, callback) => {
+        bcrypt.hash(new_password, 10, (err, hashedPassword) => {
+            if (err) return callback(err, null);
 
-    // fetchUsersByCondition: (user_id, callback) => {
-    //     let query = '';
-    //     let params = [];
-
-    //     if (user_id === 1) {
-    //         query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id !=5';
-    //     } else if (user_id === 2) {
-    //         query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id IN (3, 4)';
-    //     } else if (user_id === 3) {
-    //         query = 'SELECT users.*, roles.role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.role_id IN (4)';
-    //     } else {
-    //         // Handle other cases or return an empty result
-    //         return callback(null, []);
-    //     }
-
-    //     db.query(query, params, callback);
-    // },
+            const query = 'UPDATE users SET password = ? WHERE id = ?';
+            db.query(query, [hashedPassword, user_id], (err, result) => {
+                if (err) return callback(err, null);
+                callback(null, result);
+            });
+        });
+    },
 
     updateUser: (user_id, role_id, userData, callback) => {
         // Step 1: Allow updates only for certain roles (1, 2)

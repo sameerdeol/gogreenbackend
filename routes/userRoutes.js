@@ -1,9 +1,7 @@
 const express = require('express');
-const { 
-    signup, 
-    loginadmin, 
-    getuserDetails, 
-    fetchUser, 
+const {
+    loginadmin,
+    updatePassword,
     updateUser, 
     appsignup, 
     verifyUser,
@@ -47,7 +45,7 @@ router.post('/appsignup', (req, res) => {
 /**
  * Admin Login
  */
-router.post('/adminlogin', authenticateToken,loginadmin);
+router.post(['/update-vendorPassword', '/update-riderPassword'],updatePassword);
 
 /**
  * User Management Routes (Protected)

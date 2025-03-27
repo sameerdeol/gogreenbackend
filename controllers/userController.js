@@ -128,26 +128,6 @@ const loginadmin = async (req, res) => {
         return res.status(500).json({ message: 'Authentication error', error });
     }
 };
-
-// const getuserDetails = (req, res) => {
-//     const { id } = req.user;  // Get the user_id from the authenticated user (assumes JWT token contains id)
-
-//     // Call the findById method to get user data by user_id
-//     User.findById(id, (err, results) => {
-//         if (err) {
-//             console.error('Error fetching user details:', err);
-//             return res.status(500).json({ message: 'Server error' });
-//         }
-
-//         // Check if the user with that id exists
-//         if (results.length === 0) {
-//             return res.status(404).json({ message: 'No user found with that id' });
-//         }
-//         const user = results[0];
-//         // Assuming results is an array, return the first user object from the array
-//         res.status(200).json(user);  // Return the first user object, not the entire array
-//     });
-// };
 const updateUser = (req, res) => {
     const userData = req.body;
     const { role_id } = req.user;
@@ -161,34 +141,6 @@ const updateUser = (req, res) => {
         }
     });
 };
-// const fetchUser = (req, res) => {
-//     const { role_id } = req.user;
-
-//     User.fetchUsersByCondition(role_id, (err, results) => {
-//         if (err) {
-//             return res.status(500).json({ error: 'Database query failed' });
-//         }
-//         res.json(results);
-//     });
-// };
-
-// const getUnverifiedVendors = (req, res) => {
-//     User.getUnverifiedUsersByRole(3, (err, users) => {
-//         if (err) {
-//             return res.status(500).json({ success: false, message: 'Database error', error: err });
-//         }
-//         res.json({ success: true, users });
-//     });
-// };
-
-// const getUnverifiedDeliveryPartners = (req, res) => {
-//     User.getUnverifiedUsersByRole(4, (err, users) => {
-//         if (err) {
-//             return res.status(500).json({ success: false, message: 'Database error', error: err });
-//         }
-//         res.json({ success: true, users });
-//     });
-// };
 const getUnverifiedUsers = (req, res) => {
     User.getUnverifiedUsers((err, users) => {
         if (err) {
@@ -408,6 +360,40 @@ const vendorRiderVerification = async (req, res) => {
 };
 
 
+const updatePassword = (req, res) => {
+    const { role_id, previous_password, new_password, user_id } = req.body;
+
+    // Prevent admins from changing password
+    if ([1, 2].includes(parseInt(role_id))) {
+        return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
+    }
+
+    // Find user
+    User.findById(user_id, (err, user) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error', error: err });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        bcrypt.compare(previous_password, user.password, (err, isMatch) => {
+            if (err) {
+                console.error('🔴 Error during bcrypt comparison:', err);
+                return res.status(500).json({ success: false, message: 'Error checking password', error: err });
+            }
+        
+            if (!isMatch) {
+                console.log('❌ Passwords do NOT match!');
+                return res.status(400).json({ success: false, message: 'Incorrect previous password' });
+            }
+            User.updatePassword(user_id, new_password, (err, result) => {
+                if (err) return res.status(500).json({ success: false, message: 'Error updating password', error: err });
+
+                res.status(200).json({ success: true, message: 'Password updated successfully' });
+            });
+        });        
+    });
+};
 
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin};
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword};
