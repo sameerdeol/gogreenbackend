@@ -353,27 +353,20 @@ const setProductTodayDeal = (req, res) => {
     });
 };
 // Get all Featured Products
-const getFeaturedProducts = (req, res) => {
-    const { userID } = req.body;
-    Product.getFeatured(userID,(err, results) => {
+const getProductsByType = (req, res) => {
+    const { userID, type } = req.body; // `type` should be 'featured' or 'today_deal'
+
+    if (!type || (type !== 'featured' && type !== 'today_deal')) {
+        return res.status(400).json({ success: false, message: 'Invalid product type' });
+    }
+
+    Product.getByType(userID, type, (err, results) => {
         if (err) {
-            return res.status(500).json({ success: false, message: 'Error fetching featured products', error: err });
+            return res.status(500).json({ success: false, message: `Error fetching ${type} products`, error: err });
         }
         res.status(200).json({ success: true, data: results });
     });
 };
-
-// Get all Today's Deal Products
-const getTodayDealProducts = (req, res) => {
-    const { userID } = req.body;
-    Product.getTodayDeal(userID,(err, results) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: 'Error fetching today’s deal products', error: err });
-        }
-        res.status(200).json({ success: true, data: results });
-    });
-};
-
 const getproductbycatgeoryID = (req, res) => {
     const { catID, userID, subcatID } = req.body; // Get IDs from request body
 
@@ -400,7 +393,6 @@ module.exports = {
     getProducts,
     setProductFeatured,
     setProductTodayDeal,
-    getTodayDealProducts,
-    getFeaturedProducts,
+    getProductsByType,
     getproductbycatgeoryID
 };

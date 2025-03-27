@@ -13,8 +13,7 @@ const {
     getProducts,
     setProductTodayDeal,
     setProductFeatured,
-    getFeaturedProducts,
-    getTodayDealProducts,
+    getProductsByType,
     getproductbycatgeoryID
 } = require('../controllers/productController');
 
@@ -35,8 +34,16 @@ router.delete('/products', checkManagerRole, deleteProductById);
 router.put('/makeproductfeatures', checkManagerRole, setProductFeatured);
 router.put('/makeproductweeklydeal', checkManagerRole, setProductTodayDeal);
 
-router.post('/featuredproducts', verifyToken,getFeaturedProducts);
+router.post('/featuredproducts', verifyToken, (req, res) => {
+    req.body.type = 'featured';  // Set type statically
+    getProductsByType(req, res);
+});
+
+router.post('/weeklydealproducts', verifyToken, (req, res) => {
+    req.body.type = 'today_deal';  // Set type statically
+    getProductsByType(req, res);
+});
+
 router.post('/productbycategoryid', verifyToken,getproductbycatgeoryID);
-router.post('/weeklydealproducts', verifyToken,getTodayDealProducts);
 
 module.exports = router;

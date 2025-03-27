@@ -16,39 +16,15 @@ const {
 
 const { authenticateToken } = require('../middleware/authMiddleware');
 const uploadFields = require('../middleware/multerConfig'); 
-const { allowRoles } = require('../middleware/roleMiddleware');  // Uncommented if needed
 const { verifyToken } = require('../middleware/authroization');
 
 const router = express.Router();
-
-/**
- * Signup route (role_id 5 does not require authentication)
- */
-// router.post('/signup', uploadFields, (req, res, next) => {
-//     let { role_id } = req.body;
-//     role_id = parseInt(role_id) || 5;
-
-//     // Safely handle identity proof file
-//     if (req.files?.identity_proof?.[0]) {
-//         req.file = req.files.identity_proof[0]; 
-//     }
-
-//     if ([3, 4, 5].includes(role_id)) {
-//         return signup(req, res);
-//     }
-
-//     authenticateToken(req, res, () => signup(req, res));
-// });
-
-/**
- * Vendor & Rider Signup
- */
 router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
 /**
 
  * Vendor & Rider verification
  */
-router.post(['/vendor-verification', '/rider-verification'], uploadFields, (req, res, next) => {
+router.post(['/vendor-verification', '/rider-verification'],verifyToken, uploadFields, (req, res, next) => {
     if (req.files?.identity_proof?.[0]) {
         req.body.identity_proof = req.files.identity_proof[0].path || null; // ✅ Full URL
     }
@@ -71,7 +47,7 @@ router.post('/appsignup', (req, res) => {
 /**
  * Admin Login
  */
-router.post('/adminlogin', loginadmin);
+router.post('/adminlogin', authenticateToken,loginadmin);
 
 /**
  * User Management Routes (Protected)
@@ -87,7 +63,7 @@ router.put('/verify-user', authenticateToken, verifyUser);
 /**
  * Create Superadmins & Managers
  */
-router.post('/createadmins', (req, res) => {
+router.post('/createadmins', authenticateToken, (req, res) => {
     let { role_id } = req.body;
     role_id = parseInt(role_id);
 
@@ -97,7 +73,6 @@ router.post('/createadmins', (req, res) => {
 
     createSuperadminManagers(req, res);
 });
-
 
 
 module.exports = router;
