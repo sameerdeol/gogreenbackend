@@ -49,7 +49,10 @@ const Product = {
                 p.*, 
                 c.name AS category_name, 
                 s.name AS sub_category_name, 
-                b.*, 
+                b.name AS brand_name, 
+                b.categoryid AS brand_categoryid, 
+                b.brand_logo AS brandlogo, 
+                b.description AS brand_description,
                 CASE 
                     WHEN f.product_id IS NOT NULL THEN TRUE 
                     ELSE FALSE 
@@ -103,23 +106,26 @@ const Product = {
     // Get all products (Optimized with Promise.all) Find All Products (Include Attributes and Gallery)
     find: (userID, callback) => {
         const query = `
-            SELECT 
-                p.*, 
-                c.name AS category_name, 
-                s.name AS sub_category_name, 
-                b.*, 
-                CASE 
-                    WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
-                    ELSE FALSE 
-                END AS is_favourite 
-            FROM products p 
-            LEFT JOIN product_categories c ON p.category_id = c.id 
-            LEFT JOIN product_subcategories s ON p.sub_category = s.id 
-            LEFT JOIN product_brands b ON p.brand_id = b.id 
-            LEFT JOIN favourite_products f 
-                ON p.id = f.product_id
-                AND (f.user_id = ? OR ? IS NULL);
-        `;
+        SELECT 
+            p.*, 
+            c.name AS category_name, 
+            s.name AS sub_category_name, 
+            b.name AS brand_name, 
+            b.categoryid AS brand_categoryid, 
+            b.brand_logo AS brandlogo, 
+            b.description AS brand_description, 
+            CASE 
+                WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
+                ELSE FALSE 
+            END AS is_favourite 
+        FROM products p 
+        LEFT JOIN product_categories c ON p.category_id = c.id 
+        LEFT JOIN product_subcategories s ON p.sub_category = s.id 
+        LEFT JOIN product_brands b ON p.brand_id = b.id 
+        LEFT JOIN favourite_products f 
+            ON p.id = f.product_id
+            AND (f.user_id = ? OR ? IS NULL);
+    `;    
     
         db.query(query, [userID, userID, userID], (err, results) => { // ✅ Handles `userID` properly
             if (err) {
@@ -221,22 +227,28 @@ const Product = {
     getByType: (userId, type, callback) => {
         const filterColumn = type === 'featured' ? 'p.is_featured' : 'p.is_today_deal';
 
-        const sql = `SELECT p.*, 
-                            c.name AS category_name, 
-                            s.name AS sub_category_name, 
-                            b.*, 
-                            CASE 
-                                WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
-                                ELSE FALSE 
-                            END AS is_favourite 
-                     FROM products p
-                     LEFT JOIN product_categories c ON p.category_id = c.id
-                     LEFT JOIN product_subcategories s ON p.sub_category = s.id
-                     LEFT JOIN product_brands b ON p.brand_id = b.id
-                     LEFT JOIN favourite_products f 
-                        ON p.id = f.product_id 
-                        AND (f.user_id = ? OR ? IS NULL)
-                     WHERE ${filterColumn} = TRUE;`;
+        const sql = `
+            SELECT 
+                p.*, 
+                c.name AS category_name, 
+                s.name AS sub_category_name, 
+                b.name AS brand_name, 
+                b.categoryid AS brand_categoryid, 
+                b.brand_logo AS brandlogo, 
+                b.description AS brand_description, 
+                CASE 
+                    WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
+                    ELSE FALSE 
+                END AS is_favourite 
+            FROM products p
+            LEFT JOIN product_categories c ON p.category_id = c.id
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id
+            LEFT JOIN product_brands b ON p.brand_id = b.id
+            LEFT JOIN favourite_products f 
+                ON p.id = f.product_id 
+                AND (f.user_id = ? OR ? IS NULL)
+            WHERE ${filterColumn} = TRUE;
+        `;
 
         db.query(sql, [userId, userId, userId], callback);
     },
@@ -245,22 +257,28 @@ const Product = {
         let filterColumn = categoryId ? "p.category_id" : "p.sub_category";
         let filterValue = categoryId || subcategoryId; // Use whichever ID is available
     
-        const sql = `SELECT p.*, 
+        const sql = `
+            SELECT 
+                p.*, 
                 c.name AS category_name, 
                 s.name AS sub_category_name, 
-                b.*, 
+                b.name AS brand_name, 
+                b.categoryid AS brand_categoryid, 
+                b.brand_logo AS brandlogo, 
+                b.description AS brand_description, 
                 CASE 
                     WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
                     ELSE FALSE 
                 END AS is_favourite 
-        FROM products p
-        LEFT JOIN product_categories c ON p.category_id = c.id
-        LEFT JOIN product_subcategories s ON p.sub_category = s.id
-        LEFT JOIN product_brands b ON p.brand_id = b.id
-        LEFT JOIN favourite_products f 
-            ON p.id = f.product_id 
-            AND (f.user_id = ? OR ? IS NULL)
-        WHERE ${filterColumn} = ?;`;
+            FROM products p
+            LEFT JOIN product_categories c ON p.category_id = c.id
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id
+            LEFT JOIN product_brands b ON p.brand_id = b.id
+            LEFT JOIN favourite_products f 
+                ON p.id = f.product_id 
+                AND (f.user_id = ? OR ? IS NULL)
+            WHERE ${filterColumn} = ?;
+        `;
     
         db.query(sql, [userId, userId, userId, filterValue], callback);
     },
