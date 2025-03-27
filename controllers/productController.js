@@ -163,7 +163,6 @@ const updateProductById = (req, res) => {
             }
 
             if (attributes && Array.isArray(attributes)) {
-                console.log("hi");
                 const deleteQuery = `DELETE FROM product_attributes WHERE product_id = ?`;
                 db.query(deleteQuery, [id], (deleteErr) => {
                     if (deleteErr) {
@@ -377,21 +376,19 @@ const getTodayDealProducts = (req, res) => {
 };
 
 const getproductbycatgeoryID = (req, res) => {
-    const { catID,userID } = req.body; // Get catID from request body
+    const { catID, userID, subcatID } = req.body; // Get IDs from request body
 
-    if (!catID) {
-        return res.status(400).json({ success: false, message: 'Category ID is required' });
+    if (!catID && !subcatID) {
+        return res.status(400).json({ success: false, message: 'Category ID or Subcategory ID is required' });
     }
 
-    Product.getbycategory(userID,catID, (err, results) => { // ✅ Pass catID as argument
+    Product.getbycategory(userID, catID, subcatID, (err, results) => {
         if (err) {
-            return res.status(500).json({ success: false, message: 'Error fetching products by category', error: err });
+            return res.status(500).json({ success: false, message: 'Error fetching products', error: err });
         }
         res.status(200).json({ success: true, data: results });
     });
 };
-
-
 
 
 // Export multer upload as a middleware and role check as well

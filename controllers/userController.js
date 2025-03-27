@@ -299,7 +299,6 @@ const vendorRiderLogin = async (req, res) => {
             }
 
             const user = results.user;
-            console.log("user",user)
             // ✅ Validate password
             const isValid = await bcrypt.compare(password, user.password);
             if (!isValid) {
@@ -324,7 +323,6 @@ const vendorRiderLogin = async (req, res) => {
 const createSuperadminManagers = (req, res) => {
     try {
         const { email, password, firstname, lastname, prefix, phonenumber, role_id } = req.body;
-        console.log(role_id);
 
         // Generate unique username
         const { username } = generateUniqueUsername(firstname, phonenumber); 

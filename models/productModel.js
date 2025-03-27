@@ -196,7 +196,6 @@ const Product = {
     
     // Update a product by ID (Includes sub_category)
     updateById: (id, updateData, callback) => {
-        console.log("yhat")
         if (!id) return callback('Product ID is required.', null);
     
         const fields = [];
@@ -291,22 +290,25 @@ const Product = {
         db.query(sql, [userId, userId, userId], callback);
     },    
   
-  getbycategory: (userId, categoryId, callback) => {
-    const sql = `SELECT p.*, 
-                        c.name AS category_name, 
-                        s.name AS sub_category_name, 
-                        CASE 
-                            WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
-                            ELSE FALSE 
-                        END AS is_favourite 
-                 FROM products p
-                 LEFT JOIN product_categories c ON p.category_id = c.id
-                 LEFT JOIN product_subcategories s ON p.sub_category = s.id
-                 LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
-                 WHERE p.category_id = ?;`;
-
-    db.query(sql, [userId, userId, userId, categoryId], callback);
-}
+    getbycategory : (userId, categoryId, subcategoryId, callback) => {
+        let filterColumn = categoryId ? "p.category_id" : "p.sub_category";
+        let filterValue = categoryId || subcategoryId; // Use whichever ID is available
+    
+        const sql = `SELECT p.*, 
+                            c.name AS category_name, 
+                            s.name AS sub_category_name, 
+                            CASE 
+                                WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
+                                ELSE FALSE 
+                            END AS is_favourite 
+                     FROM products p
+                     LEFT JOIN product_categories c ON p.category_id = c.id
+                     LEFT JOIN product_subcategories s ON p.sub_category = s.id
+                     LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
+                     WHERE ${filterColumn} = ?;`;
+    
+        db.query(sql, [userId, userId, userId, filterValue], callback);
+    },
 };
 
 module.exports = Product;
