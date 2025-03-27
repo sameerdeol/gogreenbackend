@@ -154,7 +154,7 @@ const User = {
     
             const userTableFields = ['firstname', 'prefix', 'phonenumber', 'email'];
             const vendorTableFields = ['store_name', 'store_address', 'sin_code'];
-            const deliveryPartnerTableFields = ['license_number'];
+            const deliveryPartnerTableFields = ['license_number','sin_code'];
     
             const queries = [];
     
