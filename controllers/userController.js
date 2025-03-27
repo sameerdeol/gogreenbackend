@@ -396,4 +396,40 @@ const updatePassword = (req, res) => {
 };
 
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword};
+const updateWorkersProfile = (req, res) => {
+    const { role_id, firstname, storename, storeaddress, email, sincode, phonenumber, user_id, prefix, license_number } = req.body;
+
+    // Prevent admins from changing password
+    if ([1, 2].includes(parseInt(role_id))) {
+        return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
+    }
+
+    // Find user
+    User.findById(user_id, (err, user) => {
+        if (err) return res.status(500).json({ success: false, message: 'Database error', error: err });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        const userData = {
+            firstname: firstname,
+            prefix: prefix,
+            phonenumber: phonenumber,
+            email: email,
+            store_name:storename,
+            store_address:storeaddress,
+            sin_code:sincode,
+            license_number:license_number
+        };
+        User.updateWorkerData(user_id,role_id,userData, (err, results) => {
+            if (err) {
+                return res.status(500).json({ error: 'Database query failed' });
+            }
+            else{
+                res.status(200).json({ message: 'User updated successfully' });
+            }
+        });       
+    });
+};
+
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile};

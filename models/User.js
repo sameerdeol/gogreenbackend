@@ -1,6 +1,25 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 
+
+
+const updateFields = (data, tableFields) => {
+    const fieldsToUpdate = [];
+    const values = [];
+
+    for (const key of tableFields) {
+        if (data[key] !== undefined) {  // Only update fields that are provided
+            fieldsToUpdate.push(`\`${key}\` = ?`);
+            values.push(data[key]);  // Correctly extract value from userData
+        }
+    }
+
+    return {
+        queryPart: fieldsToUpdate.join(', '),
+        values
+    };
+};
+
 const User = {
 
     findByEmail: (email, callback) => {
@@ -13,7 +32,6 @@ const User = {
         });
     },
     insertUser: (userData, callback) => {
-        console.log(userData);
         const allowedFields = ["username", "firstname", "lastname", "password", "prefix", "phonenumber", "email", "role_id", "is_verified"];
         
         // Filter only available fields
@@ -103,8 +121,6 @@ const User = {
                 const userQuery = `UPDATE users SET ${userQueryPart} WHERE id = ?`;
                 userValues.push(user_id);
     
-                console.log(userQuery, userValues);
-    
                 db.query(userQuery, userValues, (err) => {
                     if (err) {
                         return db.rollback(() => {
@@ -127,6 +143,75 @@ const User = {
             }
         });
     },
+
+    updateWorkerData: (user_id, role_id, userData, callback) => {
+        if (![ 3, 4].includes(role_id)) {
+            return callback(new Error('Permission denied: Invalid role_id'), null);
+        }
+    
+        db.beginTransaction((err) => {
+            if (err) return callback(err, null);
+    
+            const userTableFields = ['firstname', 'prefix', 'phonenumber', 'email'];
+            const vendorTableFields = ['store_name', 'store_address', 'sin_code'];
+            const deliveryPartnerTableFields = ['license_number'];
+    
+            const queries = [];
+    
+            // **UPDATE users table**
+            const { queryPart: userQueryPart, values: userValues } = updateFields(userData, userTableFields);
+            if (userQueryPart) {
+                const userQuery = `UPDATE users SET ${userQueryPart} WHERE id = ?`;
+                queries.push({ query: userQuery, values: [...userValues, user_id] });
+            }
+    
+            // **UPDATE vendors OR delivery_partners (single query)**
+            let extraQuery = '';
+            let extraValues = [];
+    
+            if (role_id === 3) {
+                const { queryPart, values } = updateFields(userData, vendorTableFields);
+                if (queryPart) {
+                    extraQuery = `UPDATE vendors SET ${queryPart} WHERE user_id = ?`;
+                    extraValues = [...values, user_id];
+                }
+            } else if (role_id === 4) {
+                const { queryPart, values } = updateFields(userData, deliveryPartnerTableFields);
+                if (queryPart) {
+                    extraQuery = `UPDATE delivery_partners SET ${queryPart} WHERE user_id = ?`;
+                    extraValues = [...values, user_id];
+                }
+            }
+    
+            if (extraQuery) {
+                queries.push({ query: extraQuery, values: extraValues });
+            }
+    
+            // **Execute Queries**
+            const executeQuery = (index) => {
+                if (index >= queries.length) {
+                    return db.commit((err) => {
+                        if (err) return db.rollback(() => callback(err, null));
+                        callback(null, { message: 'User updated successfully' });
+                    });
+                }
+    
+                const { query, values } = queries[index];
+    
+                db.query(query, values, (err) => {
+                    if (err) return db.rollback(() => callback(err, null));
+                    executeQuery(index + 1);
+                });
+            };
+    
+            if (queries.length > 0) {
+                executeQuery(0);
+            } else {
+                callback(null, { message: 'No updates provided' });
+            }
+        });
+    },
+    
 
     findCustomerByPhone : (phonenumber,role_id, callback) => {
         const sql = `SELECT * FROM users WHERE phonenumber = ? and role_id= ?`;

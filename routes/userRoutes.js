@@ -9,7 +9,8 @@ const {
     vendorRiderSignup, 
     createSuperadminManagers,
     vendorRiderVerification,
-    vendorRiderLogin
+    vendorRiderLogin,
+    updateWorkersProfile
 } = require('../controllers/userController');
 
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -17,21 +18,6 @@ const uploadFields = require('../middleware/multerConfig');
 const { verifyToken } = require('../middleware/authroization');
 
 const router = express.Router();
-router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
-/**
-
- * Vendor & Rider verification
- */
-router.post(['/vendor-verification', '/rider-verification'],verifyToken, uploadFields, (req, res, next) => {
-    if (req.files?.identity_proof?.[0]) {
-        req.body.identity_proof = req.files.identity_proof[0].path || null; // ✅ Full URL
-    }
-
-    vendorRiderVerification(req, res);
-});
-
-router.post(['/vendor-login', '/rider-login'], vendorRiderLogin);
-
 
 /**
  * App Signup - Customer (role_id 5) doesn't need authentication
@@ -42,10 +28,22 @@ router.post('/appsignup', (req, res) => {
 });
 
 
+
 /**
- * Admin Login
+ * Vendor & Rider verification
  */
+router.post(['/vendor-verification', '/rider-verification'],verifyToken, uploadFields, (req, res, next) => {
+    if (req.files?.identity_proof?.[0]) {
+        req.body.identity_proof = req.files.identity_proof[0].path || null; // ✅ Full URL
+    }
+
+    vendorRiderVerification(req, res);
+});
+
 router.post(['/update-vendorPassword', '/update-riderPassword'],verifyToken,updatePassword);
+router.put(['/update-vendorProfile', '/update-riderProfile'],verifyToken,updateWorkersProfile);
+router.post(['/vendor-login', '/rider-login'], vendorRiderLogin);
+router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
 
 /**
  * User Management Routes (Protected)
@@ -57,6 +55,11 @@ router.put('/update-user', authenticateToken, updateUser);
 // router.get('/unverifieddeliverypartners', authenticateToken, getUnverifiedDeliveryPartners);
 router.get('/unverifiedUsers', getUnverifiedUsers);
 router.put('/verify-user', authenticateToken, verifyUser);
+
+
+
+
+
 
 /**
  * Create Superadmins & Managers
@@ -72,5 +75,6 @@ router.post('/createadmins', authenticateToken, (req, res) => {
     createSuperadminManagers(req, res);
 });
 
+router.post('/adminlogin', loginadmin);
 
 module.exports = router;
