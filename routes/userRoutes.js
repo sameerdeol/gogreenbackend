@@ -45,7 +45,7 @@ router.post('/appsignup', (req, res) => {
 /**
  * Admin Login
  */
-router.post(['/update-vendorPassword', '/update-riderPassword'],updatePassword);
+router.post(['/update-vendorPassword', '/update-riderPassword'],verifyToken,updatePassword);
 
 /**
  * User Management Routes (Protected)
