@@ -265,7 +265,7 @@ const vendorRiderSignup = async (req, res) => {
 
                 // 4️⃣ Generate JWT Token
                 const token = jwt.sign(
-                    { user_id: userResult.insertId, username, email, role_id },
+                    { user_id: userResult.insertId, username, email, role_id, firstname,  lastname},
                     process.env.JWT_SECRET,
                 );
 
@@ -307,7 +307,7 @@ const vendorRiderLogin = async (req, res) => {
 
             // ✅ Generate JWT token with expiration
             const token = jwt.sign(
-                { id: user.user_id, role_id: user.role_id, username: user.username },
+                { id: user.user_id, role_id: user.role_id, username: user.username, firstname:user.firstname, lastname:user.lastname },
                 process.env.JWT_SECRET
             );
 

@@ -10,7 +10,7 @@ const createProduct = (req, res) => {
     try {
         let {
             name, description, price, category, sub_category,
-            stock, manufacturer_details, title, subtitle, size, fast_delivery_available
+            stock, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description
         } = req.body;
 
         // Convert numeric values safely
@@ -35,7 +35,7 @@ const createProduct = (req, res) => {
 
         // Insert product into MySQL
         Product.create(
-            name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, title, subtitle, size, fast_delivery_available,
+            name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description,
             (err, productResult) => {
                 if (err) {
                     console.error("Database Error:", err);
@@ -117,7 +117,7 @@ const getProducts = (req, res) => {
 
 // Update product by ID
 const updateProductById = (req, res) => {
-    const { id, name, description, price, category, sub_category, stock, manufacturer_details, title, subtitle, size, fast_delivery_available, status } = req.body;
+    const { id, name, description, price, category, sub_category, stock, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, status } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required.' });
@@ -136,7 +136,7 @@ const updateProductById = (req, res) => {
         }
 
         const updatedData = {
-            name, description,price,category,sub_category,stock,manufacturer_details,title,subtitle,size,fast_delivery_available
+            name, description,price,category,sub_category,stock,manufacturer_details,title,subtitle,size,fast_delivery_available,feature_title, feature_description
         };
 
         if (status !== undefined) {

@@ -2,13 +2,13 @@ const db = require('../config/db');
 const sqlString = require('sqlstring');
 
 const Product = {
-    create: (name, description, price, category, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available, callback) => {
+    create: (name, description, price, category, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, callback) => {
             featured_image = featured_image && typeof featured_image === 'string' ? featured_image : null;
     
             const query = sqlString.format(
                 `INSERT INTO products 
-                (name, description, price, category_id, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (name, description, price, category_id, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     String(name),
                     String(description),
@@ -21,7 +21,9 @@ const Product = {
                     String(title),
                     String(subtitle),
                     size,
-                    fast_delivery_available
+                    fast_delivery_available,
+                    feature_title,
+                    feature_description
                 ]
             );
     
