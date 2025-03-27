@@ -117,7 +117,7 @@ const getProducts = (req, res) => {
 
 // Update product by ID
 const updateProductById = (req, res) => {
-    const { id, name, description, price, category, sub_category, stock, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, status } = req.body;
+    const { id, name, description, price, category_id, sub_category, stock, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, status, userID } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required.' });
@@ -136,7 +136,7 @@ const updateProductById = (req, res) => {
         }
 
         const updatedData = {
-            name, description,price,category,sub_category,stock,manufacturer_details,title,subtitle,size,fast_delivery_available,feature_title, feature_description
+            name, description,price,category_id,sub_category,stock,manufacturer_details,title,subtitle,size,fast_delivery_available,feature_title, feature_description
         };
 
         if (status !== undefined) {
@@ -161,7 +161,6 @@ const updateProductById = (req, res) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error updating product', error: err });
             }
-
             if (attributes && Array.isArray(attributes)) {
                 const deleteQuery = `DELETE FROM product_attributes WHERE product_id = ?`;
                 db.query(deleteQuery, [id], (deleteErr) => {
@@ -256,7 +255,7 @@ const updateProductById = (req, res) => {
                         }
                     });
                 } else {
-                    Product.findById(id, (findErr, updatedProduct) => {
+                    Product.findById(id,userID, (findErr, updatedProduct) => {
                         if (findErr) {
                             return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
                         }

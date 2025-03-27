@@ -93,30 +93,36 @@ const Product = {
     },
 
     findById: (id, userID, callback) => {
-        const query = `
+        // Base query
+        let query = `
             SELECT 
                 p.*, 
                 c.name AS category_name, 
                 s.name AS sub_category_name, 
                 CASE 
-                    WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
+                    WHEN f.product_id IS NOT NULL THEN TRUE 
                     ELSE FALSE 
-                END AS is_favourite 
+                END AS is_favourite
             FROM products p 
             LEFT JOIN product_categories c ON p.category_id = c.id 
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
-            LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
+            LEFT JOIN favourite_products f 
+                ON p.id = f.product_id 
+                ${userID ? "AND f.user_id = ?" : ""} 
             WHERE p.id = ?;
         `;
     
-        db.query(query, [userID, userID, userID, id], (err, productResult) => {
+        // Prepare query values
+        const values = userID ? [userID, id] : [id];
+    
+        db.query(query, values, (err, productResult) => {
             if (err || !productResult.length) {
                 return callback(err || "Product not found", null);
             }
     
             const product = productResult[0];
     
-            // Fetch gallery images & attributes for this product
+            // Fetch gallery images & attributes
             const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
             const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
     
@@ -139,7 +145,7 @@ const Product = {
                 .then(() => callback(null, product))
                 .catch((error) => callback(error, null));
         });
-    },
+    },    
     
 
     // Get all products (Optimized with Promise.all) Find All Products (Include Attributes and Gallery)
@@ -198,13 +204,7 @@ const Product = {
     
     // Update a product by ID (Includes sub_category)
     updateById: (id, updateData, callback) => {
-        console.log("Update request received for Product ID:", id);
-        console.log("Update Data:", updateData);
-    
-        if (!id) {
-            console.error("Error: Product ID is required.");
-            return callback("Product ID is required.", null);
-        }
+        if (!id) return callback('Product ID is required.', null);
     
         const fields = [];
         const values = [];
@@ -218,32 +218,24 @@ const Product = {
     
         // Ensure we don't create an invalid SQL query
         if (fields.length === 0) {
-            console.error("Error: No valid fields provided for update.");
-            return callback("No valid fields provided for update.", null);
+            return callback('No valid fields provided for update.', null);
         }
     
         // Automatically update `updated_at` timestamp
-        fields.push("updated_at = CURRENT_TIMESTAMP");
+        fields.push('updated_at = CURRENT_TIMESTAMP');
     
         // Add ID at the end for the WHERE clause
         values.push(id);
     
-        const query = `UPDATE products SET ${fields.join(", ")} WHERE id = ?`;
-    
-        console.log("Executing SQL Query:", query);
-        console.log("Query Parameters:", values);
+        const query = `UPDATE products SET ${fields.join(', ')} WHERE id = ?`;
     
         db.query(query, values, (err, result) => {
             if (err) {
-                console.error("Database error while updating product:", err);
-                return callback("Database error while updating product.", null);
+                return callback('Database error while updating product.', null);
             }
             if (result.affectedRows === 0) {
-                console.warn("Warning: Product not found or no changes made.");
-                return callback("Product not found or no changes made.", null);
+                return callback('Product not found or no changes made.', null);
             }
-    
-            console.log("Update successful. Affected rows:", result.affectedRows);
             callback(null, result);
         });
     },
