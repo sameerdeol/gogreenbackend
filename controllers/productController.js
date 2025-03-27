@@ -117,7 +117,7 @@ const getProducts = (req, res) => {
 
 // Update product by ID
 const updateProductById = (req, res) => {
-    const { id, name, description, price, category_id, sub_category, stock, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, status, userID } = req.body;
+    const { id, name, description, price, category_id, sub_category, stock, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, status, userID, brand_id} = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required.' });
@@ -136,7 +136,7 @@ const updateProductById = (req, res) => {
         }
 
         const updatedData = {
-            name, description,price,category_id,sub_category,stock,manufacturer_details,title,subtitle,size,fast_delivery_available,feature_title, feature_description
+            name, description,price,category_id,sub_category,stock,manufacturer_details,title,subtitle,size,fast_delivery_available,feature_title, feature_description, brand_id
         };
 
         if (status !== undefined) {
