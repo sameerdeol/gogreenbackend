@@ -10,7 +10,7 @@ const createProduct = (req, res) => {
     try {
         let {
             name, description, price, category, sub_category,
-            stock, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description
+            stock, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description, product_brand
         } = req.body;
 
         // Convert numeric values safely
@@ -35,7 +35,7 @@ const createProduct = (req, res) => {
 
         // Insert product into MySQL
         Product.create(
-            name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description,
+            name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description,product_brand,
             (err, productResult) => {
                 if (err) {
                     console.error("Database Error:", err);
@@ -130,7 +130,7 @@ const updateProductById = (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid attributes format" });
         }
     }
-    Product.findByIdwithoutuserID(id, (findErr, existingProduct) => {
+    Product.findById(id,userID, (findErr, existingProduct) => {
         if (findErr || !existingProduct) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
