@@ -34,7 +34,7 @@ const appsignup = async (req, res) => {
             is_verified:1
         };
         // Check if user already exists
-        User.findCustomerByPhone(userData, (err, result) => {
+        User.findCustomerByPhone(phonenumber,role_id, (err, result) => {
             if (err) {
                 console.error("Error checking user:", err);
                 return res.status(500).json({
@@ -57,11 +57,8 @@ const appsignup = async (req, res) => {
                     token,
                 });
             }
-
-            // User does not exist, insert new user
-            const newUser = { prefix, phonenumber, role_id };
-
-            User.insertUser(newUser, (err, newUserResult) => {
+            console.log
+            User.insertUser(userData, (err, newUserResult) => {
                 if (err) {
                     console.error("Error inserting user:", err);
                     return res.status(500).json({
