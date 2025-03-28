@@ -49,11 +49,7 @@ router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
  * User Management Routes (Protected)
  */
 router.put('/update-user', authenticateToken, updateUser);
-// router.get('/get-userDetails', authenticateToken, getuserDetails);
-// router.get('/fetchuser', authenticateToken, fetchUser);
-// router.get('/unverifiedVendors', authenticateToken, getUnverifiedVendors);
-// router.get('/unverifieddeliverypartners', authenticateToken, getUnverifiedDeliveryPartners);
-router.get('/unverifiedUsers', getUnverifiedUsers);
+router.get('/unverifiedUsers', authenticateToken, getUnverifiedUsers);
 router.put('/verify-user', authenticateToken, verifyUser);
 
 
