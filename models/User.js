@@ -152,7 +152,7 @@ const User = {
         db.beginTransaction((err) => {
             if (err) return callback(err, null);
     
-            const userTableFields = ['firstname', 'prefix', 'phonenumber', 'email'];
+            const userTableFields = ['firstname', 'lastname', 'prefix', 'phonenumber', 'email'];
             const vendorTableFields = ['store_name', 'store_address', 'sin_code'];
             const deliveryPartnerTableFields = ['license_number','sin_code'];
     

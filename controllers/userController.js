@@ -256,7 +256,7 @@ const vendorRiderLogin = async (req, res) => {
 
             // ✅ Generate JWT token with expiration
             const token = jwt.sign(
-                { id: user.user_id, role_id: user.role_id, username: user.username, firstname:user.firstname, lastname:user.lastname },
+                { id: user.user_id, role_id: user.role_id, username: user.username, firstname:user.firstname, lastname:user.lastname, email:user.email, phonenumber:user.phonenumber },
                 process.env.JWT_SECRET
             );
 
@@ -397,7 +397,7 @@ const updatePassword = (req, res) => {
 
 
 const updateWorkersProfile = (req, res) => {
-    const { role_id, firstname, storename, storeaddress, email, sincode, phonenumber, user_id, prefix, license_number } = req.body;
+    const { role_id, firstname, lastname, storename, storeaddress, email, sincode, phonenumber, user_id, prefix, license_number } = req.body;
 
     // Prevent admins from changing password
     if ([1, 2].includes(parseInt(role_id))) {
@@ -419,7 +419,8 @@ const updateWorkersProfile = (req, res) => {
             store_name:storename,
             store_address:storeaddress,
             sin_code:sincode,
-            license_number:license_number
+            license_number:license_number,
+            lastname:lastname
         };
         User.updateWorkerData(user_id,role_id,userData, (err, results) => {
             if (err) {
