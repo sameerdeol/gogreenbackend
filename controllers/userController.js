@@ -142,11 +142,16 @@ const updateUser = (req, res) => {
     });
 };
 const getUnverifiedUsers = (req, res) => {
-    User.getUnverifiedUsers((err, users) => {
+    User.getUnverifiedUsers((err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
-        res.json({ success: true, users });
+
+        res.json({
+            success: true,
+            vendors: result.vendors,
+            delivery_partners: result.delivery_partners
+        });
     });
 };
 

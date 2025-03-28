@@ -246,17 +246,29 @@ const User = {
     },
     
     getUnverifiedUsers: (callback) => {
-        const query = `
-            SELECT * FROM users u
-            LEFT JOIN vendors v ON u.id = v.user_id
-            WHERE u.role_id = 3 AND u.is_verified = 0
-            UNION 
-            SELECT * FROM users u
-            LEFT JOIN delivery_partners dp ON u.id = dp.user_id
-            WHERE u.role_id = 4 AND u.is_verified = 0;
+        const vendorsQuery = `
+            SELECT u.*, v.* 
+            FROM users u
+            JOIN vendors v ON u.id = v.user_id
+            WHERE u.is_verified = 0;
         `;
     
-        db.query(query, callback);
+        const deliveryPartnersQuery = `
+            SELECT u.*, dp.* 
+            FROM users u
+            JOIN delivery_partners dp ON u.id = dp.user_id
+            WHERE u.is_verified = 0;
+        `;
+    
+        db.query(vendorsQuery, (err, vendors) => {
+            if (err) return callback(err, null);
+    
+            db.query(deliveryPartnersQuery, (err, delivery_partners) => {
+                if (err) return callback(err, null);
+    
+                callback(null, { vendors, delivery_partners });
+            });
+        });
     },
 
     // Approve verification for a specific user

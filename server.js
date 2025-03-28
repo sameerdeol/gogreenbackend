@@ -30,7 +30,7 @@ app.use('/', appBanners);  // Product-related routes (Prefix with /api)
 app.use('/', userAddress);
 app.use('/', dynamicCategory);
 app.use('/', favouriteRoutes);
-app.use('/orders', orderRoutes);
+app.use("/", orderRoutes);
 
 
 // Start Server

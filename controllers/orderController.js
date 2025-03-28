@@ -1,50 +1,50 @@
-const Order = require('../models/orderModel');
+const OrderDetails = require("../models/orderDetails");
+const OrderItem = require("../models/orderItem");
 
-exports.createOrder = (req, res) => {
-    const { user_id, address_id, payment_type, items } = req.body;
+const createOrder = async (req, res) => {
+    try {
+        const { user_id, cart, payment_type } = req.body;
 
-    if (!user_id || !address_id || !payment_type || !items.length) {
-        return res.status(400).json({ message: "All fields are required" });
-    }
+        if (!user_id || !cart || cart.length === 0) {
+            return res.status(400).json({ error: "Invalid order data" });
+        }
 
-    Order.createOrder(user_id, address_id, payment_type, (err, result) => {
-        if (err) return res.status(500).json({ error: err });
+        let total_quantity = 0;
+        let total_price = 0;
 
-        const order_id = result.insertId;
+        const itemPromises = cart.map(async (item) => {
+            const { id, quantity, price } = item;
 
-        // Convert each addOrderItem call into a promise
-        const itemPromises = items.map(item => {
+            // Calculate total price for this item
+            const total_item_price = quantity * price;
+            
+            // Update total order quantity and price
+            total_quantity += quantity;
+            total_price += total_item_price;
+
             return new Promise((resolve, reject) => {
-                Order.addOrderItem(order_id, item.product_id, item.quantity, item.price, (err) => {
+                OrderItem.addItem(user_id, id, quantity, price, total_item_price, (err, result) => {
                     if (err) reject(err);
-                    else resolve();
+                    else resolve(result);
                 });
             });
         });
 
-        // Execute all item insertions and send response once completed
-        Promise.all(itemPromises)
-            .then(() => {
-                res.status(201).json({ message: "Order created successfully", order_id });
-            })
-            .catch(err => {
-                res.status(500).json({ error: err });
-            });
-    });
-};
+        // Wait until all order cart are inserted
+        await Promise.all(itemPromises);
 
-exports.getOrderDetails = (req, res) => {
-    const { order_id } = req.params;
-
-    Order.getOrderDetails(order_id, (err, orderResult) => {
-        if (err) return res.status(500).json({ error: err });
-
-        if (orderResult.length === 0) return res.status(404).json({ message: "Order not found" });
-
-        Order.getOrderItems(order_id, (err, itemsResult) => {
-            if (err) return res.status(500).json({ error: err });
-
-            res.json({ order: orderResult[0], items: itemsResult });
+        // Insert order details without storing payment_type
+        OrderDetails.addOrder(user_id, total_quantity, total_price,payment_type, (err, result) => {
+            if (err) {
+                return res.status(500).json({ error: "Error adding order details" });
+            }
+            res.status(201).json({ message: "Order created successfully", order_id: result.insertId });
         });
-    });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
 };
+
+module.exports = { createOrder };
