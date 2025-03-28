@@ -256,7 +256,7 @@ const vendorRiderLogin = async (req, res) => {
 
             // ✅ Generate JWT token with expiration
             const token = jwt.sign(
-                { id: user.user_id, role_id: user.role_id, username: user.username, firstname:user.firstname, lastname:user.lastname, email:user.email, phonenumber:user.phonenumber },
+                { id: user.id, role_id: user.role_id, username: user.username, firstname:user.firstname, lastname:user.lastname, email:user.email, phonenumber:user.phonenumber },
                 process.env.JWT_SECRET
             );
 
