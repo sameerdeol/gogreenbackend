@@ -404,38 +404,57 @@ const updatePassword = (req, res) => {
 const updateWorkersProfile = (req, res) => {
     const { role_id, firstname, lastname, storename, storeaddress, email, sincode, phonenumber, user_id, prefix, license_number } = req.body;
 
-    // Prevent admins from changing password
     if ([1, 2].includes(parseInt(role_id))) {
         return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
     }
 
-    // Find user
+    // Step 1: Find the user by ID
     User.findById(user_id, (err, user) => {
-        if (err) return res.status(500).json({ success: false, message: 'Database error', error: err });
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
 
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        const userData = {
-            firstname: firstname,
-            prefix: prefix,
-            phonenumber: phonenumber,
-            email: email,
-            store_name:storename,
-            store_address:storeaddress,
-            sin_code:sincode,
-            license_number:license_number,
-            lastname:lastname
-        };
-        User.updateWorkerData(user_id,role_id,userData, (err, results) => {
+
+        // Step 2: Check if email or phone already exists for another user
+        User.findByEmailOrPhone(email, phonenumber, (err, existingUser) => {
             if (err) {
-                return res.status(500).json({ error: 'Database query failed' });
+                return res.status(500).json({ success: false, message: "Server error", error: err });
             }
-            else{
-                res.status(200).json({ message: 'User updated successfully' });
+
+            if (existingUser && existingUser.id !== user_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: existingUser.email === email
+                        ? "This email is already in use by another user."
+                        : "This phone number is already in use by another user."
+                });
             }
-        });       
+
+            // Step 3: Prepare user data for update
+            const userData = { firstname, prefix, phonenumber, email, storename, storeaddress, sincode, license_number, lastname };
+
+            // Step 4: Update user data
+            User.updateWorkerData(user_id, role_id, userData, (err, results) => {
+                if (err) {
+                    if (err.code === 'ER_DUP_ENTRY') {
+                        return res.status(400).json({
+                            success: false,
+                            message: err.sqlMessage.includes('email')
+                                ? "This email is already registered with another user."
+                                : "This phone number is already registered with another user."
+                        });
+                    }
+                    return res.status(500).json({ success: false, message: 'Database query failed', error: err });
+                }
+
+                res.status(200).json({ success: true, message: 'User updated successfully' });
+            });
+        });
     });
 };
+
 
 module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile};

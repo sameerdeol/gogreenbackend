@@ -70,8 +70,17 @@ const User = {
             return callback(null, { success: true, user });
         });
     },
+
+    findByEmailOrPhone : (email, phonenumber, callback) => {
+        const query = `SELECT * FROM users WHERE email = ? OR phonenumber = ?`;
+        db.query(query, [email, phonenumber], (err, results) => {
+            if (err) return callback(err, null);
+            callback(null, results.length > 0 ? results[0] : null);
+        });
+    },
     
-    findById: (user_id, callback) => {
+    
+    findById : (user_id, callback) => {
         const query = 'SELECT * FROM users WHERE id = ?';
         db.query(query, [user_id], (err, results) => {
             if (err) return callback(err, null);
@@ -79,6 +88,7 @@ const User = {
             callback(null, results[0]);
         });
     },
+
     updatePassword: (user_id, new_password, callback) => {
         bcrypt.hash(new_password, 10, (err, hashedPassword) => {
             if (err) return callback(err, null);
