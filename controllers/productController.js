@@ -8,9 +8,9 @@ const db = require('../config/db');
 // Create a new product
 const createProduct = (req, res) => {
     try {
-        let {vendor_id,
-            name, description, price, category, sub_category,
-            stock, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description, product_brand
+        let { vendor_id, name, description, price, category, sub_category,
+            stock, manufacturer_details, title, subtitle, size, fast_delivery_available, 
+            feature_title, feature_description, product_brand
         } = req.body;
 
         // Convert numeric values safely
@@ -35,7 +35,7 @@ const createProduct = (req, res) => {
 
         // Insert product into MySQL
         Product.create(
-            vendor_id, name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description,product_brand,
+            vendor_id, name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description, product_brand,
             (err, productResult) => {
                 if (err) {
                     console.error("Database Error:", err);
@@ -44,38 +44,52 @@ const createProduct = (req, res) => {
 
                 const productId = productResult.insertId;
 
-                // Insert gallery images
-                GalleryImage.create(productId, galleryImages, (imageErr, imageResult) => {
-                    if (imageErr) {
-                        console.error("Gallery Image Error:", imageErr);
-                        return res.status(500).json({ success: false, message: 'Error adding gallery images', error: imageErr });
-                    }
+                // Function to finalize the response
+                const finalizeResponse = (galleryResponse = null, attrResponse = null) => {
+                    res.status(201).json({
+                        success: true,
+                        message: 'Product created successfully',
+                        product_id: productId,
+                        gallery_images: galleryResponse,
+                        attributes: attrResponse
+                    });
+                };
 
-                    // Insert attributes into `product_attributes` table
+                // Check if gallery images exist before inserting
+                if (galleryImages.length > 0) {
+                    GalleryImage.create(productId, galleryImages, (imageErr, imageResult) => {
+                        if (imageErr) {
+                            console.error("Gallery Image Error:", imageErr);
+                            return res.status(500).json({ success: false, message: 'Error adding gallery images', error: imageErr });
+                        }
+
+                        // Insert attributes if available
+                        if (attributes.length > 0) {
+                            Product.addAttributes(productId, attributes, (attrErr, attrResult) => {
+                                if (attrErr) {
+                                    console.error("Attributes Insert Error:", attrErr);
+                                    return res.status(500).json({ success: false, message: 'Error adding attributes', error: attrErr });
+                                }
+                                finalizeResponse(imageResult, attrResult);
+                            });
+                        } else {
+                            finalizeResponse(imageResult);
+                        }
+                    });
+                } else {
+                    // If no gallery images, directly insert attributes or respond
                     if (attributes.length > 0) {
                         Product.addAttributes(productId, attributes, (attrErr, attrResult) => {
                             if (attrErr) {
                                 console.error("Attributes Insert Error:", attrErr);
                                 return res.status(500).json({ success: false, message: 'Error adding attributes', error: attrErr });
                             }
-
-                            res.status(201).json({
-                                success: true,
-                                message: 'Product created successfully',
-                                product_id: productId,
-                                gallery_images: imageResult,
-                                attributes: attrResult
-                            });
+                            finalizeResponse(null, attrResult);
                         });
                     } else {
-                        res.status(201).json({
-                            success: true,
-                            message: 'Product created successfully',
-                            product_id: productId,
-                            gallery_images: imageResult
-                        });
+                        finalizeResponse();
                     }
-                });
+                }
             }
         );
     } catch (error) {
@@ -83,8 +97,6 @@ const createProduct = (req, res) => {
         res.status(500).json({ success: false, message: 'Server error', error });
     }
 };
-
-
 
 // Get product by ID
 const getProductById = (req, res) => {
