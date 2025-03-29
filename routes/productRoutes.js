@@ -6,6 +6,8 @@ const multer = require('multer');
 const { verifyToken } = require('../middleware/authroization');
 const upload = multer(); // No storage, just parsing
 const {
+    getsingleproductsbyvendorID,
+    getallproductsbyvendorID,
     createProduct,
     getProductById,
     updateProductById,
@@ -18,7 +20,11 @@ const {
 } = require('../controllers/productController');
 
 // Route to create a new product - only managers can create products
-router.post('/products', checkManagerRole, uploadFields, createProduct);
+router.post('/products', verifyToken, uploadFields, createProduct);
+
+router.post('/productbyvendorid/', verifyToken,getsingleproductsbyvendorID);
+// get list of products
+router.post('/getallproductsbyvendorID/', verifyToken,getallproductsbyvendorID);
 
 // Route to get a product by ID
 router.post('/productbyid/', upload.none(), verifyToken,getProductById);

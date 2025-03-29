@@ -2,14 +2,14 @@ const db = require('../config/db');
 const sqlString = require('sqlstring');
 
 const Product = {
-    create: (name, description, price, category, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description,product_brand, callback) => {
+    create: (vendor_id, name, description, price, category, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description,product_brand, callback) => {
             featured_image = featured_image && typeof featured_image === 'string' ? featured_image : null;
     
             const query = sqlString.format(
                 `INSERT INTO products 
-                (name, description, price, category_id, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, brand_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
+                (vendor_id, name, description, price, category_id, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, brand_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [   vendor_id,
                     String(name),
                     String(description),
                     parseFloat(price) || 0,
@@ -284,6 +284,121 @@ const Product = {
     
         db.query(sql, [userId, filterValue], callback);
     },
+
+
+    findallByVendorId: (vendorID, callback) => {
+        // Base query
+        const query = `
+            SELECT 
+                p.*, 
+                c.name AS category_name, 
+                s.name AS sub_category_name, 
+                b.name AS brand_name, 
+                b.categoryid AS brand_categoryid, 
+                b.brand_logo AS brandlogo, 
+                b.description AS brand_description
+            FROM products p 
+            LEFT JOIN product_categories c ON p.category_id = c.id 
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id 
+            LEFT JOIN product_brands b ON p.brand_id = b.id
+            WHERE p.vendor_id = ?;
+        `;
+    
+        // Corrected `vendorID` usage
+        db.query(query, [vendorID], (err, results) => {
+            if (err) {
+                return callback(err, null);
+            }
+    
+            if (!results.length) {
+                return callback(null, []); // Return empty array if no products found
+            }
+    
+            const productPromises = results.map((product) => {
+                return new Promise((resolve, reject) => {
+                    const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
+                    const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
+    
+                    Promise.all([
+                        new Promise((resolveGallery, rejectGallery) => {
+                            db.query(galleryQuery, [product.id], (imgErr, images) => {
+                                if (imgErr) return rejectGallery(imgErr);
+                                product.gallery_images = images || []; // ✅ Ensures empty array
+                                resolveGallery();
+                            });
+                        }),
+                        new Promise((resolveAttributes, rejectAttributes) => {
+                            db.query(attributesQuery, [product.id], (attrErr, attributes) => {
+                                if (attrErr) return rejectAttributes(attrErr);
+                                product.attributes = attributes || []; // ✅ Ensures empty array
+                                resolveAttributes();
+                            });
+                        }),
+                    ])
+                        .then(() => resolve(product))
+                        .catch((error) => reject(error));
+                });
+            });
+    
+            Promise.all(productPromises)
+                .then((productsWithImages) => callback(null, productsWithImages))
+                .catch((error) => callback(error, null));
+        });
+    },    
+
+
+//find single produc with vendor id
+    findSingleByVendorId: (id, vendorID, callback) => {
+        // Base query
+        const query = `
+            SELECT 
+                p.*, 
+                c.name AS category_name, 
+                s.name AS sub_category_name, 
+                b.name AS brand_name, 
+                b.categoryid AS brand_categoryid, 
+                b.brand_logo AS brandlogo, 
+                b.description AS brand_description
+            FROM products p 
+            LEFT JOIN product_categories c ON p.category_id = c.id 
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id 
+            LEFT JOIN product_brands b ON p.brand_id = b.id 
+            WHERE p.id = ? AND p.vendor_id = ?;
+        `;
+    
+        const values = [id, vendorID];
+    
+        db.query(query, values, (err, productResult) => {
+            if (err || !productResult.length) {
+                return callback(err || "Product not found", null);
+            }
+    
+            const product = productResult[0];
+    
+            // Fetch gallery images & attributes
+            const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
+            const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
+    
+            Promise.all([
+                new Promise((resolve, reject) => {
+                    db.query(galleryQuery, [id], (imgErr, images) => {
+                        if (imgErr) return reject(imgErr);
+                        product.gallery_images = images || []; // ✅ Ensures empty array
+                        resolve();
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    db.query(attributesQuery, [id], (attrErr, attributes) => {
+                        if (attrErr) return reject(attrErr);
+                        product.attributes = attributes || []; // ✅ Ensures empty array
+                        resolve();
+                    });
+                }),
+            ])
+                .then(() => callback(null, product))
+                .catch((error) => callback(error, null)); // ✅ Ensures error is returned in callback
+        });
+    }
     
 };
 

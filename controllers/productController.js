@@ -8,7 +8,7 @@ const db = require('../config/db');
 // Create a new product
 const createProduct = (req, res) => {
     try {
-        let {
+        let {vendor_id,
             name, description, price, category, sub_category,
             stock, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description, product_brand
         } = req.body;
@@ -35,7 +35,7 @@ const createProduct = (req, res) => {
 
         // Insert product into MySQL
         Product.create(
-            name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description,product_brand,
+            vendor_id, name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description,product_brand,
             (err, productResult) => {
                 if (err) {
                     console.error("Database Error:", err);
@@ -98,6 +98,35 @@ const getProductById = (req, res) => {
         res.status(200).json({ success: true, product });
     });
 };
+
+
+// Get product by VendorID
+const getallproductsbyvendorID = (req, res) => {
+    const {vendor_id} = req.body;
+
+    Product.findallByVendorId(vendor_id, (err, product) => {
+        if (err || !product) {
+            return res.status(404).json({ success: false, message: 'Product not found' });
+        }
+        res.status(200).json({ success: true, product });
+    });
+};
+
+
+const getsingleproductsbyvendorID = (req, res) => {
+    const {id,vendor_id} = req.body;
+    const productId = id;
+
+    Product.findSingleByVendorId(productId,vendor_id, (err, product) => {
+        if (err || !product) {
+            return res.status(404).json({ success: false, message: 'Product not found' });
+        }
+        res.status(200).json({ success: true, product });
+    });
+};
+
+
+
 const getProducts = (req, res) => {
     const { userID } = req.body;
     Product.find(userID,(err, products) => {
@@ -394,5 +423,7 @@ module.exports = {
     setProductFeatured,
     setProductTodayDeal,
     getProductsByType,
-    getproductbycatgeoryID
+    getproductbycatgeoryID,
+    getallproductsbyvendorID,
+    getsingleproductsbyvendorID
 };
