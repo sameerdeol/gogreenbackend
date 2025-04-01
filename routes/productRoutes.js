@@ -20,7 +20,7 @@ const {
 } = require('../controllers/productController');
 
 // Route to create a new product - only managers can create products
-router.get('/products', verifyToken, uploadFields, createProduct);
+router.post('/products', verifyToken, uploadFields, createProduct);
 
 router.post('/productbyvendorid/', verifyToken,getsingleproductsbyvendorID);
 // get list of products
@@ -29,7 +29,7 @@ router.post('/getallproductsbyvendorID/', verifyToken,getallproductsbyvendorID);
 // Route to get a product by ID
 router.post('/productbyid/', upload.none(), verifyToken,getProductById);
 // get list of products
-router.post('/getproducts/',getProducts);
+router.get('/getproducts/',getProducts);
 
 // Route to update a product by ID - only managers can update products
 router.put('/products', checkManagerRole, uploadFields, updateProductById);
