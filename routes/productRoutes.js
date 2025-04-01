@@ -29,7 +29,7 @@ router.post('/getallproductsbyvendorID/', verifyToken,getallproductsbyvendorID);
 // Route to get a product by ID
 router.post('/productbyid/', upload.none(), verifyToken,getProductById);
 // get list of products
-router.post('/getproducts/', verifyToken,getProducts);
+router.post('/getproducts/',getProducts);
 
 // Route to update a product by ID - only managers can update products
 router.put('/products', checkManagerRole, uploadFields, updateProductById);
