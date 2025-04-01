@@ -10,7 +10,7 @@ const createProduct = (req, res) => {
     try {
         let { vendor_id, name, description, price, category, sub_category,
             stock, manufacturer_details, title, subtitle, size, fast_delivery_available, 
-            feature_title, feature_description, product_brand
+            feature_title, feature_description, product_brand, nutritional_facts , ingredients , miscellaneous 
         } = req.body;
 
         // Convert numeric values safely
@@ -35,7 +35,7 @@ const createProduct = (req, res) => {
 
         // Insert product into MySQL
         Product.create(
-            vendor_id, name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description, product_brand,
+            vendor_id, name, description, price, category, sub_category, stock, featuredImage, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description, product_brand,nutritional_facts, miscellaneous,ingredients,  
             (err, productResult) => {
                 if (err) {
                     console.error("Database Error:", err);
@@ -158,7 +158,7 @@ const getProducts = (req, res) => {
 
 // Update product by ID
 const updateProductById = (req, res) => {
-    const { id, name, description, price, category_id, sub_category, stock, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, status, userID, brand_id} = req.body;
+    const { id, name, description, price, category_id, sub_category, stock, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, status, userID, brand_id, nutritional_facts, miscellaneous, ingredients} = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required.' });
@@ -177,7 +177,7 @@ const updateProductById = (req, res) => {
         }
 
         const updatedData = {
-            name, description,price,category_id,sub_category,stock,manufacturer_details,title,subtitle,size,fast_delivery_available,feature_title, feature_description, brand_id
+            name, description,price,category_id,sub_category,stock,manufacturer_details,title,subtitle,size,fast_delivery_available,feature_title, feature_description, brand_id,nutritional_facts, miscellaneous, ingredients
         };
 
         if (status !== undefined) {

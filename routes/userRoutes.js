@@ -10,7 +10,9 @@ const {
     createSuperadminManagers,
     vendorRiderVerification,
     vendorRiderLogin,
-    updateWorkersProfile
+    updateWorkersProfile,
+    workersProfile,
+    workerStatus
 } = require('../controllers/userController');
 
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -44,6 +46,8 @@ router.post(['/update-vendorPassword', '/update-riderPassword'],verifyToken,upda
 router.put(['/update-vendorProfile', '/update-riderProfile'],verifyToken,updateWorkersProfile);
 router.post(['/vendor-login', '/rider-login'], vendorRiderLogin);
 router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
+router.post(['/vendor-profile', '/rider-profile'], verifyToken,workersProfile);
+router.post(['/vendor-status', '/rider-status'], verifyToken,workerStatus);
 
 /**
  * User Management Routes (Protected)
@@ -71,6 +75,6 @@ router.post('/createadmins', authenticateToken, (req, res) => {
     createSuperadminManagers(req, res);
 });
 
-router.post('/adminlogin', loginadmin);
+router.post('/adminlogin', authenticateToken,loginadmin);
 
 module.exports = router;

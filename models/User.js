@@ -316,7 +316,63 @@ const User = {
             }
             callback(null, result);
         });
-    }
+    },
+
+    // fetch user profile
+    userProfile: (userId, roleId, callback) => {
+        let query;
+        const queryParams = [userId];
+        
+        // If roleId is 3, fetch delivery partner details
+        if (roleId === 4) {
+            query = `
+                SELECT 
+                    u.firstname, u.lastname, u.email, u.phonenumber, 
+                    dp.id AS delivery_partners_id, dp.sin_code, dp.license_number 
+                FROM users u 
+                LEFT JOIN delivery_partners dp ON dp.user_id = u.id 
+                WHERE u.id = ? AND u.role_id = ?;
+            `;
+            queryParams.push(roleId); // Add roleId to parameters
+        } else {
+            // Default query for other roles
+            query = `
+                SELECT 
+                    u.firstname, u.lastname, u.email, u.phonenumber, 
+                    v.id AS vendor_id, v.store_address, v.sin_code, v.store_name 
+                FROM users u 
+                LEFT JOIN vendors v ON v.user_id = u.id 
+                WHERE u.id = ? AND u.role_id = ?;
+            `;
+            queryParams.push(roleId); // Add roleId to parameters
+        }
+        
+        // Run the query
+        db.query(query, queryParams, (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return callback(err, null);
+            }
+            return callback(null, results[0]); // Return single user object
+        });
+    },     
+
+    userStatus: (userId, status, callback) => {
+        const sql = `
+            UPDATE users 
+            SET status = ? 
+            WHERE id = ?;
+        `;
+        
+        // Run the query
+        db.query(sql, [status, userId], (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return callback(err, null);
+            }
+            return callback(null, results); // Return results
+        });
+    },
 
 };
 

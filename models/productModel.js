@@ -2,13 +2,13 @@ const db = require('../config/db');
 const sqlString = require('sqlstring');
 
 const Product = {
-    create: (vendor_id, name, description, price, category, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description,product_brand, callback) => {
+    create: (vendor_id, name, description, price, category, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description,product_brand,nutritional_facts, miscellaneous,ingredients, callback) => {
             featured_image = featured_image && typeof featured_image === 'string' ? featured_image : null;
     
             const query = sqlString.format(
                 `INSERT INTO products 
-                (vendor_id, name, description, price, category_id, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, brand_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (vendor_id, name, description, price, category_id, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, brand_id, nutritional_facts, miscellaneous, ingredients) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [   vendor_id,
                     String(name),
                     String(description),
@@ -24,7 +24,10 @@ const Product = {
                     fast_delivery_available,
                     feature_title,
                     feature_description,
-                    product_brand
+                    product_brand,
+                    nutritional_facts,
+                    miscellaneous,
+                    ingredients
                 ]
             );
     
