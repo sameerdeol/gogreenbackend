@@ -317,14 +317,14 @@ const updateProductById = (req, res) => {
 
 // Delete product by ID
 const deleteProductById = (req, res) => {
-    const { id } = req.body;
+    const { id,user_id } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required.' });
     }
 
     // Fetch product details before deletion
-    Product.findById(id, (findErr, product) => {
+    Product.findById(id,user_id, (findErr, product) => {
         if (findErr || !product) {
             return res.status(404).json({ success: false, message: 'Product not found.' });
         }
