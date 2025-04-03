@@ -35,7 +35,7 @@ const dynamicCategoryData = (req, res) => {
         }
 
         if (result.length === 0) {
-            return res.status(404).json({ success: false, message: 'No products found for this index' });
+            return res.status(200).json({ success: false, message: 'No products found for this index' });
         }
         if(categoryset == 1){
             res.status(200).json({ success: true, message: 'Products fetched successfully', categories: result });
