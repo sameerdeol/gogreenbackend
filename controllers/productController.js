@@ -423,6 +423,23 @@ const getproductbycatgeoryID = (req, res) => {
     });
 };
 
+const getproductbycatvenID = (req, res) => {
+    const { catID, userID, subcatID,vendor_id } = req.body; // Get IDs from request body
+    if (!vendor_id) {
+        return res.status(400).json({ success: false, message: 'vendor_id is required' });
+    }
+    if (!catID && !subcatID) {
+        return res.status(400).json({ success: false, message: 'Category ID or Subcategory ID is required' });
+    }
+
+    Product.getbyvencategory(userID, catID, subcatID,vendor_id, (err, results) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error fetching products', error: err });
+        }
+        res.status(200).json({ success: true, data: results });
+    });
+};
+
 
 // Export multer upload as a middleware and role check as well
 module.exports = {
@@ -437,5 +454,6 @@ module.exports = {
     getProductsByType,
     getproductbycatgeoryID,
     getallproductsbyvendorID,
-    getsingleproductsbyvendorID
+    getsingleproductsbyvendorID,
+    getproductbycatvenID
 };
