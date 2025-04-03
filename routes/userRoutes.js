@@ -75,6 +75,6 @@ router.post('/createadmins', authenticateToken, (req, res) => {
     createSuperadminManagers(req, res);
 });
 
-router.post('/adminlogin', authenticateToken,loginadmin);
+router.post('/adminlogin',loginadmin);
 
 module.exports = router;
