@@ -12,7 +12,6 @@ const appBanners = require('./routes/appBannerRoutes');
 const userAddress = require('./routes/userAdressRoutes');
 const dynamicCategory = require('./routes//displayCategory');
 const favouriteRoutes = require('./routes/favouriteRoutes');
-const orderRoutes = require('./routes/orderRoutes');
 const app = express();
 
 // Middleware
@@ -30,7 +29,6 @@ app.use('/', appBanners);  // Product-related routes (Prefix with /api)
 app.use('/', userAddress);
 app.use('/', dynamicCategory);
 app.use('/', favouriteRoutes);
-app.use("/", orderRoutes);
 
 
 // Start Server
