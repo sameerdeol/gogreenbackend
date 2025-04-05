@@ -24,7 +24,7 @@ router.get('/subcategories',verifyToken, getAllSubcategories);
 
 router.get('/beautysubcategories', verifyToken,getAllBeautysubcat);
 
-router.post('/subcategoriesbycatID', verifyToken,getAllSubcategoriesbycatID);
+router.post('/subcategoriesbycatID', getAllSubcategoriesbycatID);
 // Route to update a subcategory - only managers can update subcategories
 router.put('/subcategories', checkManagerRole,uploadFields, updateSubcategoryById);
 
