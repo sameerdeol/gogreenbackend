@@ -67,42 +67,48 @@ const getOrdersByUserId = (req, res) => {
     const { user_id } = req.body;
 
     OrderModel.getOrdersByUserId(user_id, (err, results) => {
-    if (err) return res.status(500).json({ error: "Database error" });
+        if (err) return res.status(500).json({ error: "Database error" });
 
-    const ordersMap = {};
-
-    results.forEach(row => {
-        const {
-        order_id, user_id, total_quantity, total_price,
-        payment_method, order_created_at,
-        product_id, product_name, product_description,
-        product_price, total_item_price
-        } = row;
-
-        if (!ordersMap[order_id]) {
-        ordersMap[order_id] = {
-            order_id,
-            user_id,
-            total_quantity,
-            total_price,
-            payment_method,
-            order_created_at,
-            items: []
-        };
+        // If no results returned
+        if (!results || results.length === 0) {
+            return res.status(200).json({ message: "No order found for this user." });
         }
 
-        ordersMap[order_id].items.push({
-        product_id,
-        product_name,
-        product_description,
-        product_price,
-        total_item_price
-        });
-    });
+        const ordersMap = {};
 
-    const groupedOrders = Object.values(ordersMap);
-    res.status(200).json(groupedOrders);
+        results.forEach(row => {
+            const {
+                order_id, user_id, total_quantity, total_price,
+                payment_method, order_created_at,
+                product_id, product_name, product_description,
+                product_price, total_item_price
+            } = row;
+
+            if (!ordersMap[order_id]) {
+                ordersMap[order_id] = {
+                    order_id,
+                    user_id,
+                    total_quantity,
+                    total_price,
+                    payment_method,
+                    order_created_at,
+                    items: []
+                };
+            }
+
+            ordersMap[order_id].items.push({
+                product_id,
+                product_name,
+                product_description,
+                product_price,
+                total_item_price
+            });
+        });
+
+        const groupedOrders = Object.values(ordersMap);
+        res.status(200).json(groupedOrders);
     });
 };
+
  
  module.exports = { createOrder, getOrdersByUserId };
