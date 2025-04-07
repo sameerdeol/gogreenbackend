@@ -288,6 +288,34 @@ const Product = {
         db.query(sql, [userId, filterValue], callback);
     },
 
+    getbybrandID: (userId,brandID, callback) => {
+    
+        const sql = `
+            SELECT 
+                p.*, 
+                c.name AS category_name, 
+                s.name AS sub_category_name, 
+                b.name AS brand_name, 
+                b.categoryid AS brand_categoryid, 
+                b.brand_logo AS brandlogo, 
+                b.description AS brand_description, 
+                CASE 
+                    WHEN f.product_id IS NOT NULL THEN TRUE 
+                    ELSE FALSE 
+                END AS is_favourite 
+            FROM products p
+            LEFT JOIN product_categories c ON p.category_id = c.id
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id
+            LEFT JOIN product_brands b ON p.brand_id = b.id
+            LEFT JOIN favourite_products f 
+                ON p.id = f.product_id 
+                AND f.user_id = ?
+            WHERE brand_id = ?;
+        `;
+    
+        db.query(sql, [userId, brandID], callback);
+    },
+
     getbyvencategory: (userId, categoryId, subcategoryId,vendor_id, callback) => {
         let filterColumn = categoryId ? "p.category_id" : "p.sub_category";
         let filterValue = categoryId || subcategoryId; // Use whichever ID is available

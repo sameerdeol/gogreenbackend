@@ -17,7 +17,8 @@ const {
     setProductFeatured,
     getProductsByType,
     getproductbycatgeoryID,
-    getproductbycatvenID
+    getproductbycatvenID,
+    getproductbybrandID
 } = require('../controllers/productController');
 
 // Route to create a new product - only managers can create products
@@ -51,8 +52,12 @@ router.post('/weeklydealproducts', verifyToken, (req, res) => {
     getProductsByType(req, res);
 });
 
+//get product by category or sub-category  id
 router.post('/productbycategoryid', verifyToken,getproductbycatgeoryID);
 
+//get product by catyegory and vendor id
 router.post('/productbycat-vendorId', verifyToken, getproductbycatvenID);
 
+//get product by brand id
+router.post('/productbybrandID', getproductbybrandID);
 module.exports = router;

@@ -440,6 +440,21 @@ const getproductbycatvenID = (req, res) => {
     });
 };
 
+const getproductbybrandID = (req, res) => {
+    const { brandID, userID } = req.body; // Get IDs from request body
+
+    if (!brandID) {
+        return res.status(400).json({ success: false, message: 'Brand ID is required' });
+    }
+
+    Product.getbybrandID(userID, brandID, (err, results) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error fetching products', error: err });
+        }
+        res.status(200).json({ success: true, data: results });
+    });
+};
+
 
 // Export multer upload as a middleware and role check as well
 module.exports = {
@@ -455,5 +470,6 @@ module.exports = {
     getproductbycatgeoryID,
     getallproductsbyvendorID,
     getsingleproductsbyvendorID,
-    getproductbycatvenID
+    getproductbycatvenID,
+    getproductbybrandID
 };
