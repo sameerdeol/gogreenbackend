@@ -38,7 +38,7 @@ const Order = {
             FROM order_details OD
             JOIN order_items OI ON OD.id = OI.order_id
             JOIN products P ON OI.product_id = P.id
-            WHERE OD.user_id = 1;
+            WHERE OD.user_id = ?;
         `;
     
         db.query(query, [user_id], callback);
