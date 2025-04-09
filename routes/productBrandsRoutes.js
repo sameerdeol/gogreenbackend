@@ -19,7 +19,7 @@ router.post('/product-brands', checkManagerRole, uploadFields, createProductBran
 router.post('/product-brandsbyCategory',verifyToken,fetchbrandbycatID);
 
 // Route to get a product brand by ID
-router.post('/product-brands', verifyToken,getProductBrandById);
+router.post('/product-brandbyID', verifyToken,getProductBrandById);
 
 // Route to get the list of product brands
 router.get('/allProduct-brands', verifyToken,getAllProductBrands);
