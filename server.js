@@ -13,6 +13,7 @@ const userAddress = require('./routes/userAdressRoutes');
 const dynamicCategory = require('./routes//displayCategory');
 const favouriteRoutes = require('./routes/favouriteRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const searchRoutes = require('./routes/searchRoutes')
 const app = express();
 
 // Middleware
@@ -31,6 +32,7 @@ app.use('/', userAddress);
 app.use('/', dynamicCategory);
 app.use('/', favouriteRoutes);
 app.use("/", orderRoutes);
+app.use("/", searchRoutes);
 
 
 // Start Server
