@@ -9,6 +9,11 @@ const DiscountModel = {
         db.query(sql, [product_id, discount_percent], callback);
     },
 
+    getDiscounts: (callback) => {
+        const sql = `SELECT * FROM product_discounts`;
+        db.query(sql, [], callback);
+    },
+
     // Update discount by product ID
     updateDiscountByProductId: (product_id, discount_percent, callback) => {
         const sql = `

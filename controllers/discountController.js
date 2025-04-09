@@ -16,6 +16,17 @@ const createDiscount = (req, res) => {
     });
 };
 
+const getDiscounts = (req, res) => {
+    DiscountModel.getDiscounts((err, result) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Failed to retrieve discounts', error: err });
+        }
+
+        res.status(200).json({ success: true, message: 'Discounts fetched successfully', data: result });
+    });
+};
+
+
 const updateDiscount = (req, res) => {
     const { product_id, discount_percent } = req.body;
 
@@ -56,5 +67,6 @@ const deleteDiscount = (req, res) => {
 module.exports = {
     createDiscount,
     updateDiscount,
-    deleteDiscount
+    deleteDiscount,
+    getDiscounts
 };
