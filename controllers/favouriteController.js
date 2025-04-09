@@ -23,7 +23,7 @@ const getUserFavouritesdetails = (req, res) => {
         return res.status(400).json({ success: false, message: 'User ID is required.' });
     }
 
-    Favourite.getUserFavourites(user_id, async (err, favourites) => {
+    Favourite.getUserFavourites(user_id, (err, favourites) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching favourites', error: err });
         }
@@ -32,25 +32,11 @@ const getUserFavouritesdetails = (req, res) => {
             return res.status(200).json({ success: true, message: 'No favourites found', data: [] });
         }
 
-        try {
-            const favouriteProducts = await Promise.all(
-                favourites.map(fav => new Promise((resolve, reject) => {
-                    Product.findById(fav.product_id, (err, product) => {
-                        if (err || !product) {
-                            resolve({ ...fav, product: null }); // Handle missing products gracefully
-                        } else {
-                            resolve({ ...fav, product });
-                        }
-                    });
-                }))
-            );
-
-            res.status(200).json({ success: true, data: favouriteProducts });
-        } catch (error) {
-            res.status(500).json({ success: false, message: 'Error retrieving product details', error });
-        }
+        // No need to fetch products again — they're already included in the result
+        res.status(200).json({ success: true, data: favourites });
     });
 };
+
 
 const removeFavourite = (req, res) => {
     const { user_id, product_id } = req.body;
