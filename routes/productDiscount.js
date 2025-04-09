@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { checkManagerRole } = require('../middleware/checkManagerRoll');
+const { verifyToken } = require('../middleware/authroization');
 const {
     createDiscount,
     updateDiscount,

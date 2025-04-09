@@ -10,7 +10,8 @@ const DiscountModel = {
     },
 
     getDiscounts: (callback) => {
-        const sql = `SELECT * FROM product_discounts`;
+        const sql = `SELECT pd.*,p.* FROM product_discounts pd
+                    JOIN products p where p.id = pd.product_id`;
         db.query(sql, [], callback);
     },
 
