@@ -8,8 +8,8 @@ const {
     deleteDiscount
 } = require('../controllers/discountController');
 
-router.post('/add-discount', createDiscount);
-router.put('/update-discount', updateDiscount);
-router.delete('/delete-discount', deleteDiscount);
+router.post('/add-discount', verifyToken, createDiscount);
+router.put('/update-discount', verifyToken, updateDiscount);
+router.delete('/delete-discount', verifyToken, deleteDiscount);
 
 module.exports = router;

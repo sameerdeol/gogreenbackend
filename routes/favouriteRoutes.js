@@ -4,7 +4,7 @@ const {addFavourite,getUserFavouritesdetails,removeFavourite} = require('../cont
 const { verifyToken } = require('../middleware/authroization');
 
 router.post('/addfavourite', verifyToken,addFavourite);
-router.post('/getfavouritebyuserid',getUserFavouritesdetails);
+router.post('/getfavouritebyuserid',verifyToken, getUserFavouritesdetails);
 router.delete('/removefavoruite', verifyToken,removeFavourite);
 
 module.exports = router;
