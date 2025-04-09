@@ -66,7 +66,7 @@ const Product = {
                 LEFT JOIN product_categories c ON p.category_id = c.id 
                 LEFT JOIN product_subcategories s ON p.sub_category = s.id 
                 LEFT JOIN product_brands b ON p.brand_id = b.id 
-                LEFT JOIN discounts d ON p.id = d.product_id 
+                LEFT JOIN product_discounts d ON p.id = d.product_id 
                 LEFT JOIN favourite_products f 
                     ON p.id = f.product_id 
                     AND (f.user_id = ? OR ? IS NULL)
@@ -131,7 +131,7 @@ const Product = {
             LEFT JOIN product_categories c ON p.category_id = c.id 
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
             LEFT JOIN product_brands b ON p.brand_id = b.id 
-            LEFT JOIN discounts d ON p.id = d.product_id
+            LEFT JOIN product_discounts d ON p.id = d.product_id
             LEFT JOIN favourite_products f 
                 ON p.id = f.product_id
                 AND f.user_id = ?;
@@ -257,7 +257,7 @@ const Product = {
         LEFT JOIN product_categories c ON p.category_id = c.id
         LEFT JOIN product_subcategories s ON p.sub_category = s.id
         LEFT JOIN product_brands b ON p.brand_id = b.id
-        LEFT JOIN discounts d ON p.id = d.product_id
+        LEFT JOIN product_discounts d ON p.id = d.product_id
         LEFT JOIN favourite_products f 
             ON p.id = f.product_id 
             AND f.user_id = ? 
@@ -289,7 +289,7 @@ const Product = {
             LEFT JOIN product_categories c ON p.category_id = c.id
             LEFT JOIN product_subcategories s ON p.sub_category = s.id
             LEFT JOIN product_brands b ON p.brand_id = b.id
-            LEFT JOIN discounts d ON p.id = d.product_id
+            LEFT JOIN product_discounts d ON p.id = d.product_id
             LEFT JOIN favourite_products f 
                 ON p.id = f.product_id 
                 AND f.user_id = ?
@@ -320,7 +320,7 @@ const Product = {
             LEFT JOIN product_categories c ON p.category_id = c.id
             LEFT JOIN product_subcategories s ON p.sub_category = s.id
             LEFT JOIN product_brands b ON p.brand_id = b.id
-            LEFT JOIN discounts d ON p.id = d.product_id
+            LEFT JOIN product_discounts d ON p.id = d.product_id
             LEFT JOIN favourite_products f 
                 ON p.id = f.product_id 
                 AND f.user_id = ?
@@ -353,7 +353,7 @@ const Product = {
             LEFT JOIN product_categories c ON p.category_id = c.id
             LEFT JOIN product_subcategories s ON p.sub_category = s.id
             LEFT JOIN product_brands b ON p.brand_id = b.id
-            LEFT JOIN discounts d ON p.id = d.product_id
+            LEFT JOIN product_discounts d ON p.id = d.product_id
             LEFT JOIN favourite_products f 
                 ON p.id = f.product_id 
                 AND f.user_id = ?
@@ -381,7 +381,7 @@ const Product = {
             LEFT JOIN product_categories c ON p.category_id = c.id 
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
             LEFT JOIN product_brands b ON p.brand_id = b.id
-            LEFT JOIN discounts d ON p.id = d.product_id
+            LEFT JOIN product_discounts d ON p.id = d.product_id
             WHERE p.vendor_id = ?;
         `;
     
@@ -448,7 +448,7 @@ const Product = {
             LEFT JOIN product_categories c ON p.category_id = c.id 
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
             LEFT JOIN product_brands b ON p.brand_id = b.id 
-            LEFT JOIN discounts d ON p.id = d.product_id
+            LEFT JOIN product_discounts d ON p.id = d.product_id
             WHERE p.id = ? AND p.vendor_id = ?;
         `;
     
