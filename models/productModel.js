@@ -56,7 +56,7 @@ const Product = {
                     b.categoryid AS brand_categoryid, 
                     b.brand_logo AS brandlogo, 
                     b.description AS brand_description,
-                    
+                    IFNULL(d.discount_percent, 0) AS discount_percent,
                     ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
                     CASE 
                         WHEN f.product_id IS NOT NULL THEN TRUE 
@@ -121,6 +121,7 @@ const Product = {
                 b.categoryid AS brand_categoryid, 
                 b.brand_logo AS brandlogo, 
                 b.description AS brand_description, 
+                IFNULL(d.discount_percent, 0) AS discount_percent,
                 ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
                 CASE 
                     WHEN f.product_id IS NOT NULL THEN TRUE 
@@ -246,6 +247,7 @@ const Product = {
             b.categoryid AS brand_categoryid, 
             b.brand_logo AS brandlogo, 
             b.description AS brand_description, 
+            IFNULL(d.discount_percent, 0) AS discount_percent,
             ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
             CASE 
                 WHEN f.product_id IS NOT NULL THEN TRUE 
@@ -277,6 +279,7 @@ const Product = {
                 b.categoryid AS brand_categoryid, 
                 b.brand_logo AS brandlogo, 
                 b.description AS brand_description, 
+                IFNULL(d.discount_percent, 0) AS discount_percent,
                 ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
                 CASE 
                     WHEN f.product_id IS NOT NULL THEN TRUE 
@@ -306,7 +309,8 @@ const Product = {
                 b.name AS brand_name, 
                 b.categoryid AS brand_categoryid, 
                 b.brand_logo AS brandlogo, 
-                b.description AS brand_description,
+                b.description AS brand_description, 
+                IFNULL(d.discount_percent, 0) AS discount_percent,
                 ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
                 CASE 
                     WHEN f.product_id IS NOT NULL THEN TRUE 
@@ -338,6 +342,7 @@ const Product = {
                 b.categoryid AS brand_categoryid, 
                 b.brand_logo AS brandlogo, 
                 b.description AS brand_description, 
+                IFNULL(d.discount_percent, 0) AS discount_percent,
                 ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
                 d.updated_at AS discount_updated_at,
                 CASE 
@@ -369,6 +374,7 @@ const Product = {
                 b.categoryid AS brand_categoryid, 
                 b.brand_logo AS brandlogo, 
                 b.description AS brand_description,
+                IFNULL(d.discount_percent, 0) AS discount_percent,
                 ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
                 d.updated_at AS discount_updated_at
             FROM products p 
@@ -435,6 +441,7 @@ const Product = {
                 b.categoryid AS brand_categoryid, 
                 b.brand_logo AS brandlogo, 
                 b.description AS brand_description,
+                IFNULL(d.discount_percent, 0) AS discount_percent,
                 ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
                 d.updated_at AS discount_updated_at
             FROM products p 
