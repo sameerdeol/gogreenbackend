@@ -15,6 +15,7 @@ const favouriteRoutes = require('./routes/favouriteRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const searchRoutes = require('./routes/searchRoutes')
 const productDiscount = require('./routes/productDiscount')
+const notificationRoutes = require('./routes/notificationRoutes');
 const app = express();
 
 // Middleware
@@ -35,6 +36,7 @@ app.use('/', favouriteRoutes);
 app.use("/", orderRoutes);
 app.use("/", searchRoutes);
 app.use("/", productDiscount);
+app.use("/", notificationRoutes);
 
 
 // Start Server

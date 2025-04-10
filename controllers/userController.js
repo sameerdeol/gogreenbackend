@@ -4,6 +4,8 @@ const User = require('../models/User');
 const {generateUniqueUsername} = require('../middleware/username');
 const db = require('../config/db'); // Import the existing connection
 const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
+const UserFcmToken = require('../models/fcmTokenModel');
+const sendNotification = require('../middleware/sendNotification');
 const fs = require('fs');
 
 require('dotenv').config();
@@ -155,19 +157,60 @@ const getUnverifiedUsers = (req, res) => {
     });
 };
 
+// const verifyUser = (req, res) => {
+//     const userId = req.body.id;
+
+//     User.verifyUser(userId, (err, result) => {
+//         if (err) {
+//             return res.status(500).json({ success: false, message: 'Database error', error: err });
+//         }
+//         if (result.affectedRows === 0) {
+//             return res.status(404).json({ success: false, message: 'User not found or already verified' });
+//         }
+//         res.json({ success: true, message: 'User verified successfully' });
+//     });
+// };
+
+
 const verifyUser = (req, res) => {
     const userId = req.body.id;
 
-    User.verifyUser(userId, (err, result) => {
+    User.verifyUser(userId, async (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: 'User not found or already verified' });
         }
-        res.json({ success: true, message: 'User verified successfully' });
+
+        UserFcmToken.getTokenByUserId(userId, async (err, tokenResult) => {
+            if (err || !tokenResult || !tokenResult.fcm_token) {
+                console.warn(`FCM token not found for user ${userId}`);
+                return res.json({ success: true, message: 'User verified, but no FCM token found.' });
+            }
+
+            const fcmToken = tokenResult.fcm_token;
+
+            const notificationResult = await sendNotification({
+                fcmToken,
+                title: 'Account Verified',
+                body: 'Your account has been successfully verified!'
+            });
+
+            if (!notificationResult.success) {
+                return res.status(500).json({
+                    success: true,
+                    message: 'User verified, but failed to send notification',
+                    notificationError: notificationResult.error
+                });
+            }
+
+            res.json({ success: true, message: 'User verified and notification sent.' });
+        });
     });
 };
+
 
 const vendorRiderSignup = async (req, res) => {
     try {
