@@ -7,9 +7,8 @@ const UserFcmToken = {
             VALUES (?, ?)`;
         db.query(sql, [user_id, fcmToken], callback);
     },
-    getTokenByUserId: (user_id,callback) => {
-        const sql = `
-        Select fcm_token from users_fcm_token where user_id = ?`;
+    getTokenByUserId: (user_id, callback) => {
+        const sql = `SELECT fcm_token FROM users_fcm_token WHERE user_id = ?`;
         db.query(sql, [user_id], callback);
     }
 };

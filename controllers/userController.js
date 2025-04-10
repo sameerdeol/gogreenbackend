@@ -185,12 +185,12 @@ const verifyUser = (req, res) => {
         }
 
         UserFcmToken.getTokenByUserId(userId, async (err, tokenResult) => {
-            if (err || !tokenResult || !tokenResult.fcm_token) {
+            if (err || !tokenResult || tokenResult.length === 0 || !tokenResult[0].fcm_token) {
                 console.warn(`FCM token not found for user ${userId}`);
                 return res.json({ success: true, message: 'User verified, but no FCM token found.' });
             }
-
-            const fcmToken = tokenResult.fcm_token;
+            
+            const fcmToken = tokenResult[0].fcm_token;
 
             const notificationResult = await sendNotification({
                 fcmToken,
