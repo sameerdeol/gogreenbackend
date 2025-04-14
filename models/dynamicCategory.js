@@ -15,11 +15,19 @@ const ProductCategory = {
         if (categoryset == 1) {
             // ✅ Fetch subcategories related to the index (No need for userID here)
             sql = `
-                SELECT ps.*, pc.name AS category_name 
-                FROM product_subcategories ps
-                JOIN category_selection cs ON cs.product_categories = ps.category_id
-                JOIN product_categories pc ON ps.category_id = pc.id
-                WHERE cs.index_no = ?;
+                SELECT 
+                    ps.*, 
+                    pc.name AS category_name,
+                    (SELECT MAX(index_no) FROM category_selection) AS last_added_index
+                FROM 
+                    product_subcategories ps
+                JOIN 
+                    category_selection cs ON cs.product_categories = ps.category_id
+                JOIN 
+                    product_categories pc ON ps.category_id = pc.id
+                WHERE 
+                    cs.index_no = ?
+                ;
             `;
             params = [index];
         } else {
