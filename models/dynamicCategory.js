@@ -8,17 +8,15 @@ const ProductCategory = {
     
         db.query(sql, [catid, index], callback);
     },
-    getProductsByIndex: (index, categoryset, userID, callback) => {
+    getProductsByIndex : (index, categoryset, userID, callback) => {
         let sql;
         let params;
     
         if (categoryset == 1) {
-            // ✅ Fetch subcategories related to the index (No need for userID here)
             sql = `
                 SELECT 
                     ps.*, 
-                    pc.name AS category_name,
-                    (SELECT MAX(index_no) FROM category_selection) AS last_added_index
+                    pc.name AS category_name
                 FROM 
                     product_subcategories ps
                 JOIN 
@@ -27,11 +25,27 @@ const ProductCategory = {
                     product_categories pc ON ps.category_id = pc.id
                 WHERE 
                     cs.index_no = ?
-                ;
             `;
             params = [index];
+    
+            db.query(sql, params, (err, categoryResult) => {
+                if (err) return callback(err);
+    
+                const lastIndexQuery = `SELECT MAX(index_no) AS last_added_index FROM category_selection`;
+                db.query(lastIndexQuery, (err2, lastIndexResult) => {
+                    if (err2) return callback(err2);
+    
+                    const lastIndex = lastIndexResult[0]?.last_added_index || null;
+    
+                    callback(null, {
+                        success: true,
+                        message: 'Products fetched successfully',
+                        categories: categoryResult,
+                        last_added_index: lastIndex
+                    });
+                });
+            });
         } else {
-            // ✅ Fetch products related to the index, including is_favourite status
             sql = `
                 SELECT 
                     p.*, 
@@ -46,13 +60,29 @@ const ProductCategory = {
                 LEFT JOIN product_categories c ON cs.product_categories = c.id
                 LEFT JOIN product_subcategories s ON p.sub_category = s.id
                 LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
-                WHERE cs.index_no = ?;
+                WHERE cs.index_no = ?
             `;
-            params = [userID, userID, userID, index]; // ✅ Ensure userID is properly handled
-        }
+            params = [userID, userID, userID, index];
     
-        db.query(sql, params, callback);
-    },    
+            db.query(sql, params, (err, productResult) => {
+                if (err) return callback(err);
+    
+                const lastIndexQuery = `SELECT MAX(index_no) AS last_added_index FROM category_selection`;
+                db.query(lastIndexQuery, (err2, lastIndexResult) => {
+                    if (err2) return callback(err2);
+    
+                    const lastIndex = lastIndexResult[0]?.last_added_index || null;
+    
+                    callback(null, {
+                        success: true,
+                        message: 'Products fetched successfully',
+                        products: productResult,
+                        last_added_index: lastIndex
+                    });
+                });
+            });
+        }
+    },
     getshowselectedcategory: (index, callback) => {
         const sql = `
             SELECT 

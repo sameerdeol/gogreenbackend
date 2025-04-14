@@ -23,24 +23,31 @@ const selectProductcategoryfirst = (req, res) => {
 
 // **New Function** to fetch products based on dynamic index
 const dynamicCategoryData = (req, res) => {
-    const  {index,categoryset,userID}  = req.body;  // Getting index from request body
+    const { index, categoryset, userID } = req.body;  // Getting data from the request body
 
     if (!index) {
         return res.status(400).json({ success: false, message: 'Index is required.' });
     }
 
-    dynamicCategory.getProductsByIndex(index,categoryset,userID, (err, result) => {
+    dynamicCategory.getProductsByIndex(index, categoryset, userID, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching products', error: err });
         }
 
-        if (result.length === 0) {
-            return res.status(200).json({ success: false, message: 'No products found for this index' });
-        }
-        if(categoryset == 1){
-            res.status(200).json({ success: true, message: 'Products fetched successfully', categories: result });
-        }else{
-            res.status(200).json({ success: true, message: 'Products fetched successfully', products: result });
+        if (categoryset == 1) {
+            res.status(200).json({ 
+                success: true, 
+                message: 'Categories fetched successfully', 
+                categories: result.categories, 
+                last_added_index: result.last_added_index 
+            });
+        } else {
+            res.status(200).json({ 
+                success: true, 
+                message: 'Products fetched successfully', 
+                products: result.products, 
+                last_added_index: result.last_added_index 
+            });
         }
     });
 };
