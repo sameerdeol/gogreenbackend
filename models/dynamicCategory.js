@@ -23,9 +23,13 @@ const ProductCategory = {
                     category_selection cs ON cs.product_categories = ps.category_id
                 JOIN 
                     product_categories pc ON ps.category_id = pc.id
+                JOIN 
+                    products p ON p.subcategory_id = ps.id
                 WHERE 
                     cs.index_no = ?
-            `;
+                GROUP BY 
+                    ps.id
+                `;
             params = [index];
     
             db.query(sql, params, (err, categoryResult) => {
@@ -55,12 +59,18 @@ const ProductCategory = {
                         WHEN ? IS NOT NULL AND f.product_id IS NOT NULL THEN TRUE 
                         ELSE FALSE 
                     END AS is_favourite
-                FROM products p
-                LEFT JOIN category_selection cs ON p.category_id = cs.product_categories
-                LEFT JOIN product_categories c ON cs.product_categories = c.id
-                LEFT JOIN product_subcategories s ON p.sub_category = s.id
-                LEFT JOIN favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
-                WHERE cs.index_no = ?
+                FROM 
+                    products p
+                JOIN 
+                    category_selection cs ON p.category_id = cs.product_categories
+                JOIN 
+                    product_categories c ON cs.product_categories = c.id
+                JOIN 
+                    product_subcategories s ON p.sub_category = s.id
+                LEFT JOIN 
+                    favourite_products f ON p.id = f.product_id AND (f.user_id = ? OR ? IS NULL)
+                WHERE 
+                    cs.index_no = ?
             `;
             params = [userID, userID, userID, index];
     
