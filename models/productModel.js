@@ -1,7 +1,5 @@
 const db = require('../config/db');
 const sqlString = require('sqlstring');
-const fs = require('fs');
-const path = require('path');
 
 const Product = {
     create: (vendor_id, name, description, price, category, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description,product_brand,nutritional_facts, miscellaneous,ingredients, callback) => {
@@ -486,110 +484,6 @@ const Product = {
             ])
                 .then(() => callback(null, product))
                 .catch((error) => callback(error, null)); // ✅ Ensures error is returned in callback
-        });
-    },
-
-
-
-    findByIdupdate:  (id, userID) => {
-        return new Promise((resolve, reject) => {
-            const query = `SELECT * FROM products WHERE id = ? AND userID = ?`;
-            db.query(query, [id, userID], (err, results) => {
-                if (err || results.length === 0) return reject("Product not found");
-                resolve(results[0]);
-            });
-        });
-    },
-
-    updateById: (id, updatedData) => {
-        return new Promise((resolve, reject) => {
-            const query = `UPDATE products SET ? WHERE id = ?`;
-            db.query(query, [updatedData, id], (err, result) => {
-                if (err) return reject(err);
-                resolve(result);
-            });
-        });
-    },
-
-    addAttributes: (productId, attributes) => {
-        return new Promise((resolve, reject) => {
-            const query = `INSERT INTO product_attributes (product_id, name, value) VALUES ?`;
-            const values = attributes.map(attr => [productId, attr.name, attr.value]);
-            db.query(query, [values], (err) => {
-                if (err) return reject(err);
-                resolve();
-            });
-        });
-    },
-
-    updateByIdAndReturn: async (id, userID, data, files, attributes) => {
-        const existingProduct = await Product.findById(id, userID);
-
-        const updatedData = {
-            name: data.name,
-            description: data.description,
-            price: data.price,
-            category_id: data.category_id,
-            sub_category: data.sub_category,
-            stock: data.stock,
-            manufacturer_details: data.manufacturer_details,
-            title: data.title,
-            subtitle: data.subtitle,
-            size: data.size,
-            fast_delivery_available: data.fast_delivery_available,
-            feature_title: data.feature_title,
-            feature_description: data.feature_description,
-            brand_id: data.brand_id,
-            nutritional_facts: data.nutritional_facts,
-            miscellaneous: data.miscellaneous,
-            ingredients: data.ingredients,
-        };
-
-        if (data.status !== undefined) {
-            updatedData.status = parseInt(data.status, 10);
-        }
-
-        // Handle featured image update
-        if (files?.['featuredImage']?.length > 0) {
-            const newPath = files['featuredImage'][0].path;
-            if (existingProduct.featured_image) {
-                fs.unlink(path.join(__dirname, '..', existingProduct.featured_image), () => {});
-            }
-            updatedData.featured_image = newPath;
-        }
-
-        // Update product
-        await Product.updateById(id, updatedData);
-
-        // Handle attributes update
-        if (attributes && Array.isArray(attributes)) {
-            await new Promise((resolve, reject) => {
-                const deleteQuery = `DELETE FROM product_attributes WHERE product_id = ?`;
-                db.query(deleteQuery, [id], (err) => {
-                    if (err) return reject(err);
-                    resolve();
-                });
-            });
-            await Product.addAttributes(id, attributes);
-        }
-
-        // Handle gallery images
-        const galleryImages = files?.['galleryImages']?.map(file => file.path) || [];
-        if (galleryImages.length > 0) {
-            const existingGallery = await GalleryImage.findByProductId(id);
-            for (const img of existingGallery) {
-                fs.unlink(path.join(__dirname, '..', img.image_path), () => {});
-            }
-            await GalleryImage.deleteByProductId(id);
-            await GalleryImage.create(id, galleryImages);
-        }
-
-        // Return updated product
-        return new Promise((resolve, reject) => {
-            db.query(`SELECT * FROM products WHERE id = ?`, [id], (err, results) => {
-                if (err || results.length === 0) return reject("Failed to fetch updated product");
-                resolve(results[0]);
-            });
         });
     }
     
