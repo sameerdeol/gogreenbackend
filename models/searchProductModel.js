@@ -1,16 +1,34 @@
 const db = require('../config/db');
 
 const searchProduct = {
-    search: (searchTerm, callback) => {
-        const sql = `
-            SELECT p.*
-            FROM products p
-            JOIN product_categories c ON p.category_id = c.id
-            WHERE p.name LIKE ? OR c.name LIKE ?`;
-        
-        const likeSearchTerm = `%${searchTerm}%`;
-        db.query(sql, [likeSearchTerm, likeSearchTerm], callback);
+  search: (searchTerm, searchNum, callback) => {
+    const likeSearchTerm = `%${searchTerm}%`;
+    let query = '';
+    let values = [];
+
+    if (searchNum == 1) {
+      query = `
+        SELECT p.*
+        FROM products p
+        JOIN product_categories c ON p.category_id = c.id
+        WHERE p.name LIKE ? OR c.name LIKE ?`;
+      values = [likeSearchTerm, likeSearchTerm];
+    } else if (searchNum == 0) {
+      query = `
+        SELECT *
+        FROM product_categories
+        WHERE name LIKE ?`;
+      values = [likeSearchTerm];
+    } else {
+      query = `
+        SELECT *
+        FROM product_subcategories
+        WHERE name LIKE ?`;
+      values = [likeSearchTerm];
     }
+
+    db.query(query, values, callback);
+  }
 };
 
 module.exports = searchProduct;
