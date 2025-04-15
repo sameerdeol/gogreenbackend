@@ -342,7 +342,7 @@ const User = {
         if (roleId === 4) {
             query = `
                 SELECT 
-                    u.firstname, u.lastname, u.email, u.phonenumber, 
+                    u.firstname, u.lastname, u.email, u.phonenumber,u.prefix 
                     dp.id AS delivery_partners_id, dp.sin_code, dp.license_number 
                 FROM users u 
                 LEFT JOIN delivery_partners dp ON dp.user_id = u.id 
