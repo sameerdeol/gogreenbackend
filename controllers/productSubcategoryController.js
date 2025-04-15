@@ -32,18 +32,35 @@ const createSubcategory = (req, res) => {
 
 // Get all subcategories
 const getAllSubcategories = (req, res) => {
-    ProductSubcategory.findAllSubCatWithProducts((err, results) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: 'Error fetching subcategories', error: err });
-        }
+    const { is_web } = req.body;
 
-        if (!results.length) {
-            return res.status(200).json({ success: true, message: 'No subcategories with products found' });
-        }
+    if (is_web) {
+        ProductSubcategory.findAllSubCatWithProducts((err, results) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Error fetching subcategories', error: err });
+            }
 
-        res.status(200).json({ success: true, subcategories: results });
-    });
+            if (!results.length) {
+                return res.status(200).json({ success: true, message: 'No subcategories with products found' });
+            }
+
+            res.status(200).json({ success: true, subcategories: results });
+        });
+    } else {    
+        ProductSubcategory.findAll((err, results) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Error fetching subcategories', error: err });
+            }
+
+            if (!results.length) {
+                return res.status(200).json({ success: true, message: 'No subcategories with products found' });
+            }
+
+            res.status(200).json({ success: true, subcategories: results });
+        });  
+    } 
 };
+
 const getAllBeautysubcat = (req, res) => {
     const  catID  =18;
 

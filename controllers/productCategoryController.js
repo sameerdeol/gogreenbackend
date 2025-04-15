@@ -27,18 +27,37 @@ const createCategory = (req, res) => {
 
 // Get all categories
 const getAllCategories = (req, res) => {
-    ProductCategory.findAllCatWithProducts((err, results) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: 'Error fetching categories', error: err });
-        }
+    const { is_web } = req.body;
 
-        if (!results.length) {
-            return res.status(200).json({ success: true, message: 'No categories with products found' });
-        }
+    if (is_web) {
+        // Web-specific logic (if needed)
+        ProductCategory.findAll((err, results) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Error fetching categories', error: err });
+            }
 
-        res.status(200).json({ success: true, categories: results });
-    });
+            if (!results.length) {
+                return res.status(200).json({ success: true, message: 'No categories with products found' });
+            }
+
+            res.status(200).json({ success: true, categories: results });
+        });
+    } else {
+        // App-specific logic (if needed)
+        ProductCategory.findAllCatWithProducts((err, results) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Error fetching categories', error: err });
+            }
+
+            if (!results.length) {
+                return res.status(200).json({ success: true, message: 'No categories with products found' });
+            }
+
+            res.status(200).json({ success: true, categories: results });
+        });
+    }
 };
+
 
 
 // Get category by ID
