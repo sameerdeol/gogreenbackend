@@ -196,7 +196,9 @@ const updateProductById = (req, res) => {
             updatedData.featured_image = newFeaturedImagePath;
         }
 
-        const newGalleryImages = req.files?.['galleryImages']?.map(file => file.path) || [];
+        const gallery = req.files && req.files['galleryImages'];
+        const newGalleryImages = Array.isArray(gallery) ? gallery.map(file => file.path) : [];
+        
 
         Product.updateById(id, updatedData, (err, result) => {
             if (err) {
@@ -258,36 +260,51 @@ const updateProductById = (req, res) => {
             } else {
                 if (newGalleryImages.length > 0) {
                     GalleryImage.findByProductId(id, (galleryErr, existingGallery) => {
-                        if (!galleryErr && existingGallery.length > 0) {
-                            existingGallery.forEach(img => {
-                                fs.unlink(path.join(__dirname, '..', img.image_path), (err) => {
-                                    if (err) console.error("Error deleting gallery image:", err);
+                        if (galleryErr) {
+                            return res.status(500).json({ success: false, message: 'Error fetching gallery images', error: galleryErr });
+                        }
+                    
+                        const deleteOldImages = () => {
+                            if (existingGallery.length > 0) {
+                                existingGallery.forEach(img => {
+                                    fs.unlink(path.join(__dirname, '..', img.image_path), (err) => {
+                                        if (err) console.error("Error deleting gallery image:", err);
+                                    });
                                 });
-                            });
-
-                            GalleryImage.deleteByProductId(id, (deleteErr) => {
-                                if (deleteErr) {
-                                    return res.status(500).json({ success: false, message: 'Error clearing old gallery images', error: deleteErr });
-                                }
-
-                                GalleryImage.create(id, newGalleryImages, (createErr) => {
-                                    if (createErr) {
-                                        return res.status(500).json({ success: false, message: 'Error updating gallery images', error: createErr });
+                    
+                                GalleryImage.deleteByProductId(id, (deleteErr) => {
+                                    if (deleteErr) {
+                                        return res.status(500).json({ success: false, message: 'Error clearing old gallery images', error: deleteErr });
                                     }
-
-                                    Product.findById(id, (findErr, updatedProduct) => {
-                                        if (findErr) {
-                                            return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
-                                        }
-                                        res.status(200).json({
-                                            success: true,
-                                            message: 'Product updated successfully',
-                                            product: updatedProduct
-                                        });
+                                    createAndRespond();
+                                });
+                            } else {
+                                // No old images, just create
+                                createAndRespond();
+                            }
+                        };
+                    
+                        const createAndRespond = () => {
+                            GalleryImage.create(id, newGalleryImages, (createErr) => {
+                                if (createErr) {
+                                    return res.status(500).json({ success: false, message: 'Error updating gallery images', error: createErr });
+                                }
+                    
+                                Product.findById(id, (findErr, updatedProduct) => {
+                                    if (findErr) {
+                                        return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
+                                    }
+                    
+                                    return res.status(200).json({
+                                        success: true,
+                                        message: 'Product updated successfully',
+                                        product: updatedProduct
                                     });
                                 });
                             });
-                        }
+                        };
+                    
+                        deleteOldImages();
                     });
                 } else {
                     Product.findById(id,userID, (findErr, updatedProduct) => {
