@@ -27,12 +27,19 @@ const createCategory = (req, res) => {
 
 // Get all categories
 const getAllCategories = (req, res) => {
-    ProductCategory.findAll((err, results) => {
-        if (err) return res.status(500).json({ success: false, message: 'Error fetching categories', error: err });
-        if (!results.length) return res.status(200).json({ success: true, message: 'No categories found' });
+    ProductCategory.findAllCatWithProducts((err, results) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error fetching categories', error: err });
+        }
+
+        if (!results.length) {
+            return res.status(200).json({ success: true, message: 'No categories with products found' });
+        }
+
         res.status(200).json({ success: true, categories: results });
     });
 };
+
 
 // Get category by ID
 const getCategoryById = (req, res) => {

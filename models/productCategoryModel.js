@@ -5,6 +5,16 @@ const ProductCategory = {
         const query = 'SELECT * FROM product_categories';
         db.query(query, callback);
     },
+    findAllCatWithProducts: (callback) => {
+        const query = `
+            SELECT pc.*
+            FROM product_categories pc
+            JOIN products p ON pc.id = p.category_id
+            GROUP BY pc.id
+            HAVING COUNT(p.id) > 0
+        `;
+        db.query(query, callback);
+    },
 
     findById: (id, callback) => {
     

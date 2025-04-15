@@ -32,13 +32,15 @@ const createSubcategory = (req, res) => {
 
 // Get all subcategories
 const getAllSubcategories = (req, res) => {
-    ProductSubcategory.findAll((err, results) => {
+    ProductSubcategory.findAllSubCatWithProducts((err, results) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching subcategories', error: err });
         }
+
         if (!results.length) {
-            return res.status(200).json({ success: true, message: 'No subcategories found' });
+            return res.status(200).json({ success: true, message: 'No subcategories with products found' });
         }
+
         res.status(200).json({ success: true, subcategories: results });
     });
 };

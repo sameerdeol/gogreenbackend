@@ -11,6 +11,17 @@ const ProductSubcategory = {
         db.query(query, callback);
     },
 
+    findAllSubCatWithProducts: (callback) => {
+        const query = `
+            SELECT sc.*
+            FROM product_subcategories sc
+            JOIN products p ON sc.id = p.sub_category
+            GROUP BY sc.id
+            HAVING COUNT(p.id) > 0
+        `;
+        db.query(query, callback);
+    },
+    
     // Get subcategory by ID with category name
     findById: (id, callback) => {
         console.log("Finding subcategory with ID:", id); // Debugging log
