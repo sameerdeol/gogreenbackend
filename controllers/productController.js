@@ -157,12 +157,13 @@ const getProducts = (req, res) => {
 };
 
 // Update product by ID
-const updateProductById = (req, res) => {
-    const { id, name, description, price, category_id, sub_category, stock, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, status, userID, brand_id, nutritional_facts, miscellaneous, ingredients} = req.body;
+const updateProductById = async (req, res) => {
+    const { id, userID } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required.' });
     }
+
     let attributes = req.body.attributes;
     if (typeof attributes === "string") {
         try {
@@ -171,145 +172,39 @@ const updateProductById = (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid attributes format" });
         }
     }
-    Product.findById(id,userID, (findErr, existingProduct) => {
-        if (findErr || !existingProduct) {
+
+    try {
+        const existingProduct = await Product.findByIdupdate(id, userID);
+        if (!existingProduct) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
-        const updatedData = {
-            name, description,price,category_id,sub_category,stock,manufacturer_details,title,subtitle,size,fast_delivery_available,feature_title, feature_description, brand_id,nutritional_facts, miscellaneous, ingredients
-        };
+        const updatedData = Product.extractUpdateFields(req.body);
+        Product.handleFeaturedImage(req.files, existingProduct, updatedData);
 
-        if (status !== undefined) {
-            updatedData.status = parseInt(status, 10);
+        const newGalleryImages = Product.extractGalleryImages(req.files);
+
+        await Product.updateById(id, updatedData);
+
+        if (attributes && Array.isArray(attributes)) {
+            await Product.updateAttributes(id, attributes);
         }
 
-        if (req.files?.['featuredImage']?.length > 0) {
-            const newFeaturedImagePath = req.files['featuredImage'][0].path;
-
-            if (existingProduct.featured_image) {
-                fs.unlink(path.join(__dirname, '..', existingProduct.featured_image), (err) => {
-                    if (err) console.error("Error deleting old featured image:", err);
-                });
-            }
-
-            updatedData.featured_image = newFeaturedImagePath;
+        if (newGalleryImages.length > 0) {
+            await GalleryImage.updateGallery(id, newGalleryImages);
         }
 
-        const newGalleryImages = req.files?.['galleryImages']?.map(file => file.path) || [];
-
-        Product.updateById(id, updatedData, (err, result) => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Error updating product', error: err });
-            }
-            if (attributes && Array.isArray(attributes)) {
-                const deleteQuery = `DELETE FROM product_attributes WHERE product_id = ?`;
-                db.query(deleteQuery, [id], (deleteErr) => {
-                    if (deleteErr) {
-                        return res.status(500).json({ success: false, message: 'Error deleting old attributes', error: deleteErr });
-                    }
-
-                    Product.addAttributes(id, attributes, (insertErr) => {
-                        if (insertErr) {
-                            return res.status(500).json({ success: false, message: 'Error inserting new attributes', error: insertErr });
-                        }
-
-                        if (newGalleryImages.length > 0) {
-                            GalleryImage.findByProductId(id, (galleryErr, existingGallery) => {
-                                if (!galleryErr && existingGallery.length > 0) {
-                                    existingGallery.forEach(img => {
-                                        fs.unlink(path.join(__dirname, '..', img.image_path), (err) => {
-                                            if (err) console.error("Error deleting gallery image:", err);
-                                        });
-                                    });
-
-                                    GalleryImage.deleteByProductId(id, (deleteErr) => {
-                                        if (deleteErr) {
-                                            return res.status(500).json({ success: false, message: 'Error clearing old gallery images', error: deleteErr });
-                                        }
-
-                                        GalleryImage.create(id, newGalleryImages, (createErr) => {
-                                            if (createErr) {
-                                                return res.status(500).json({ success: false, message: 'Error updating gallery images', error: createErr });
-                                            }
-
-                                            Product.findById(id, (findErr, updatedProduct) => {
-                                                if (findErr) {
-                                                    return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
-                                                }
-                                                res.status(200).json({
-                                                    success: true,
-                                                    message: 'Product and attributes updated successfully',
-                                                    product: updatedProduct
-                                                });
-                                            });
-                                        });
-                                    });
-                                }
-                            });
-                        } else {
-                            Product.findById(id, (findErr, updatedProduct) => {
-                                if (findErr) {
-                                    return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
-                                }
-                                res.status(200).json({
-                                    success: true,
-                                    message: 'Product updated successfully',
-                                    product: updatedProduct
-                                });
-                            });
-                        }
-                    });
-                });
-            } else {
-                if (newGalleryImages.length > 0) {
-                    GalleryImage.findByProductId(id, (galleryErr, existingGallery) => {
-                        if (!galleryErr && existingGallery.length > 0) {
-                            existingGallery.forEach(img => {
-                                fs.unlink(path.join(__dirname, '..', img.image_path), (err) => {
-                                    if (err) console.error("Error deleting gallery image:", err);
-                                });
-                            });
-
-                            GalleryImage.deleteByProductId(id, (deleteErr) => {
-                                if (deleteErr) {
-                                    return res.status(500).json({ success: false, message: 'Error clearing old gallery images', error: deleteErr });
-                                }
-
-                                GalleryImage.create(id, newGalleryImages, (createErr) => {
-                                    if (createErr) {
-                                        return res.status(500).json({ success: false, message: 'Error updating gallery images', error: createErr });
-                                    }
-
-                                    Product.findById(id, (findErr, updatedProduct) => {
-                                        if (findErr) {
-                                            return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
-                                        }
-                                        res.status(200).json({
-                                            success: true,
-                                            message: 'Product updated successfully',
-                                            product: updatedProduct
-                                        });
-                                    });
-                                });
-                            });
-                        }
-                    });
-                } else {
-                    Product.findById(id,userID, (findErr, updatedProduct) => {
-                        if (findErr) {
-                            return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
-                        }
-                        res.status(200).json({
-                            success: true,
-                            message: 'Product updated successfully',
-                            product: updatedProduct
-                        });
-                    });
-                }
-            }
+        const updatedProduct = await Product.findById(id);
+        res.status(200).json({
+            success: true,
+            message: 'Product updated successfully',
+            product: updatedProduct
         });
-    });
+
+    } catch (error) {
+        console.error("Update error:", error);
+        res.status(500).json({ success: false, message: 'Internal server error', error });
+    }
 };
 
 

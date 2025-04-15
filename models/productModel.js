@@ -485,6 +485,81 @@ const Product = {
                 .then(() => callback(null, product))
                 .catch((error) => callback(error, null)); // ✅ Ensures error is returned in callback
         });
+    },
+
+
+
+    findByIdupdate: (id, userID = null) => {
+        return new Promise((resolve, reject) => {
+            const query = userID ? `SELECT * FROM products WHERE id = ? AND user_id = ?` : `SELECT * FROM products WHERE id = ?`;
+            const values = userID ? [id, userID] : [id];
+            db.query(query, values, (err, results) => {
+                if (err) return reject(err);
+                resolve(results[0] || null);
+            });
+        });
+    },
+
+    extractUpdateFields: (body) => {
+        const {
+            name, description, price, category_id, sub_category, stock,
+            manufacturer_details, title, subtitle, size, fast_delivery_available,
+            feature_title, feature_description, status, brand_id,
+            nutritional_facts, miscellaneous, ingredients
+        } = body;
+
+        return {
+            name, description, price, category_id, sub_category, stock,
+            manufacturer_details, title, subtitle, size,
+            fast_delivery_available, feature_title, feature_description,
+            brand_id, nutritional_facts, miscellaneous, ingredients,
+            status: status !== undefined ? parseInt(status, 10) : undefined
+        };
+    },
+
+    handleFeaturedImage: (files, existingProduct, updatedData) => {
+        if (files?.['featuredImage']?.length > 0) {
+            const newImage = files['featuredImage'][0].path;
+            if (existingProduct.featured_image) {
+                fs.unlink(path.join(__dirname, '..', existingProduct.featured_image), (err) => {
+                    if (err) console.error("Error deleting old featured image:", err);
+                });
+            }
+            updatedData.featured_image = newImage;
+        }
+    },
+
+    extractGalleryImages: (files) => {
+        const gallery = files && files['galleryImages'];
+        return Array.isArray(gallery) ? gallery.map(file => file.path) : [];
+    },
+
+    updateById: (id, data) => {
+        return new Promise((resolve, reject) => {
+            const keys = Object.keys(data).filter(key => data[key] !== undefined);
+            const values = keys.map(key => data[key]);
+            const query = `UPDATE products SET ${keys.map(k => `${k} = ?`).join(', ')} WHERE id = ?`;
+            db.query(query, [...values, id], (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        });
+    },
+
+    updateAttributes: (id, attributes) => {
+        return new Promise((resolve, reject) => {
+            const deleteQuery = `DELETE FROM product_attributes WHERE product_id = ?`;
+            db.query(deleteQuery, [id], (deleteErr) => {
+                if (deleteErr) return reject(deleteErr);
+
+                const insertValues = attributes.map(attr => [id, attr.name, attr.value]);
+                const insertQuery = `INSERT INTO product_attributes (product_id, name, value) VALUES ?`;
+                db.query(insertQuery, [insertValues], (insertErr) => {
+                    if (insertErr) return reject(insertErr);
+                    resolve();
+                });
+            });
+        });
     }
     
 };
