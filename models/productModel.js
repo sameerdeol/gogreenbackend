@@ -1,5 +1,7 @@
 const db = require('../config/db');
 const sqlString = require('sqlstring');
+const fs = require('fs');
+const path = require('path');
 
 const Product = {
     create: (vendor_id, name, description, price, category, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description,product_brand,nutritional_facts, miscellaneous,ingredients, callback) => {
