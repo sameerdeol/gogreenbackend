@@ -7,6 +7,7 @@ const uploadFields = require('../middleware/multerConfig'); // Import Multer set
 const UserFcmToken = require('../models/fcmTokenModel');
 const sendNotification = require('../middleware/sendNotification');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 require('dotenv').config();
 
@@ -408,38 +409,105 @@ const vendorRiderVerification = async (req, res) => {
 };
 
 
+// UPDATE PASSWORD with previous password
 const updatePassword = (req, res) => {
-    const { role_id, previous_password, new_password, user_id } = req.body;
+    const { previous_password, new_password, user_id } = req.body;
 
-    // Prevent admins from changing password
-    if ([1, 2].includes(parseInt(role_id))) {
-        return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
-    }
-
-    // Find user
     User.findById(user_id, (err, user) => {
-        if (err) return res.status(500).json({ success: false, message: 'Database error', error: err });
-
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
+        if (err || !user) return res.status(404).json({ success: false, message: 'User not found' });
 
         bcrypt.compare(previous_password, user.password, (err, isMatch) => {
-            if (err) {
-                console.error('🔴 Error during bcrypt comparison:', err);
-                return res.status(500).json({ success: false, message: 'Error checking password', error: err });
-            }
-        
-            if (!isMatch) {
-                console.log('❌ Passwords do NOT match!');
-                return res.status(400).json({ success: false, message: 'Incorrect previous password' });
-            }
-            User.updatePassword(user_id, new_password, (err, result) => {
-                if (err) return res.status(500).json({ success: false, message: 'Error updating password', error: err });
+            if (!isMatch) return res.status(400).json({ success: false, message: 'Incorrect previous password' });
 
-                res.status(200).json({ success: true, message: 'Password updated successfully' });
+            User.updatePassword(user_id, new_password, (err) => {
+                if (err) return res.status(500).json({ success: false, message: 'Error updating password' });
+                res.json({ success: true, message: 'Password updated successfully' });
             });
-        });        
+        });
+    });
+};
+
+// SEND OTP for forgot password
+const sendOTP = (req, res) => {
+    const { email } = req.body;
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    User.findByEmail(email, (err, user) => {
+        if (err || !user) return res.status(404).json({ success: false, message: 'User not found' });
+    console.log(otp)
+        User.storeOTP(email, otp, expiresAt, (err) => {
+            if (err) return res.status(500).json({ success: false, message: 'Error storing OTP' });
+
+            const transporter = nodemailer.createTransport({
+                host: process.env.SMTP_HOST,  // e.g., 'smtp.webmail.com'
+                port: process.env.SMTP_PORT,  // e.g., 587 or 465
+                secure: process.env.SMTP_PORT === '465',  // true for SSL, false for TLS
+                auth: {
+                    user: process.env.EMAIL_USER,  // Your Webmail email address
+                    pass: process.env.EMAIL_PASS,  // Your Webmail email password or app-specific password
+                },
+            });
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Password Reset OTP',
+                text: `Your OTP for password reset is: ${otp}`,
+            };
+
+            transporter.sendMail(mailOptions, (error) => {
+                if (error) return res.status(500).json({ success: false, message: 'Error sending email' });
+                res.json({ success: true, message: 'OTP sent to email' });
+            });
+        });
+    });
+};
+
+// RESET password using OTP
+const resetPassword = (req, res) => {
+    const { email, otp, new_password } = req.body;
+
+    User.verifyOTP(email, otp, (err, record) => {
+        if (err || !record) return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+
+        User.findByEmail(email, (err, user) => {
+            if (err || !user) return res.status(404).json({ success: false, message: 'User not found' });
+
+            User.updatePassword(user.id, new_password, (err) => {
+                if (err) return res.status(500).json({ success: false, message: 'Error resetting password' });
+
+                // ✅ Send email after password reset
+                const transporter = nodemailer.createTransport({
+                    host: process.env.SMTP_HOST,
+                    port: process.env.SMTP_PORT,
+                    secure: process.env.SMTP_PORT === '465',
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS,
+                    },
+                });
+
+                const mailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: email,
+                    subject: 'Password Reset Confirmation',
+                    text: `Hi ${user.firstname || 'User'},\n\nYour password has been reset successfully. If this wasn't you, please contact support immediately.`,
+                };
+
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.error('❌ Error sending confirmation email:', error);
+                        return res.status(500).json({
+                            success: true,
+                            message: 'Password reset successfully, but failed to send confirmation email.',
+                        });
+                    }
+
+                    res.json({ success: true, message: 'Password reset successfully and confirmation email sent.' });
+                });
+            });
+        });
     });
 };
 
@@ -555,4 +623,4 @@ const workerStatus = (req, res) => {
 
 
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus};
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP};

@@ -12,7 +12,9 @@ const {
     vendorRiderLogin,
     updateWorkersProfile,
     workersProfile,
-    workerStatus
+    workerStatus,
+    sendOTP,
+    resetPassword
 } = require('../controllers/userController');
 
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -48,6 +50,8 @@ router.post(['/vendor-login', '/rider-login'], vendorRiderLogin);
 router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
 router.post(['/vendor-profile', '/rider-profile'], verifyToken,workersProfile);
 router.post(['/vendor-status', '/rider-status'], verifyToken,workerStatus);
+router.post(['/send-vendorOtp', '/send-riderOtp'], verifyToken ,sendOTP);
+router.post(['/reset-vendorPwd', '/send-riderPwd'], verifyToken ,resetPassword);
 
 /**
  * User Management Routes (Protected)

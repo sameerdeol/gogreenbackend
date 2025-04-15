@@ -23,14 +23,14 @@ const updateFields = (data, tableFields) => {
 const User = {
 
     findByEmail: (email, callback) => {
-        const query = 'SELECT * FROM users WHERE email = ?';
+        const query = `SELECT * FROM users WHERE email = ?`;
         db.query(query, [email], (err, results) => {
-            if (err) {
-                return callback(err, null);
-            }
-            callback(null, results);
+            if (err) return callback(err, null);
+            if (results.length === 0) return callback(null, null);
+            callback(null, results[0]);
         });
     },
+
     insertUser: (userData, callback) => {
         const allowedFields = ["username", "firstname", "lastname", "password", "prefix", "phonenumber", "email", "role_id", "is_verified"];
         
@@ -91,13 +91,28 @@ const User = {
 
     updatePassword: (user_id, new_password, callback) => {
         bcrypt.hash(new_password, 10, (err, hashedPassword) => {
-            if (err) return callback(err, null);
+            if (err) return callback(err);
+            db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user_id], callback);
+        });
+    },
 
-            const query = 'UPDATE users SET password = ? WHERE id = ?';
-            db.query(query, [hashedPassword, user_id], (err, result) => {
-                if (err) return callback(err, null);
-                callback(null, result);
-            });
+    storeOTP: (email, otp, expiresAt, callback) => {
+        // Delete any existing OTP entries for this email
+        const deleteQuery = 'DELETE FROM password_resets_otp WHERE email = ?';
+        db.query(deleteQuery, [email], (deleteErr) => {
+            if (deleteErr) return callback(deleteErr);
+    
+            const insertQuery = 'INSERT INTO password_resets_otp (email, otp, expires_at) VALUES (?, ?, ?)';
+            db.query(insertQuery, [email, otp, expiresAt], callback);
+        });
+    },
+    verifyOTP: (email, otp, callback) => {
+        const query = `SELECT * FROM password_resets_otp 
+                       WHERE email = ? AND otp = ? AND expires_at > NOW()
+                       ORDER BY id DESC LIMIT 1`;
+        db.query(query, [email, otp], (err, results) => {
+            if (err) return callback(err, null);
+            callback(null, results[0] || null);
         });
     },
 
