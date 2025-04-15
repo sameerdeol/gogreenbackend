@@ -24,7 +24,7 @@ const ProductCategory = {
                 JOIN 
                     product_categories pc ON ps.category_id = pc.id
                 JOIN 
-                    products p ON p.subcategory_id = ps.id
+                    products p ON p.sub_category = ps.id
                 WHERE 
                     cs.index_no = ?
                 GROUP BY 
