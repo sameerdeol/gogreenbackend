@@ -20,7 +20,7 @@ router.post('/subcategories', checkManagerRole,uploadFields, createSubcategory);
 router.get('/subcategories/:id', verifyToken,getSubcategoryById);
 
 // Route to get the list of subcategories
-router.post('/subcategories',verifyToken, getAllSubcategories);
+router.post('/fetch-subcategories',verifyToken, getAllSubcategories);
 
 router.get('/beautysubcategories', verifyToken,getAllBeautysubcat);
 

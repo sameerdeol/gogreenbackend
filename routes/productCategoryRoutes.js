@@ -18,7 +18,7 @@ router.post('/categories', checkManagerRole,uploadFields, createCategory);
 router.get('/categories/:id', verifyToken,getCategoryById);
 
 // Route to get the list of categories
-router.post('/categories', verifyToken,getAllCategories);
+router.post('/fetch-categories', verifyToken,getAllCategories);
 
 // Route to update a category - only managers can update categories
 router.put('/categories', checkManagerRole,uploadFields, updateCategoryById);
