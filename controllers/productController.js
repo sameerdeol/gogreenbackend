@@ -216,35 +216,29 @@ const updateProductById = (req, res) => {
 
                         if (newGalleryImages.length > 0) {
                             GalleryImage.findByProductId(id, (galleryErr, existingGallery) => {
-                                if (!galleryErr && existingGallery.length > 0) {
+                                if (galleryErr) {
+                                    return res.status(500).json({ success: false, message: 'Error fetching gallery images', error: galleryErr });
+                                }
+                            
+                                // If there ARE existing images, delete them
+                                if (existingGallery.length > 0) {
                                     existingGallery.forEach(img => {
                                         fs.unlink(path.join(__dirname, '..', img.image_path), (err) => {
                                             if (err) console.error("Error deleting gallery image:", err);
                                         });
                                     });
-
+                            
                                     GalleryImage.deleteByProductId(id, (deleteErr) => {
                                         if (deleteErr) {
                                             return res.status(500).json({ success: false, message: 'Error clearing old gallery images', error: deleteErr });
                                         }
-
-                                        GalleryImage.create(id, newGalleryImages, (createErr) => {
-                                            if (createErr) {
-                                                return res.status(500).json({ success: false, message: 'Error updating gallery images', error: createErr });
-                                            }
-
-                                            Product.findById(id, (findErr, updatedProduct) => {
-                                                if (findErr) {
-                                                    return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
-                                                }
-                                                res.status(200).json({
-                                                    success: true,
-                                                    message: 'Product and attributes updated successfully',
-                                                    product: updatedProduct
-                                                });
-                                            });
-                                        });
+                            
+                                        // Create new gallery images
+                                        createGalleryImagesAndRespond(id, newGalleryImages, res);
                                     });
+                                } else {
+                                    // No images to delete, just create new ones directly
+                                    createGalleryImagesAndRespond(id, newGalleryImages, res);
                                 }
                             });
                         } else {
@@ -312,6 +306,27 @@ const updateProductById = (req, res) => {
     });
 };
 
+
+
+function createGalleryImagesAndRespond(productId, imagePaths, res) {
+    GalleryImage.create(productId, imagePaths, (createErr) => {
+        if (createErr) {
+            return res.status(500).json({ success: false, message: 'Error updating gallery images', error: createErr });
+        }
+
+        Product.findById(productId, (findErr, updatedProduct) => {
+            if (findErr) {
+                return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Product updated successfully',
+                product: updatedProduct
+            });
+        });
+    });
+}
 
 
 
