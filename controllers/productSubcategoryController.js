@@ -35,7 +35,7 @@ const getAllSubcategories = (req, res) => {
     const { is_web } = req.body;
 
     if (is_web) {
-        ProductSubcategory.findAllSubCatWithProducts((err, results) => {
+        ProductSubcategory.findAll((err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error fetching subcategories', error: err });
             }
@@ -47,7 +47,7 @@ const getAllSubcategories = (req, res) => {
             res.status(200).json({ success: true, subcategories: results });
         });
     } else {    
-        ProductSubcategory.findAll((err, results) => {
+        ProductSubcategory.findAllSubCatWithProducts((err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error fetching subcategories', error: err });
             }
