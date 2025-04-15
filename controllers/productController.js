@@ -160,9 +160,7 @@ const getProducts = (req, res) => {
 const updateProductById = async (req, res) => {
     const { id, userID } = req.body;
 
-    if (!id) {
-        return res.status(400).json({ success: false, message: 'Product ID is required.' });
-    }
+    if (!id) return res.status(400).json({ success: false, message: "Product ID is required." });
 
     let attributes = req.body.attributes;
     if (typeof attributes === "string") {
@@ -174,36 +172,19 @@ const updateProductById = async (req, res) => {
     }
 
     try {
-        const existingProduct = await Product.findByIdupdate(id, userID);
-        if (!existingProduct) {
-            return res.status(404).json({ success: false, message: 'Product not found' });
-        }
-
-        const updatedData = Product.extractUpdateFields(req.body);
-        Product.handleFeaturedImage(req.files, existingProduct, updatedData);
-
-        const newGalleryImages = Product.extractGalleryImages(req.files);
-
-        await Product.updateById(id, updatedData);
-
-        if (attributes && Array.isArray(attributes)) {
-            await Product.updateAttributes(id, attributes);
-        }
-
-        if (newGalleryImages.length > 0) {
-            await GalleryImage.updateGallery(id, newGalleryImages);
-        }
-
-        const updatedProduct = await Product.findById(id);
+        const updatedProduct = await Product.updateByIdAndReturn(id, userID, req.body, req.files, attributes);
         res.status(200).json({
             success: true,
-            message: 'Product updated successfully',
+            message: "Product updated successfully",
             product: updatedProduct
         });
-
     } catch (error) {
         console.error("Update error:", error);
-        res.status(500).json({ success: false, message: 'Internal server error', error });
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to update product",
+            error
+        });
     }
 };
 
