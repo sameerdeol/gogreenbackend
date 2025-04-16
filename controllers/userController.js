@@ -102,16 +102,14 @@ const loginadmin = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        User.findByEmail(email, async (err, results) => {
+        User.findByEmail(email, async (err, user) => {
             if (err) {
                 return res.status(500).json({ message: 'Internal server error', error: err });
             }
 
-            if (!results || results.length === 0) {
+            if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
-
-            const user = results[0];
 
             // ✅ Validate password
             const isValid = await bcrypt.compare(password, user.password);
@@ -122,15 +120,16 @@ const loginadmin = async (req, res) => {
             // ✅ Generate JWT token with expiration
             const token = jwt.sign(
                 { id: user.id, role_id: user.role_id, role: user.role_name, username: user.username },
-                process.env.JWT_SECRET,
+                process.env.JWT_SECRET
             );
 
             return res.json({ message: 'Login successful', token });
         });
-    } catch (error) {
-        return res.status(500).json({ message: 'Authentication error', error });
+    } catch (err) {
+        return res.status(500).json({ message: 'Something went wrong', error: err });
     }
 };
+
 const updateUser = (req, res) => {
     const userData = req.body;
     const { role_id } = req.user;

@@ -27,9 +27,9 @@ const User = {
         db.query(query, [email], (err, results) => {
             if (err) return callback(err, null);
             if (results.length === 0) return callback(null, null);
-            callback(null, results[0]);
+            callback(null, results[0]); // returns a single user object
         });
-    },
+    },    
 
     insertUser: (userData, callback) => {
         const allowedFields = ["username", "firstname", "lastname", "password", "prefix", "phonenumber", "email", "role_id", "is_verified"];
