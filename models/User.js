@@ -170,7 +170,7 @@ const User = {
     },
 
     updateWorkerData: (user_id, role_id, userData, callback) => {
-        if (![ 3, 4].includes(role_id)) {
+        if (![ 3, 4, 5].includes(role_id)) {
             return callback(new Error('Permission denied: Invalid role_id'), null);
         }
     
@@ -180,6 +180,7 @@ const User = {
             const userTableFields = ['firstname', 'lastname', 'prefix', 'phonenumber', 'email'];
             const vendorTableFields = ['store_name', 'store_address', 'sin_code'];
             const deliveryPartnerTableFields = ['license_number','sin_code'];
+            const customerTableFields = ['dob','gender'];
     
             const queries = [];
     
@@ -207,6 +208,36 @@ const User = {
                     extraValues = [...values, user_id];
                 }
             }
+            else if (role_id === 5) {
+                const { queryPart, values } = updateFields(userData, customerTableFields);
+            
+                if (queryPart) {
+                    // First, check if customer record exists
+                    queries.push({
+                        query: `SELECT COUNT(*) AS count FROM customers WHERE user_id = ?`,
+                        values: [user_id],
+                        isSelect: true,
+                        next: (result) => {
+                            const exists = result[0].count > 0;
+            
+                            if (exists) {
+                                const updateQuery = `UPDATE customers SET ${queryPart} WHERE user_id = ?`;
+                                queries.push({ query: updateQuery, values: [...values, user_id] });
+                            } else {
+                                const insertFields = customerTableFields.filter(key => userData[key] !== undefined);
+                                const insertValues = insertFields.map(key => userData[key]);
+                                insertFields.push('user_id'); // add user_id to fields
+                                insertValues.push(user_id);
+            
+                                const placeholders = insertFields.map(() => '?').join(', ');
+                                const insertQuery = `INSERT INTO customers (${insertFields.join(', ')}) VALUES (${placeholders})`;
+                                queries.push({ query: insertQuery, values: insertValues });
+                            }
+                        }
+                    });
+                }
+            }
+            
     
             if (extraQuery) {
                 queries.push({ query: extraQuery, values: extraValues });
@@ -220,14 +251,20 @@ const User = {
                         callback(null, { message: 'User updated successfully' });
                     });
                 }
-    
-                const { query, values } = queries[index];
-    
-                db.query(query, values, (err) => {
+            
+                const { query, values, isSelect, next } = queries[index];
+            
+                db.query(query, values, (err, result) => {
                     if (err) return db.rollback(() => callback(err, null));
+            
+                    if (isSelect && next) {
+                        next(result);
+                    }
+            
                     executeQuery(index + 1);
                 });
             };
+            
     
             if (queries.length > 0) {
                 executeQuery(0);

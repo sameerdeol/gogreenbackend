@@ -45,7 +45,7 @@ router.post(['/vendor-verification', '/rider-verification'],verifyToken, uploadF
 });
 
 router.post(['/update-vendorPassword', '/update-riderPassword'],verifyToken,updatePassword);
-router.put(['/update-vendorProfile', '/update-riderProfile'],verifyToken,updateWorkersProfile);
+router.put(['/update-vendorProfile', '/update-riderProfile', '/update-customerProfile'],updateWorkersProfile);
 router.post(['/vendor-login', '/rider-login'], vendorRiderLogin);
 router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
 router.post(['/vendor-profile', '/rider-profile'], verifyToken,workersProfile);

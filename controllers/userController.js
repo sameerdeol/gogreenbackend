@@ -512,7 +512,7 @@ const resetPassword = (req, res) => {
 
 
 const updateWorkersProfile = (req, res) => {
-    const { role_id, firstname, lastname, storename, storeaddress, email, sincode, phonenumber, user_id, prefix, license_number } = req.body;
+    const { role_id, firstname, lastname, storename, storeaddress, email, sincode, phonenumber, user_id, prefix, license_number, gender, dob } = req.body;
 
     if ([1, 2].includes(parseInt(role_id))) {
         return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
@@ -544,7 +544,7 @@ const updateWorkersProfile = (req, res) => {
             }
 
             // Step 3: Prepare user data for update
-            const userData = { firstname, prefix, phonenumber, email, storename, storeaddress, sincode, license_number, lastname };
+            const userData = { firstname, prefix, phonenumber, email, storename, storeaddress, sincode, license_number, lastname, gender, dob };
 
             // Step 4: Update user data
             User.updateWorkerData(user_id, role_id, userData, (err, results) => {
