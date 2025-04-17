@@ -485,7 +485,49 @@ const Product = {
                 .then(() => callback(null, product))
                 .catch((error) => callback(error, null)); // ✅ Ensures error is returned in callback
         });
+    },
+
+
+
+
+    findByIdAsync : (id) => {
+        return new Promise((resolve, reject) => {
+            const query = `SELECT * FROM products WHERE id = ?`;
+            db.query(query, [id], (err, results) => {
+                if (err) return reject(err);
+                resolve(results[0]);
+            });
+        });
+    },
+
+    updateByIdAsync : (id, data) => {
+        return new Promise((resolve, reject) => {
+            const query = `UPDATE products SET ? WHERE id = ?`;
+            db.query(query, [data, id], (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        });
+    },
+    
+    replaceAttributes : (productId, attributes) => {
+        return new Promise((resolve, reject) => {
+            const deleteQuery = `DELETE FROM product_attributes WHERE product_id = ?`;
+            db.query(deleteQuery, [productId], (delErr) => {
+                if (delErr) return reject(delErr);
+    
+                const insertValues = attributes.map(attr => [productId, attr.key, attr.value]);
+                const insertQuery = `INSERT INTO product_attributes (product_id, attribute_key, attribute_value) VALUES ?`;
+                db.query(insertQuery, [insertValues], (insErr) => {
+                    if (insErr) return reject(insErr);
+                    resolve();
+                });
+            });
+        });
     }
+
+
+
     
 };
 
