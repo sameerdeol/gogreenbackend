@@ -386,7 +386,7 @@ const User = {
                 WHERE u.id = ? AND u.role_id = ?;
             `;
             queryParams.push(roleId); // Add roleId to parameters
-        } else {
+        } else if(roleId ===3) {
             // Default query for other roles
             query = `
                 SELECT 
@@ -397,6 +397,16 @@ const User = {
                 WHERE u.id = ? AND u.role_id = ?;
             `;
             queryParams.push(roleId); // Add roleId to parameters
+        }else {
+            query = `
+                SELECT 
+                    u.firstname, u.lastname, u.email, u.phonenumber, 
+                    c.id AS customer_id, c.dob, c.gender
+                FROM users u 
+                LEFT JOIN customers c ON c.user_id = u.id 
+                WHERE u.id = ? AND u.role_id = ?;
+            `;
+            queryParams.push(roleId); // You also need to push roleId here!
         }
         
         // Run the query
