@@ -219,7 +219,7 @@ const vendorRiderSignup = async (req, res) => {
         const { username } = generateUniqueUsername(firstname, phonenumber); // Generate unique username
 
         // 1️⃣ Check if email already exists
-        User.findByEmail(email, async (err, result) => {
+        User.findByEmail(email, async (err, existingUser) => {
             if (err) {
                 return res.status(500).json({
                     success: false,
@@ -228,7 +228,7 @@ const vendorRiderSignup = async (req, res) => {
                 });
             }
 
-            if (result.length > 0) {
+            if (existingUser) {
                 return res.status(400).json({
                     success: false,
                     message: 'A user with this email already exists'
