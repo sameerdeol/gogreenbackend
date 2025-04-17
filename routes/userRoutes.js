@@ -48,7 +48,7 @@ router.post(['/update-vendorPassword', '/update-riderPassword'],verifyToken,upda
 router.put(['/update-vendorProfile', '/update-riderProfile', '/update-customerProfile'],updateWorkersProfile);
 router.post(['/vendor-login', '/rider-login'], vendorRiderLogin);
 router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
-router.post(['/vendor-profile', '/rider-profile', '/customer-profile'], verifyToken,workersProfile);
+router.post(['/vendor-profile', '/rider-profile', '/customer-profile'], workersProfile);
 router.post(['/vendor-status', '/rider-status'], verifyToken,workerStatus);
 router.post(['/send-vendorOtp', '/send-riderOtp'], verifyToken ,sendOTP);
 router.post(['/reset-vendorPwd', '/send-riderPwd'], verifyToken ,resetPassword);
