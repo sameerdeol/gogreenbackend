@@ -10,7 +10,7 @@ const {
 } = require('../controllers/userAddressController');
 
 // Routes for User Addresses
-router.post('/user-addresses', verifyToken, createAddress);
+router.post('/user-addresses',  createAddress);
 router.get('/user-addresses', verifyToken, getUserAddresses);
 router.get('/user-addressesbyid', verifyToken, getAddressById);
 router.put('/updateUser-addresses', verifyToken, updateAddressById);

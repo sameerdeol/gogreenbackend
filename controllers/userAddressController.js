@@ -4,7 +4,7 @@ const UserAddress = require('../models/userAddressModel');
 const createAddress = (req, res) => {
     const { user_id, address, floor, landmark, type } = req.body;
 
-    if (!user_id || !address || floor || !type) {
+    if (!user_id || !address || !floor || !type) {
         return res.status(400).json({ success: false, message: 'All fields except landmark are required.' });
     }
 
