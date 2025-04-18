@@ -510,10 +510,6 @@ const resetPassword = (req, res) => {
     });
 };
 
-
-const fs = require('fs');
-const path = require('path');
-
 const updateWorkersProfile = (req, res) => {
     const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob } = req.body;
     const profile_pic = req.files && req.files['worker_profilePic'] 
