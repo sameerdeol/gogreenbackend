@@ -42,15 +42,15 @@ const getAddressById = (req, res) => {
         return res.status(400).json({ success: false, message: 'Address ID is required.' });
     }
 
-    UserAddress.findById(user_id, (err, result) => {
+    UserAddress.findByUserId(user_id, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching address', error: err });
         }
         if (!result.length) {
             return res.status(404).json({ success: false, message: 'Address not found' });
         }
-        res.status(200).json({ success: true, address: result[0] });
-    });
+        res.status(200).json({ success: true, addresses: result }); // return full list
+    });    
 };
 
 // Update address by ID

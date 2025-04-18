@@ -17,7 +17,7 @@ const UserAddress = {
 
     // Get a single address by its ID
     findById: (id, callback) => {
-        const sql = "SELECT * FROM user_addresses WHERE user_id = ?";
+        const sql = "SELECT * FROM user_addresses WHERE id = ?";
         db.query(sql, [id], callback);
     },
 
