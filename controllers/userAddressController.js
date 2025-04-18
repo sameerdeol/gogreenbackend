@@ -2,13 +2,13 @@ const UserAddress = require('../models/userAddressModel');
 
 // Create a new user address
 const createAddress = (req, res) => {
-    const { user_id, address, city, province, postal_code, road_number, landmark, type } = req.body;
+    const { user_id, address, floor, landmark, type } = req.body;
 
-    if (!user_id || !address || !city || !province || !postal_code || !road_number || !type) {
+    if (!user_id || !address || floor || !type) {
         return res.status(400).json({ success: false, message: 'All fields except landmark are required.' });
     }
 
-    UserAddress.create(user_id, address, city, province, postal_code, road_number, landmark, type, (err, result) => {
+    UserAddress.create(user_id, address,floor, landmark, type, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error creating address', error: err });
         }
