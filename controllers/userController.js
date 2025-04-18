@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const {generateUniqueUsername} = require('../middleware/username');
-const db = require('../config/db'); // Import the existing connection
+const path = require('path');
 const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
 const UserFcmToken = require('../models/fcmTokenModel');
 const sendNotification = require('../middleware/sendNotification');
@@ -528,7 +528,7 @@ const updateWorkersProfile = (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-
+        console.log(user)
         // ✅ Step: Delete old profile picture if a new one is uploaded
         if (profile_pic && user.profile_pic) {
             const oldPicPath = path.resolve(user.profile_pic);

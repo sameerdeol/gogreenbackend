@@ -379,6 +379,9 @@ const User = {
     userProfile: (userId, roleId, callback) => {
         let query;
         const queryParams = [userId];
+        if (typeof roleId === 'string') {
+            roleId = Number(roleId);
+        }
         
         // If roleId is 3, fetch delivery partner details
         if (roleId === 4) {
