@@ -384,8 +384,8 @@ const User = {
         if (roleId === 4) {
             query = `
                 SELECT 
-                    u.firstname, u.lastname, u.email, u.phonenumber,u.prefix, 
-                    dp.id AS delivery_partners_id, dp.sin_code, dp.license_number, dp.profile_pic, 
+                    u.firstname, u.lastname, u.email, u.phonenumber, u.prefix, 
+                    dp.id AS delivery_partners_id, dp.sin_code, dp.license_number, dp.profile_pic 
                 FROM users u 
                 LEFT JOIN delivery_partners dp ON dp.user_id = u.id 
                 WHERE u.id = ? AND u.role_id = ?;
@@ -396,10 +396,11 @@ const User = {
             query = `
                 SELECT 
                     u.firstname, u.lastname, u.email, u.phonenumber, 
-                    v.id AS vendor_id, v.store_address, v.sin_code, v.store_name, v.profile_pic, 
+                    v.id AS vendor_id, v.store_address, v.sin_code, v.store_name, v.profile_pic 
                 FROM users u 
                 LEFT JOIN vendors v ON v.user_id = u.id 
                 WHERE u.id = ? AND u.role_id = ?;
+
             `;
             queryParams.push(roleId); // Add roleId to parameters
         }else {
