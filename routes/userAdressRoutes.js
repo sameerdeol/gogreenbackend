@@ -12,7 +12,7 @@ const {
 // Routes for User Addresses
 router.post('/user-addresses',  createAddress);
 router.get('/user-addresses', verifyToken, getUserAddresses);
-router.get('/user-addressesbyid', verifyToken, getAddressById);
+router.post('/user-addressesbyid', verifyToken, getAddressById);
 router.put('/updateUser-addresses', verifyToken, updateAddressById);
 router.delete('/deleteUser-addresses', verifyToken, deleteAddressById);
 

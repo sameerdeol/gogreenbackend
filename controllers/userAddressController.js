@@ -36,13 +36,13 @@ const getUserAddresses = (req, res) => {
 
 // Get address by ID
 const getAddressById = (req, res) => {
-    const { id } = req.body;
+    const { user_id } = req.body;
 
-    if (!id) {
+    if (!user_id) {
         return res.status(400).json({ success: false, message: 'Address ID is required.' });
     }
 
-    UserAddress.findById(id, (err, result) => {
+    UserAddress.findById(user_id, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching address', error: err });
         }
