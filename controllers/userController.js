@@ -520,7 +520,7 @@ const updateWorkersProfile = (req, res) => {
         return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
     }
 
-    User.findById(user_id, (err, user) => {
+    User.userProfile(user_id,role_id, (err, user) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
