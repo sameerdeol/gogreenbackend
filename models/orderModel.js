@@ -38,10 +38,14 @@ const Order = {
                 UA.address,
                 UA.type,
                 UA.floor,
-                UA.landmark
+                UA.landmark,
+                u.firstname,
+                u.lastname,
+                u.phonenumber
             FROM order_details OD
             JOIN order_items OI ON OD.id = OI.order_id
             JOIN products P ON OI.product_id = P.id
+            JOIN users u on OD.user_id = u.id
             JOIN user_addresses UA ON OD.user_address_id = UA.id
             WHERE OD.user_id = ?;
         `;
