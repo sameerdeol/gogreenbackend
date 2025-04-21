@@ -81,7 +81,8 @@ const getOrdersByUserId = (req, res) => {
                 payment_method, order_created_at,
                 product_id, product_name, product_description,
                 product_price, total_item_price,
-                address, type, floor, landmark
+                address, type, floor, landmark,
+                firstname, lastname, phonenumber
             } = row;
 
             if (!ordersMap[order_id]) {
@@ -92,12 +93,13 @@ const getOrdersByUserId = (req, res) => {
                     total_price,
                     payment_method,
                     order_created_at,
-                    address: {
-                        address,
-                        type,
-                        floor,
-                        landmark
-                    },
+                    firstname,
+                    lastname,
+                    phonenumber,
+                    address,
+                    type,
+                    floor,
+                    landmark,
                     items: []
                 };
             }
@@ -115,6 +117,7 @@ const getOrdersByUserId = (req, res) => {
         res.status(200).json(groupedOrders);
     });
 };
+
 
  
  module.exports = { createOrder, getOrdersByUserId };
