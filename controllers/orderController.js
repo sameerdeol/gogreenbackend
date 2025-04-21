@@ -4,7 +4,7 @@ const OrderModel = require("../models/orderModel");
  
 const createOrder = async (req, res) => {
     try {
-        const { user_id, cart, payment_method } = req.body;
+        const { user_id, cart, payment_method, user_address } = req.body;
 
         if (!user_id || !cart || cart.length === 0) {
             console.warn("Invalid order data received");
@@ -21,7 +21,7 @@ const createOrder = async (req, res) => {
         });
 
         // First, insert into OrderDetails to get order_id
-        OrderDetails.addOrder(user_id, total_quantity, total_price, payment_method, async (err, result) => {
+        OrderDetails.addOrder(user_id, total_quantity, total_price, payment_method, user_address, async (err, result) => {
             if (err) {
                 console.error("Error adding order details:", err);
                 return res.status(500).json({ error: "Error adding order details" });

@@ -24,20 +24,25 @@ const Order = {
     getOrdersByUserId : (user_id, callback) => {
         const query = `
             SELECT 
-            OD.id AS order_id,
-            OD.user_id,
-            OD.total_quantity,
-            OD.total_price,
-            OD.payment_method,
-            OD.created_at AS order_created_at,
-            OI.product_id,
-            OI.total_item_price,
-            P.name AS product_name,
-            P.description AS product_description,
-            P.price AS product_price
+                OD.id AS order_id,
+                OD.user_id,
+                OD.total_quantity,
+                OD.total_price,
+                OD.payment_method,
+                OD.created_at AS order_created_at,
+                OI.product_id,
+                OI.total_item_price,
+                P.name AS product_name,
+                P.description AS product_description,
+                P.price AS product_price,
+                UA.address,
+                UA.type,
+                UA.floor,
+                UA.landmark
             FROM order_details OD
             JOIN order_items OI ON OD.id = OI.order_id
             JOIN products P ON OI.product_id = P.id
+            JOIN user_addresses UA ON UA.user_id = OD.user_id
             WHERE OD.user_id = ?;
         `;
     
