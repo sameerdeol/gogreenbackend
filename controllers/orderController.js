@@ -69,7 +69,6 @@ const getOrdersByUserId = (req, res) => {
     OrderModel.getOrdersByUserId(user_id, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
 
-        // If no results returned
         if (!results || results.length === 0) {
             return res.status(200).json({ message: "No order found for this user." });
         }
@@ -81,7 +80,8 @@ const getOrdersByUserId = (req, res) => {
                 order_id, user_id, total_quantity, total_price,
                 payment_method, order_created_at,
                 product_id, product_name, product_description,
-                product_price, total_item_price
+                product_price, total_item_price,
+                address, type, floor, landmark
             } = row;
 
             if (!ordersMap[order_id]) {
@@ -92,6 +92,12 @@ const getOrdersByUserId = (req, res) => {
                     total_price,
                     payment_method,
                     order_created_at,
+                    address: {
+                        address,
+                        type,
+                        floor,
+                        landmark
+                    },
                     items: []
                 };
             }
