@@ -42,7 +42,7 @@ const Order = {
             FROM order_details OD
             JOIN order_items OI ON OD.id = OI.order_id
             JOIN products P ON OI.product_id = P.id
-            JOIN user_addresses UA ON UA.user_id = OD.user_id
+            JOIN user_addresses UA ON OD.user_address_id = UA.id
             WHERE OD.user_id = ?;
         `;
     
