@@ -62,5 +62,5 @@ router.post('/productbycat-vendorId', verifyToken, getproductbycatvenID);
 //get product by brand id
 router.post('/productbybrandID', verifyToken, getproductbybrandID);
 
-router.post('/bestsellerproducts', bestSellProducts);
+router.post('/bestsellerproducts', verifyToken, bestSellProducts);
 module.exports = router;
