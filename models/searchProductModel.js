@@ -19,7 +19,7 @@ const searchProduct = {
         FROM product_categories
         WHERE name LIKE ?`;
       values = [likeSearchTerm];
-    } else {
+    } else if (searchNum == 2) {
       query = `
         SELECT *
         FROM product_subcategories
