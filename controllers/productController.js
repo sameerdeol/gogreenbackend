@@ -392,6 +392,18 @@ const getproductbybrandID = (req, res) => {
 };
 
 
+const bestSellProducts = (req, res) => {
+    const {user_id} = req.body;
+
+    Product.findBestSell(user_id, (err, product) => {
+        if (err || !product) {
+            return res.status(404).json({ success: false, message: 'Product not found' });
+        }
+        res.status(200).json({ success: true, product });
+    });
+};
+
+
 // Export multer upload as a middleware and role check as well
 module.exports = {
     uploadFields,
@@ -407,5 +419,6 @@ module.exports = {
     getallproductsbyvendorID,
     getsingleproductsbyvendorID,
     getproductbycatvenID,
-    getproductbybrandID
+    getproductbybrandID,
+    bestSellProducts
 };

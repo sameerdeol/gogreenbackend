@@ -18,7 +18,8 @@ const {
     getProductsByType,
     getproductbycatgeoryID,
     getproductbycatvenID,
-    getproductbybrandID
+    getproductbybrandID,
+    bestSellProducts
 } = require('../controllers/productController');
 
 // Route to create a new product - only managers can create products
@@ -59,5 +60,7 @@ router.post('/productbycategoryid', verifyToken,getproductbycatgeoryID);
 router.post('/productbycat-vendorId', verifyToken, getproductbycatvenID);
 
 //get product by brand id
-router.post('/productbybrandID', getproductbybrandID);
+router.post('/productbybrandID', verifyToken, getproductbybrandID);
+
+router.post('/bestsellerproducts', bestSellProducts);
 module.exports = router;

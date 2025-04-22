@@ -524,9 +524,41 @@ const Product = {
                 });
             });
         });
-    }
+    },
 
-
+    findBestSell: (userId, callback) => {
+    
+        const sql = `
+            SELECT 
+                p.*, 
+                c.name AS category_name, 
+                s.name AS sub_category_name, 
+                b.name AS brand_name, 
+                b.categoryid AS brand_categoryid, 
+                b.brand_logo AS brandlogo, 
+                b.description AS brand_description, 
+                IFNULL(d.discount_percent, 0) AS discount_percent,
+                ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
+                CASE 
+                    WHEN f.product_id IS NOT NULL THEN TRUE 
+                    ELSE FALSE 
+                END AS is_favourite 
+            FROM (
+                SELECT product_id
+                FROM order_items
+                GROUP BY product_id
+                ORDER BY COUNT(*) DESC
+                LIMIT 5
+            ) AS top_products
+            JOIN products p ON p.id = top_products.product_id
+            LEFT JOIN product_categories c ON p.category_id = c.id 
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id 
+            LEFT JOIN product_brands b ON p.brand_id = b.id 
+            LEFT JOIN product_discounts d ON p.id = d.product_id
+            LEFT JOIN favourite_products f ON p.id = f.product_id AND f.user_id =?;
+        `;
+        db.query(sql, [userId], callback);
+    },
 
     
 };
