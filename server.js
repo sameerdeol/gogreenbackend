@@ -16,6 +16,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const searchRoutes = require('./routes/searchRoutes')
 const productDiscount = require('./routes/productDiscount')
 const notificationRoutes = require('./routes/notificationRoutes');
+const chatbotRoutes = require('./routes/chatbotRoutes');
 const app = express();
 
 // Middleware
@@ -37,6 +38,7 @@ app.use("/", orderRoutes);
 app.use("/", searchRoutes);
 app.use("/", productDiscount);
 app.use("/", notificationRoutes);
+app.use('/', chatbotRoutes); // Now your chatbot is at /api/chatbot
 
 
 // Start Server
