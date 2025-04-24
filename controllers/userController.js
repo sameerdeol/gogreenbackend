@@ -6,6 +6,7 @@ const path = require('path');
 const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
 const UserFcmToken = require('../models/fcmTokenModel');
 const sendNotification = require('../middleware/sendNotification');
+const verifyGoogleIdToken = require('../middleware/googleAuthToken');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
 
@@ -214,79 +215,134 @@ const verifyUser = (req, res) => {
 
 const vendorRiderSignup = async (req, res) => {
     try {
-        const { firstname, lastname, email, password, role_id, phonenumber, prefix } = req.body;
-        const is_verified = 0;
-        const { username } = generateUniqueUsername(firstname, phonenumber); // Generate unique username
-
-        // 1️⃣ Check if email already exists
-        User.findByEmail(email, async (err, existingUser) => {
-            if (err) {
-                return res.status(500).json({
-                    success: false,
-                    message: 'Server error while checking existing user',
-                    error: err.message
-                });
-            }
-
-            if (existingUser) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'A user with this email already exists'
-                });
-            }
-
-            // 2️⃣ Hash password before storing
-            const hashedPassword = await bcrypt.hash(password, 10);
-
-            // 3️⃣ Insert into `users` table (No `user_roles`)
-            const userData = {
-                username: username,
-                firstname: firstname,
-                lastname: lastname,
-                password: hashedPassword, // Make sure password is hashed before passing
-                prefix: prefix,
-                phonenumber: phonenumber,
-                email: email,
-                role_id: role_id,
-                is_verified:is_verified
-            };
-
-            User.insertUser(userData, (err, userResult) => {
-                if (err) {
-                    return res.status(500).json({
-                        success: false,
-                        message: 'Server error while inserting user',
-                        error: err.message
-                    });
-                }
-
-                // 4️⃣ Generate JWT Token
-                const token = jwt.sign(
-                    { user_id: userResult.insertId, username, email, role_id, firstname,  lastname},
-                    process.env.JWT_SECRET,
-                );
-
-                return res.status(201).json({
-                    success: true,
-                    message: 'User created successfully',
-                    token
-                });
-            });
-        });
-    } catch (error) {
-        return res.status(500).json({
+      const {
+        firstname,
+        lastname,
+        email,
+        password,
+        role_id,
+        phonenumber,
+        prefix,
+        googleauthToken,
+      } = req.body;
+  
+      let finalEmail = email;
+      let finalFirstname = firstname;
+      let finalLastname = lastname;
+      let finalPassword = password;
+      let hashedPassword = null;
+  
+      // 1️⃣ If Google Token Exists: Verify and extract info
+      if (googleauthToken) {
+        try {
+          const decoded = await verifyGoogleIdToken(googleauthToken);
+  
+          finalEmail = decoded.email;
+          finalFirstname = decoded.name?.split(" ")[0] || "User";
+          finalLastname = decoded.name?.split(" ")[1] || "";
+  
+          // 2️⃣ Use `user_id` from decoded token as the password and hash it
+          finalPassword = decoded.user_id || "defaultUserID";  // Fallback if user_id is missing
+          hashedPassword = await bcrypt.hash(finalPassword, 10);  // Hash the user_id to store as password
+        } catch (err) {
+          return res.status(401).json({ success: false, message: "Invalid Google token" });
+        }
+      } else {
+        // 3️⃣ Normal signup: hash the password
+        if (!password || password.trim() === "") {
+          return res.status(400).json({ success: false, message: "Password is required" });
+        }
+        hashedPassword = await bcrypt.hash(password, 10);
+      }
+  
+      const is_verified = 0;
+      const { username } = generateUniqueUsername(finalFirstname, phonenumber);
+  
+      // 4️⃣ Check if email already exists
+      User.findByEmail(finalEmail, (err, existingUser) => {
+        if (err) {
+          return res.status(500).json({
             success: false,
-            message: 'Internal server error',
-            error: error.message
+            message: "Server error while checking existing user",
+            error: err.message,
+          });
+        }
+  
+        if (existingUser) {
+          return res.status(400).json({
+            success: false,
+            message: "A user with this email already exists",
+          });
+        }
+  
+        // 5️⃣ Insert into users table
+        const userData = {
+          username,
+          firstname: finalFirstname,
+          lastname: finalLastname,
+          password: hashedPassword,  // Store hashed password
+          prefix,
+          phonenumber,
+          email: finalEmail,
+          role_id,
+          is_verified,
+        };
+  
+        User.insertUser(userData, (err, userResult) => {
+          if (err) {
+            return res.status(500).json({
+              success: false,
+              message: "Server error while inserting user",
+              error: err.message,
+            });
+          }
+  
+          // 6️⃣ Generate JWT
+          const token = jwt.sign(
+            {
+              user_id: userResult.insertId,
+              username,
+              email: finalEmail,
+              role_id,
+              firstname: finalFirstname,
+              lastname: finalLastname,
+            },
+            process.env.JWT_SECRET
+          );
+  
+          return res.status(201).json({
+            success: true,
+            message: "User created successfully",
+            token,
+          });
         });
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      });
     }
-};
+  };
+
 
 const vendorRiderLogin = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, googleauthToken } = req.body;
+        let finalemail = email;
+        let finalpassword = password;
+        if (googleauthToken) {
+            try {
+              const decoded = await verifyGoogleIdToken(googleauthToken);
+              finalemail = decoded.email;
+              finalpassword = decoded.user_id;
+            } catch (err) {
+              return res.status(401).json({ success: false, message: "Invalid Google token" });
+            }
+          } 
 
-        User.findByEmailForVendorRider(email, async (err, results) => {
+        User.findByEmailForVendorRider(finalemail, async (err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Internal server error', error: err });
             }
@@ -297,7 +353,7 @@ const vendorRiderLogin = async (req, res) => {
 
             const user = results.user;
             // ✅ Validate password
-            const isValid = await bcrypt.compare(password, user.password);
+            const isValid = await bcrypt.compare(finalpassword, user.password);
             if (!isValid) {
                 return res.status(401).json({ success: false, message: 'Invalid credentials' });
             }

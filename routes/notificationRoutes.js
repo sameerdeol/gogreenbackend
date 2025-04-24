@@ -8,7 +8,7 @@ const {
 } = require('../controllers/notificationController');
 
 // Save FCM token
-router.post('/userfcm-token',verifyToken, saveFcmToken);
+router.post('/userfcm-token', saveFcmToken);
 
 // Send test notification
 router.post('/send-notification', sendNotification);
