@@ -686,5 +686,32 @@ const workerStatus = (req, res) => {
 };
 
 
+const allVendors = (req, res) => {
+    User.allVendors((err, users) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: 'Database error',
+                error: err
+            });
+        }
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP};
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No vendors found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Vendors retrieved successfully',
+            data: users
+        });
+    });
+};
+
+
+
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors};

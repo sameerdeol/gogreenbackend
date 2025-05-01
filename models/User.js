@@ -445,6 +445,27 @@ const User = {
         });
     },
 
+    allVendors: (callback) => {
+        const sql = `
+            SELECT 
+                u.firstname, u.lastname, u.email, u.prefix, u.phonenumber,
+                v.store_address, v.sin_code, v.store_name, v.profile_pic
+            FROM users u
+            JOIN vendors v ON v.user_id = u.id
+            WHERE u.is_verified = 1 AND u.status = 1;
+            ;
+        `;
+    
+        db.query(sql, (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return callback(err, null);
+            }
+            return callback(null, results);
+        });
+    },
+    
+
 };
 
 module.exports = User;
