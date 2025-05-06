@@ -458,7 +458,7 @@ const User = {
                 v.sin_code, 
                 v.store_name, 
                 v.profile_pic, 
-                v.user_id,
+                v.user_id as vendor_id,
                 v.vendor_timing,  -- Added missing comma here
                 IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
             FROM users u
