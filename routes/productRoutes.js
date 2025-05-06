@@ -63,4 +63,5 @@ router.post('/productbycat-vendorId', verifyToken, getproductbycatvenID);
 router.post('/productbybrandID', verifyToken, getproductbybrandID);
 
 router.post('/bestsellerproducts', verifyToken, bestSellProducts);
+
 module.exports = router;
