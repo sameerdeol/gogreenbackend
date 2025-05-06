@@ -92,10 +92,10 @@ const searchProduct = {
 
     const query = `
       SELECT 'product' AS type, p.id, 
-             p.name COLLATE utf8mb4_general_ci AS name, 
-             p.description COLLATE utf8mb4_general_ci AS description, 
-             NULL AS extra, 
-             NULL AS is_favourite
+            p.name COLLATE utf8mb4_general_ci AS name, 
+            p.description COLLATE utf8mb4_general_ci AS description, 
+            NULL AS extra, 
+            NULL AS is_favourite
       FROM products p
       JOIN product_categories c ON p.category_id = c.id
       WHERE p.name LIKE ? COLLATE utf8mb4_general_ci OR c.name LIKE ? COLLATE utf8mb4_general_ci
@@ -103,28 +103,30 @@ const searchProduct = {
       UNION ALL
 
       SELECT 'category' AS type, id, 
-             name COLLATE utf8mb4_general_ci AS name, 
-             description COLLATE utf8mb4_general_ci AS description, 
-             NULL, NULL
+            name COLLATE utf8mb4_general_ci AS name, 
+            description COLLATE utf8mb4_general_ci AS description, 
+            NULL AS extra, 
+            NULL AS is_favourite
       FROM product_categories
       WHERE name LIKE ? COLLATE utf8mb4_general_ci
 
       UNION ALL
 
       SELECT 'subcategory' AS type, id, 
-             name COLLATE utf8mb4_general_ci AS name, 
-             description COLLATE utf8mb4_general_ci AS description, 
-             category_id, NULL
+            name COLLATE utf8mb4_general_ci AS name, 
+            description COLLATE utf8mb4_general_ci AS description, 
+            category_id AS extra, 
+            NULL AS is_favourite
       FROM product_subcategories
       WHERE name LIKE ? COLLATE utf8mb4_general_ci
 
       UNION ALL
 
       SELECT 'vendor_by_name' AS type, u.id, 
-             v.store_name COLLATE utf8mb4_general_ci AS store_name, 
-             v.store_address COLLATE utf8mb4_general_ci AS store_address, 
-             v.profile_pic COLLATE utf8mb4_general_ci AS profile_pic,
-             IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
+            v.store_name COLLATE utf8mb4_general_ci AS name, 
+            v.store_address COLLATE utf8mb4_general_ci AS description, 
+            v.profile_pic COLLATE utf8mb4_general_ci AS extra,
+            IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
       FROM users u 
       JOIN vendors v ON v.user_id = u.id 
       LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
@@ -132,11 +134,11 @@ const searchProduct = {
 
       UNION ALL
 
-      SELECT 'vendor_by_product' AS type, u.id, 
-             v.store_name COLLATE utf8mb4_general_ci AS store_name, 
-             v.store_address COLLATE utf8mb4_general_ci AS store_address, 
-             v.profile_pic COLLATE utf8mb4_general_ci AS profile_pic,
-             IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
+      SELECT DISTINCT 'vendor_by_product' AS type, u.id, 
+            v.store_name COLLATE utf8mb4_general_ci AS name, 
+            v.store_address COLLATE utf8mb4_general_ci AS description, 
+            v.profile_pic COLLATE utf8mb4_general_ci AS extra,
+            IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
       FROM products p
       JOIN vendors v ON p.vendor_id = v.user_id
       JOIN users u ON v.user_id = u.id
