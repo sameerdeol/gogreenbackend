@@ -152,7 +152,20 @@ const searchProduct = {
       user_id, likeSearchTerm         // vendor by product
     ];
 
-    db.query(query, values, callback);
+    db.query(query, values, (err, results) => {
+      if (err) return callback(err, null);
+    
+      // Group by type
+      const groupedResults = results.reduce((acc, item) => {
+        if (!acc[item.type]) {
+          acc[item.type] = [];
+        }
+        acc[item.type].push(item);
+        return acc;
+      }, {});
+    
+      return callback(null, groupedResults);
+    });
   }
 };
 
