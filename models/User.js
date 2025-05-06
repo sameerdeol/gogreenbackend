@@ -448,12 +448,23 @@ const User = {
     allVendors: (callback) => {
         const sql = `
             SELECT 
-                u.firstname, u.lastname, u.email, u.prefix, u.phonenumber,
-                v.store_address, v.sin_code, v.store_name, v.profile_pic
+                u.firstname, 
+                u.lastname, 
+                u.email, 
+                u.prefix, 
+                u.phonenumber,
+                u.status,
+                v.store_address, 
+                v.sin_code, 
+                v.store_name, 
+                v.profile_pic, 
+                v.user_id,
+                v.vendor_timing,  -- Added missing comma here
+                IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
             FROM users u
             JOIN vendors v ON v.user_id = u.id
-            WHERE u.is_verified = 1 AND u.status = 1;
-            ;
+            LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = u.id
+            WHERE u.is_verified = 1;
         `;
     
         db.query(sql, (err, results) => {
