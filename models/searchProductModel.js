@@ -93,7 +93,8 @@ const searchProduct = {
     const query = `
       SELECT 'product' AS type, p.id, 
             p.name COLLATE utf8mb4_general_ci AS name, 
-            p.description COLLATE utf8mb4_general_ci AS description, 
+            p.description COLLATE utf8mb4_general_ci AS description,
+            p.featured_image COLLATE utf8mb4_general_ci AS image, 
             NULL AS extra, 
             NULL AS is_favourite
       FROM products p
@@ -104,7 +105,8 @@ const searchProduct = {
 
       SELECT 'category' AS type, id, 
             name COLLATE utf8mb4_general_ci AS name, 
-            description COLLATE utf8mb4_general_ci AS description, 
+            description COLLATE utf8mb4_general_ci AS description,
+            category_logo COLLATE utf8mb4_general_ci AS image,  
             NULL AS extra, 
             NULL AS is_favourite
       FROM product_categories
@@ -115,6 +117,7 @@ const searchProduct = {
       SELECT 'subcategory' AS type, id, 
             name COLLATE utf8mb4_general_ci AS name, 
             description COLLATE utf8mb4_general_ci AS description, 
+            subcategory_logo COLLATE utf8mb4_general_ci AS image,
             category_id AS extra, 
             NULL AS is_favourite
       FROM product_subcategories
@@ -125,7 +128,8 @@ const searchProduct = {
       SELECT 'vendor_by_name' AS type, u.id, 
             v.store_name COLLATE utf8mb4_general_ci AS name, 
             v.store_address COLLATE utf8mb4_general_ci AS description, 
-            v.profile_pic COLLATE utf8mb4_general_ci AS extra,
+            v.profile_pic COLLATE utf8mb4_general_ci AS image,
+            NULL AS extra, 
             IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
       FROM users u 
       JOIN vendors v ON v.user_id = u.id 
@@ -137,7 +141,8 @@ const searchProduct = {
       SELECT DISTINCT 'vendor_by_product' AS type, u.id, 
             v.store_name COLLATE utf8mb4_general_ci AS name, 
             v.store_address COLLATE utf8mb4_general_ci AS description, 
-            v.profile_pic COLLATE utf8mb4_general_ci AS extra,
+            v.profile_pic COLLATE utf8mb4_general_ci AS image,
+            NULL AS extra, 
             IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
       FROM products p
       JOIN vendors v ON p.vendor_id = v.user_id

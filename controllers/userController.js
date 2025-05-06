@@ -687,7 +687,8 @@ const workerStatus = (req, res) => {
 
 
 const allVendors = (req, res) => {
-    User.allVendors((err, users) => {
+    const {user_id} = req.body;
+    User.allVendors(user_id,(err, users) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({

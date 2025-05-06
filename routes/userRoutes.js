@@ -53,7 +53,7 @@ router.post(['/vendor-profile', '/rider-profile', '/customer-profile'], verifyTo
 router.post(['/vendor-status', '/rider-status'], verifyToken,workerStatus);
 router.post(['/send-vendorOtp', '/send-riderOtp'], verifyToken ,sendOTP);
 router.post(['/reset-vendorPwd', '/send-riderPwd'], verifyToken ,resetPassword);
-router.get(['/all-vendors'], verifyToken, allVendors);
+router.post(['/all-vendors'], verifyToken, allVendors);
 
 /**
  * User Management Routes (Protected)

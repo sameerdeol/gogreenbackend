@@ -445,7 +445,7 @@ const User = {
         });
     },
 
-    allVendors: (callback) => {
+    allVendors: (user_id, callback) => {
         const sql = `
             SELECT 
                 u.firstname, 
@@ -459,24 +459,22 @@ const User = {
                 v.store_name, 
                 v.profile_pic, 
                 v.user_id as vendor_id,
-                v.vendor_timing,  -- Added missing comma here
+                v.vendor_timing,
                 IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
             FROM users u
             JOIN vendors v ON v.user_id = u.id
-            LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = u.id
+            LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
             WHERE u.is_verified = 1;
         `;
     
-        db.query(sql, (err, results) => {
+        db.query(sql, [user_id], (err, results) => {
             if (err) {
                 console.error("Database error:", err);
                 return callback(err, null);
             }
             return callback(null, results);
         });
-    },
-    
-
+    } 
 };
 
 module.exports = User;
