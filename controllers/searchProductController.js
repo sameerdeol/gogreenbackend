@@ -1,12 +1,12 @@
 const searchProductModel = require('../models/searchProductModel');
 
 const searchProduct = (req, res) => {
-    const { searchstring,searchNum } = req.body;
+    const { searchstring, searchNum, user_id } = req.body;
     if (!searchstring) {
         return res.status(400).json({ success: false, message: 'Search string is required.' });
     }
 
-    searchProductModel.search(searchstring, searchNum, (err, result) => {
+    searchProductModel.search(searchstring, searchNum, user_id, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error searching products', error: err });
         }
@@ -21,12 +21,12 @@ const searchProduct = (req, res) => {
 };
 
 const vendorbySearchProduct = (req, res) => {
-    const { searchstring, searchNum } = req.body;
+    const { searchstring, searchNum, user_id } = req.body;
     if (!searchstring) {
         return res.status(400).json({ success: false, message: 'Search string is required.' });
     }
 
-    searchProductModel.search(searchstring, searchNum,  (err, result) => {
+    searchProductModel.search(searchstring, searchNum,user_id,  (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error searching vendors', error: err });
         }
