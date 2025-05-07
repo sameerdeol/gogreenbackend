@@ -154,23 +154,26 @@ const searchProduct = {
     // Search vendors by category name
     if (!searchtype || searchtype === 'category') {
       queries.push(`
-        SELECT DISTINCT 'vendor' AS type, u.id,
-              v.store_name COLLATE utf8mb4_general_ci AS name,
-              v.store_address COLLATE utf8mb4_general_ci AS description,
-              (
-                SELECT p.featured_image 
-                FROM products p2 
-                WHERE p2.vendor_id = v.user_id 
-                LIMIT 1
-              ) COLLATE utf8mb4_general_ci AS image,
-              NULL AS extra,
-              IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
+        SELECT 
+          'vendor' AS type,
+          u.id,
+          v.store_name COLLATE utf8mb4_general_ci AS name,
+          v.store_address COLLATE utf8mb4_general_ci AS description,
+          (
+            SELECT p2.featured_image 
+            FROM products p2 
+            WHERE p2.vendor_id = v.user_id 
+            LIMIT 1
+          ) COLLATE utf8mb4_general_ci AS image,
+          NULL AS extra,
+          IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
         FROM product_categories c
         JOIN products p ON p.category_id = c.id
         JOIN vendors v ON p.vendor_id = v.user_id
         JOIN users u ON v.user_id = u.id
         LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
         WHERE c.name LIKE ? COLLATE utf8mb4_general_ci
+        GROUP BY v.user_id
       `);
       values.push(user_id, likeSearchTerm);
     }
@@ -178,23 +181,26 @@ const searchProduct = {
     // Search vendors by subcategory name
     if (!searchtype || searchtype === 'subcategory') {
       queries.push(`
-        SELECT DISTINCT 'vendor' AS type, u.id,
-              v.store_name COLLATE utf8mb4_general_ci AS name,
-              v.store_address COLLATE utf8mb4_general_ci AS description,
-              (
-                SELECT p.featured_image 
-                FROM products p2 
-                WHERE p2.vendor_id = v.user_id 
-                LIMIT 1
-              ) COLLATE utf8mb4_general_ci AS image,
-              NULL AS extra,
-              IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
+        SELECT 
+          'vendor' AS type,
+          u.id,
+          v.store_name COLLATE utf8mb4_general_ci AS name,
+          v.store_address COLLATE utf8mb4_general_ci AS description,
+          (
+            SELECT p2.featured_image 
+            FROM products p2 
+            WHERE p2.vendor_id = v.user_id 
+            LIMIT 1
+          ) COLLATE utf8mb4_general_ci AS image,
+          NULL AS extra,
+          IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
         FROM product_subcategories s
-        JOIN products p ON p.subcategory_id = s.id
+        JOIN products p ON p.sub_category = s.id
         JOIN vendors v ON p.vendor_id = v.user_id
         JOIN users u ON v.user_id = u.id
         LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
         WHERE s.name LIKE ? COLLATE utf8mb4_general_ci
+        GROUP BY v.user_id
       `);
       values.push(user_id, likeSearchTerm);
     }
