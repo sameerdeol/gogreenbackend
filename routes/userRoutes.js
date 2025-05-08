@@ -15,7 +15,8 @@ const {
     workerStatus,
     sendOTP,
     resetPassword,
-    allVendors
+    allVendors,
+    verifyOtp
 } = require('../controllers/userController');
 
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -52,6 +53,7 @@ router.post(['/vendor-signup', '/rider-signup'], vendorRiderSignup);
 router.post(['/vendor-profile', '/rider-profile', '/customer-profile'], verifyToken,workersProfile);
 router.post(['/vendor-status', '/rider-status'], verifyToken,workerStatus);
 router.post(['/send-vendorOtp', '/send-riderOtp'], sendOTP);
+router.post(['/verifyotp'], verifyOtp);
 router.post(['/reset-vendorPwd', '/reset-riderPwd'], resetPassword);
 router.post(['/all-vendors'], verifyToken, allVendors);
 

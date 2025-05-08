@@ -97,24 +97,40 @@ const User = {
     },
 
     storeOTP: (email, otp, expiresAt, callback) => {
-        // Delete any existing OTP entries for this email
+        // Delete any existing OTP entries for this email (including the flag state)
         const deleteQuery = 'DELETE FROM password_resets_otp WHERE email = ?';
         db.query(deleteQuery, [email], (deleteErr) => {
             if (deleteErr) return callback(deleteErr);
     
-            const insertQuery = 'INSERT INTO password_resets_otp (email, otp, expires_at) VALUES (?, ?, ?)';
-            db.query(insertQuery, [email, otp, expiresAt], callback);
+            // Insert OTP along with flag (flag = 0 means not used)
+            const insertQuery = 'INSERT INTO password_resets_otp (email, otp, expires_at, verified) VALUES (?, ?, ?, ?)';
+            db.query(insertQuery, [email, otp, expiresAt, 0], callback);  // flag set to 0 (unused)
         });
     },
+    
     verifyOTP: (email, otp, callback) => {
+        // Query to verify OTP and check if it hasn't been used (flag = 0)
         const query = `SELECT * FROM password_resets_otp 
-                       WHERE email = ? AND otp = ? AND expires_at > NOW()
+                       WHERE email = ? AND otp = ? AND expires_at > NOW() AND verified = 0
                        ORDER BY id DESC LIMIT 1`;
         db.query(query, [email, otp], (err, results) => {
             if (err) return callback(err, null);
-            callback(null, results[0] || null);
+            // If no result, the OTP might have expired or been already used
+            if (results.length === 0) {
+                return callback(null, null);  // OTP expired or already used
+            }
+    
+            // OTP is valid and hasn't been used, so return it
+            callback(null, results[0]);
         });
     },
+    
+    // To mark OTP as used once it has been verified
+    markOTPAsUsed: (email, otp, callback) => {
+        const updateQuery = 'UPDATE password_resets_otp SET verified = 1 WHERE email = ? AND otp = ?';
+        db.query(updateQuery, [email, otp], callback);
+    },
+    
 
     updateUser: (user_id, role_id, userData, callback) => {
         // Step 1: Allow updates only for certain roles (1, 2)

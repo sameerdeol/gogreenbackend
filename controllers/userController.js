@@ -490,7 +490,7 @@ const sendOTP = (req, res) => {
 
     User.findByEmail(email, (err, user) => {
         if (err || !user) return res.status(404).json({ success: false, message: 'User not found' });
-    console.log(otp)
+    console.log(user)
         User.storeOTP(email, otp, expiresAt, (err) => {
             if (err) return res.status(500).json({ success: false, message: 'Error storing OTP' });
 
@@ -519,52 +519,84 @@ const sendOTP = (req, res) => {
     });
 };
 
+// VERIFY OTP before allowing reset
+const verifyOtp = (req, res) => {
+    const { email, otp } = req.body;
+
+    User.verifyOTP(email, otp, (err, record) => {
+        if (err || !record) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        }
+
+        res.json({ success: true, message: 'OTP verified successfully' });
+    });
+};
+
+
 // RESET password using OTP
 const resetPassword = (req, res) => {
     const { email, otp, new_password } = req.body;
 
-    User.verifyOTP(email, otp, (err, record) => {
-        if (err || !record) return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+    // Verify OTP first
+    User.verifyOTP(email, otp, (err, otpRecord) => {
+        if (err || !otpRecord) {
+            return res.status(400).json({ success: false, message: 'already used,invalid or expired OTP' });
+        }
 
-        User.findByEmail(email, (err, user) => {
-            if (err || !user) return res.status(404).json({ success: false, message: 'User not found' });
+        // OTP is valid, mark it as used
+        User.markOTPAsUsed(email, otp, (err) => {
+            if (err) {
+                console.error('Error marking OTP as used:', err);
+                return res.status(500).json({ success: false, message: 'Error marking OTP as used' });
+            }
 
-            User.updatePassword(user.id, new_password, (err) => {
-                if (err) return res.status(500).json({ success: false, message: 'Error resetting password' });
+            // Continue with the rest of the password reset process
+            User.findByEmail(email, (err, user) => {
+                if (err || !user) {
+                    return res.status(404).json({ success: false, message: 'User not found' });
+                }
 
-                // ✅ Send email after password reset
-                const transporter = nodemailer.createTransport({
-                    host: process.env.SMTP_HOST,
-                    port: process.env.SMTP_PORT,
-                    secure: process.env.SMTP_PORT === '465',
-                    auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASS,
-                    },
-                });
-
-                const mailOptions = {
-                    from: process.env.EMAIL_USER,
-                    to: email,
-                    subject: 'Password Reset Confirmation',
-                    text: `Hi ${user.firstname || 'User'},\n\nYour password has been reset successfully. If this wasn't you, please contact support immediately.`,
-                };
-
-                transporter.sendMail(mailOptions, (error, info) => {
-                    if (error) {
-                        console.error('❌ Error sending confirmation email:', error);
-                        return res.status(500).json({
-                            success: true,
-                            message: 'Password reset successfully, but failed to send confirmation email.',
-                        });
+                // Update the user's password
+                User.updatePassword(user.id, new_password, (err) => {
+                    if (err) {
+                        return res.status(500).json({ success: false, message: 'Error resetting password' });
                     }
 
-                    res.json({ success: true, message: 'Password reset successfully and confirmation email sent.' });
+                    // Send confirmation email
+                    const transporter = nodemailer.createTransport({
+                        host: process.env.SMTP_HOST,
+                        port: process.env.SMTP_PORT,
+                        secure: process.env.SMTP_PORT === '465',
+                        auth: {
+                            user: process.env.EMAIL_USER,
+                            pass: process.env.EMAIL_PASS,
+                        },
+                    });
+
+                    const mailOptions = {
+                        from: process.env.EMAIL_USER,
+                        to: email,
+                        subject: 'Password Reset Confirmation',
+                        text: `Hi ${user.firstname || 'User'},\n\nYour password has been reset successfully. If this wasn't you, please contact support immediately.`,
+                    };
+
+                    transporter.sendMail(mailOptions, (error) => {
+                        if (error) {
+                            console.error('❌ Error sending confirmation email:', error);
+                            return res.status(500).json({
+                                success: true,
+                                message: 'Password reset, but failed to send confirmation email.',
+                            });
+                        }
+
+                        res.json({ success: true, message: 'Password reset successfully and confirmation email sent.' });
+                    });
                 });
             });
         });
     });
 };
+
 
 const updateWorkersProfile = (req, res) => {
     const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob } = req.body;
@@ -715,4 +747,4 @@ const allVendors = (req, res) => {
 
 
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors};
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp};
