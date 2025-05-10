@@ -267,11 +267,14 @@ const vendorRiderSignup = async (req, res) => {
             error: err.message,
           });
         }
-  
+        if(existingUser.is_verified == 0){
+            is_registered = true;
+        }
         if (existingUser) {
           return res.status(400).json({
             success: false,
             message: "A user with this email already exists",
+            registered :is_registered
           });
         }
   
