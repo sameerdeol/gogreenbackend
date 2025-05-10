@@ -268,7 +268,7 @@ const vendorRiderSignup = async (req, res) => {
           });
         }
         if(existingUser.is_verified == 0){
-            is_registered = true;
+            is_registered = false;
         }
         if (existingUser) {
           return res.status(400).json({
