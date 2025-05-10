@@ -69,13 +69,15 @@ const User = {
             const isVerified = !!user.is_verified; // ✅ Cleaner boolean conversion
     
             if (!isVerified) {
-                return callback(null, { success: false, message: "Your application is under review" });
+                // If not verified, return success but with message for under review
+                return callback(null, { success: true, message: "Your application is under review" });
             }
     
             // If the user is verified, send a success message
             return callback(null, { success: true, user, message: "Your application is approved" });
         });
     },
+    
        
 
     findByEmailOrPhone : (email, phonenumber, callback) => {

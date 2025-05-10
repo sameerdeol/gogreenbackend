@@ -327,55 +327,56 @@ const vendorRiderSignup = async (req, res) => {
   };
 
 
-const vendorRiderLogin = async (req, res) => {
+  const vendorRiderLogin = async (req, res) => {
     try {
         const { email, password, googleauthToken } = req.body;
         let finalemail = email;
         let finalpassword = password;
         if (googleauthToken) {
             try {
-              const decoded = await verifyGoogleIdToken(googleauthToken);
-              finalemail = decoded.email;
-              finalpassword = decoded.user_id;
+                const decoded = await verifyGoogleIdToken(googleauthToken);
+                finalemail = decoded.email;
+                finalpassword = decoded.user_id;
             } catch (err) {
-              return res.status(401).json({ success: false, message: "Invalid Google token" });
+                return res.status(401).json({ success: false, message: "Invalid Google token" });
             }
-          } 
+        }
 
-          User.findByEmailForVendorRider(finalemail, async (err, results) => {
+        User.findByEmailForVendorRider(finalemail, async (err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Internal server error', error: err });
             }
-        
+
             if (!results || !results.success) {
                 return res.status(404).json({ success: false, message: results?.message || 'User not found' });
             }
-        
+
             const user = results.user;
             const applicationMessage = results.message || ''; // Get the message from the results
             if (applicationMessage) {
-                return res.status(400).json({ success: false, message: applicationMessage });
+                // If the application is under review, send a 200 with the message or a 401 with the message
+                return res.status(200).json({ success: true, message: applicationMessage });
             }
-        
+
             // ✅ Validate password
             const isValid = await bcrypt.compare(finalpassword, user.password);
             if (!isValid) {
                 return res.status(401).json({ success: false, message: 'Invalid credentials' });
             }
-        
+
             // ✅ Generate JWT token with expiration
             const token = jwt.sign(
                 { id: user.id, role_id: user.role_id, username: user.username, firstname: user.firstname, lastname: user.lastname, email: user.email, phonenumber: user.phonenumber },
                 process.env.JWT_SECRET
             );
-        
+
             return res.json({ success: true, message: 'Login successful', token });
         });
-        
     } catch (error) {
         return res.status(500).json({ success: false, message: 'Authentication error', error });
     }
 };
+
 
 
 
