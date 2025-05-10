@@ -69,7 +69,7 @@ const User = {
             const isVerified = !!user.is_verified; // ✅ Cleaner boolean conversion
     
             if (!isVerified) {
-                return callback(null, { success: true, message: "Your application is under review" });
+                return callback(null, { success: false, message: "Your application is under review" });
             }
     
             return callback(null, { success: true, user });
