@@ -72,9 +72,11 @@ const User = {
                 return callback(null, { success: false, message: "Your application is under review" });
             }
     
-            return callback(null, { success: true, user });
+            // If the user is verified, send a success message
+            return callback(null, { success: true, user, message: "Your application is approved" });
         });
-    },    
+    },
+       
 
     findByEmailOrPhone : (email, phonenumber, callback) => {
         const query = `SELECT * FROM users WHERE email = ? OR phonenumber = ?`;

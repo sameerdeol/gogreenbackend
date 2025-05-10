@@ -342,30 +342,36 @@ const vendorRiderLogin = async (req, res) => {
             }
           } 
 
-        User.findByEmailForVendorRider(finalemail, async (err, results) => {
+          User.findByEmailForVendorRider(finalemail, async (err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Internal server error', error: err });
             }
-
+        
             if (!results || !results.success) {
                 return res.status(404).json({ success: false, message: results?.message || 'User not found' });
             }
-
+        
             const user = results.user;
+            const applicationMessage = results.message || ''; // Get the message from the results
+            if (applicationMessage) {
+                return res.status(400).json({ success: false, message: applicationMessage });
+            }
+        
             // ✅ Validate password
             const isValid = await bcrypt.compare(finalpassword, user.password);
             if (!isValid) {
                 return res.status(401).json({ success: false, message: 'Invalid credentials' });
             }
-
+        
             // ✅ Generate JWT token with expiration
             const token = jwt.sign(
-                { id: user.id, role_id: user.role_id, username: user.username, firstname:user.firstname, lastname:user.lastname, email:user.email, phonenumber:user.phonenumber },
+                { id: user.id, role_id: user.role_id, username: user.username, firstname: user.firstname, lastname: user.lastname, email: user.email, phonenumber: user.phonenumber },
                 process.env.JWT_SECRET
             );
-
+        
             return res.json({ success: true, message: 'Login successful', token });
         });
+        
     } catch (error) {
         return res.status(500).json({ success: false, message: 'Authentication error', error });
     }
