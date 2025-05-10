@@ -213,8 +213,8 @@ const verifyUser = (req, res) => {
 };
 
 
-const vendorRiderSignup = async (req, res) => {
-    try {
+    const vendorRiderSignup = async (req, res) => {
+        try {
         const {
             firstname,
             lastname,
@@ -225,138 +225,119 @@ const vendorRiderSignup = async (req, res) => {
             prefix,
             googleauthToken,
         } = req.body;
-
+    
         let finalEmail = email;
         let finalFirstname = firstname;
         let finalLastname = lastname;
         let finalPassword = password;
         let hashedPassword = null;
-
+    
         // 🔹 Google Signup
         if (googleauthToken) {
             try {
-                const decoded = await verifyGoogleIdToken(googleauthToken);
-                finalEmail = decoded.email;
-                finalFirstname = decoded.name?.split(" ")[0] || "User";
-                finalLastname = decoded.name?.split(" ")[1] || "";
-                finalPassword = decoded.user_id || "defaultUserID";
-                hashedPassword = await bcrypt.hash(finalPassword, 10);
+            const decoded = await verifyGoogleIdToken(googleauthToken);
+            finalEmail = decoded.email;
+            finalFirstname = decoded.name?.split(" ")[0] || "User";
+            finalLastname = decoded.name?.split(" ")[1] || "";
+            finalPassword = decoded.user_id || "defaultUserID";
+            hashedPassword = await bcrypt.hash(finalPassword, 10);
             } catch (err) {
-                return res.status(401).json({
-                    success: false,
-                    message: "Invalid Google token",
-                });
+            return res.status(401).json({ success: false, message: "Invalid Google token" });
             }
         } else {
             if (!password || password.trim() === "") {
-                return res.status(400).json({
-                    success: false,
-                    message: "Password is required",
-                });
+            return res.status(400).json({ success: false, message: "Password is required" });
             }
             hashedPassword = await bcrypt.hash(password, 10);
         }
-
+    
         const { username } = generateUniqueUsername(finalFirstname, phonenumber);
-
-        // 🔎 Check if user already exists
+    
         User.findByEmail(finalEmail, async (err, existingUser) => {
             if (err) {
-                return res.status(500).json({
-                    success: false,
-                    message: "Server error while checking existing user",
-                    error: err.message,
-                });
+            return res.status(500).json({
+                success: false,
+                message: "Server error while checking existing user",
+                error: err.message,
+            });
             }
-
+    
             if (existingUser) {
-                // ✅ Allow access to token and verification status
-                const token = jwt.sign(
-                    {
-                        user_id: existingUser.id,
-                        username: existingUser.username,
-                        email: existingUser.email,
-                        role_id: existingUser.role_id,
-                        firstname: existingUser.firstname,
-                        lastname: existingUser.lastname,
-                        is_verified: existingUser.is_verified,
-                    },
-                    process.env.JWT_SECRET
-                );
-
-                // ❌ Block re-registration with a different role
-                if (existingUser.role_id !== role_id) {
-                    return res.status(409).json({
-                        success: false,
-                        message: `You already have an account as a ${existingUser.role_id === 3 ? "vendor" : "rider"}. You cannot register as a different role.`,
-                        token,
-                        is_verified: existingUser.is_verified,
-                    });
-                }
-
-                // ✅ Same role - just return token
-                return res.status(200).json({
-                    success: true,
-                    message: existingUser.is_verified
-                        ? "User already exists and is verified"
-                        : "User already exists but not verified. Complete profile to proceed",
-                    token,
-                    is_verified: existingUser.is_verified,
+            // 🔹 Always return token even if not verified
+            const token = jwt.sign(
+                {
+                user_id: existingUser.id,
+                username: existingUser.username,
+                email: existingUser.email,
+                role_id: existingUser.role_id,
+                firstname: existingUser.firstname,
+                lastname: existingUser.lastname,
+                is_verified: existingUser.is_verified,
+                },
+                process.env.JWT_SECRET
+            );
+    
+            return res.status(200).json({
+                success: true,
+                message: existingUser.is_verified
+                ? "User already exists and is verified"
+                : "User already exists but not verified. Complete profile to proceed",
+                token,
+                is_verified: existingUser.is_verified,
+            });
+            }
+    
+            // 🔹 Create new user
+            const userData = {
+            username,
+            firstname: finalFirstname,
+            lastname: finalLastname,
+            password: hashedPassword,
+            prefix,
+            phonenumber,
+            email: finalEmail,
+            role_id,
+            is_verified: 0,
+            };
+    
+            User.insertUser(userData, (err, userResult) => {
+            if (err) {
+                return res.status(500).json({
+                success: false,
+                message: "Server error while inserting user",
+                error: err.message,
                 });
             }
-
-            // 🆕 Create new user
-            const userData = {
+    
+            const token = jwt.sign(
+                {
+                user_id: userResult.insertId,
                 username,
-                firstname: finalFirstname,
-                lastname: finalLastname,
-                password: hashedPassword,
-                prefix,
-                phonenumber,
                 email: finalEmail,
                 role_id,
+                firstname: finalFirstname,
+                lastname: finalLastname,
                 is_verified: 0,
-            };
-
-            User.insertUser(userData, (err, userResult) => {
-                if (err) {
-                    return res.status(500).json({
-                        success: false,
-                        message: "Server error while inserting user",
-                        error: err.message,
-                    });
-                }
-
-                const token = jwt.sign(
-                    {
-                        user_id: userResult.insertId,
-                        username,
-                        email: finalEmail,
-                        role_id,
-                        firstname: finalFirstname,
-                        lastname: finalLastname,
-                        is_verified: 0,
-                    },
-                    process.env.JWT_SECRET
-                );
-
-                return res.status(201).json({
-                    success: true,
-                    message: "User created successfully",
-                    token,
-                    is_verified: 0,
-                });
+                },
+                process.env.JWT_SECRET
+            );
+    
+            return res.status(201).json({
+                success: true,
+                message: "User created successfully",
+                token,
+                is_verified: 0,
+            });
             });
         });
-    } catch (error) {
+        } catch (error) {
         return res.status(500).json({
             success: false,
             message: "Internal server error",
             error: error.message,
         });
-    }
-};
-
+        }
+    };
   
 
 
