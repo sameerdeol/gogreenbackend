@@ -38,7 +38,7 @@ router.post('/appsignup', (req, res) => {
 /**
  * Vendor & Rider verification
  */
-router.post(['/vendor-verification', '/rider-verification'], uploadFields, (req, res, next) => {
+router.post(['/vendor-verification', '/rider-verification'],verifyToken, uploadFields, (req, res, next) => {
     if (req.files?.identity_proof?.[0]) {
         req.body.identity_proof = req.files.identity_proof[0].path || null; // ✅ Full URL
     }

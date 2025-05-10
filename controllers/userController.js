@@ -213,121 +213,132 @@ const verifyUser = (req, res) => {
 };
 
 
-const vendorRiderSignup = async (req, res) => {
-    try {
-      const {
-        firstname,
-        lastname,
-        email,
-        password,
-        role_id,
-        phonenumber,
-        prefix,
-        googleauthToken,
-      } = req.body;
-  
-      let finalEmail = email;
-      let finalFirstname = firstname;
-      let finalLastname = lastname;
-      let finalPassword = password;
-      let hashedPassword = null;
-  
-      // 1️⃣ If Google Token Exists: Verify and extract info
-      if (googleauthToken) {
+    const vendorRiderSignup = async (req, res) => {
         try {
-          const decoded = await verifyGoogleIdToken(googleauthToken);
-  
-          finalEmail = decoded.email;
-          finalFirstname = decoded.name?.split(" ")[0] || "User";
-          finalLastname = decoded.name?.split(" ")[1] || "";
-  
-          // 2️⃣ Use `user_id` from decoded token as the password and hash it
-          finalPassword = decoded.user_id || "defaultUserID";  // Fallback if user_id is missing
-          hashedPassword = await bcrypt.hash(finalPassword, 10);  // Hash the user_id to store as password
-        } catch (err) {
-          return res.status(401).json({ success: false, message: "Invalid Google token" });
+        const {
+            firstname,
+            lastname,
+            email,
+            password,
+            role_id,
+            phonenumber,
+            prefix,
+            googleauthToken,
+        } = req.body;
+    
+        let finalEmail = email;
+        let finalFirstname = firstname;
+        let finalLastname = lastname;
+        let finalPassword = password;
+        let hashedPassword = null;
+    
+        // 🔹 Google Signup
+        if (googleauthToken) {
+            try {
+            const decoded = await verifyGoogleIdToken(googleauthToken);
+            finalEmail = decoded.email;
+            finalFirstname = decoded.name?.split(" ")[0] || "User";
+            finalLastname = decoded.name?.split(" ")[1] || "";
+            finalPassword = decoded.user_id || "defaultUserID";
+            hashedPassword = await bcrypt.hash(finalPassword, 10);
+            } catch (err) {
+            return res.status(401).json({ success: false, message: "Invalid Google token" });
+            }
+        } else {
+            if (!password || password.trim() === "") {
+            return res.status(400).json({ success: false, message: "Password is required" });
+            }
+            hashedPassword = await bcrypt.hash(password, 10);
         }
-      } else {
-        // 3️⃣ Normal signup: hash the password
-        if (!password || password.trim() === "") {
-          return res.status(400).json({ success: false, message: "Password is required" });
-        }
-        hashedPassword = await bcrypt.hash(password, 10);
-      }
-  
-      const is_verified = 0;
-      const { username } = generateUniqueUsername(finalFirstname, phonenumber);
-  
-      // 4️⃣ Check if email already exists
-      User.findByEmail(finalEmail, (err, existingUser) => {
-        if (err) {
-          return res.status(500).json({
-            success: false,
-            message: "Server error while checking existing user",
-            error: err.message,
-          });
-        }
-        if(existingUser.is_verified == 0){
-            is_registered = false;
-        }
-        if (existingUser) {
-          return res.status(400).json({
-            success: true,
-            message: "A user with this email already exists",
-            registered :is_registered
-          });
-        }
-  
-        // 5️⃣ Insert into users table
-        const userData = {
-          username,
-          firstname: finalFirstname,
-          lastname: finalLastname,
-          password: hashedPassword,  // Store hashed password
-          prefix,
-          phonenumber,
-          email: finalEmail,
-          role_id,
-          is_verified,
-        };
-  
-        User.insertUser(userData, (err, userResult) => {
-          if (err) {
+    
+        const { username } = generateUniqueUsername(finalFirstname, phonenumber);
+    
+        User.findByEmail(finalEmail, async (err, existingUser) => {
+            if (err) {
             return res.status(500).json({
-              success: false,
-              message: "Server error while inserting user",
-              error: err.message,
+                success: false,
+                message: "Server error while checking existing user",
+                error: err.message,
             });
-          }
-  
-          // 6️⃣ Generate JWT
-          const token = jwt.sign(
-            {
-              user_id: userResult.insertId,
-              username,
-              email: finalEmail,
-              role_id,
-              firstname: finalFirstname,
-              lastname: finalLastname,
-            },
-            process.env.JWT_SECRET
-          );
-  
-          return res.status(201).json({
-            success: true,
-            message: "User created successfully",
-            token,
-          });
+            }
+    
+            if (existingUser) {
+            // 🔹 Always return token even if not verified
+            const token = jwt.sign(
+                {
+                user_id: existingUser.id,
+                username: existingUser.username,
+                email: existingUser.email,
+                role_id: existingUser.role_id,
+                firstname: existingUser.firstname,
+                lastname: existingUser.lastname,
+                is_verified: existingUser.is_verified,
+                },
+                process.env.JWT_SECRET
+            );
+    
+            return res.status(200).json({
+                success: true,
+                message: existingUser.is_verified
+                ? "User already exists and is verified"
+                : "User already exists but not verified. Complete profile to proceed",
+                token,
+                is_verified: existingUser.is_verified,
+            });
+            }
+    
+            // 🔹 Create new user
+            const userData = {
+            username,
+            firstname: finalFirstname,
+            lastname: finalLastname,
+            password: hashedPassword,
+            prefix,
+            phonenumber,
+            email: finalEmail,
+            role_id,
+            is_verified: 0,
+            };
+    
+            User.insertUser(userData, (err, userResult) => {
+            if (err) {
+                return res.status(500).json({
+                success: false,
+                message: "Server error while inserting user",
+                error: err.message,
+                });
+            }
+    
+            const token = jwt.sign(
+                {
+                user_id: userResult.insertId,
+                username,
+                email: finalEmail,
+                role_id,
+                firstname: finalFirstname,
+                lastname: finalLastname,
+                is_verified: 0,
+                },
+                process.env.JWT_SECRET
+            );
+    
+            return res.status(201).json({
+                success: true,
+                message: "User created successfully",
+                token,
+                is_verified: 0,
+            });
+            });
         });
-      });
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-        error: error.message,
-      });
-    }
-  };
+        } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+        });
+        }
+    };
+  
 
 
   const vendorRiderLogin = async (req, res) => {
