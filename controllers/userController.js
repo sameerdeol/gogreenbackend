@@ -272,7 +272,7 @@ const vendorRiderSignup = async (req, res) => {
         }
         if (existingUser) {
           return res.status(400).json({
-            success: false,
+            success: true,
             message: "A user with this email already exists",
             registered :is_registered
           });
