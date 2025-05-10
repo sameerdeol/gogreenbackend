@@ -48,12 +48,17 @@ const User = {
         db.query(query, values, callback);
     },
     findByEmailForVendorRider: (email, callback) => {
-        const checkQuery = `SELECT * FROM users WHERE email = ?`;  // ✅ Fixed SQL syntax
+        // Validate email format
+        if (!email || typeof email !== 'string' || !email.match(/\S+@\S+\.\S+/)) {
+            return callback(null, { success: false, message: "Invalid email format" });
+        }
     
+        const checkQuery = `SELECT * FROM users WHERE email = ?`;  // ✅ Fixed SQL syntax
+        
         db.query(checkQuery, [email], (err, results) => {
             if (err) {
                 console.error('Error checking user role:', err);
-                return callback(err, null);
+                return callback(err, null); // Pass error to callback
             }
     
             if (results.length === 0) {
@@ -69,7 +74,7 @@ const User = {
     
             return callback(null, { success: true, user });
         });
-    },
+    },    
 
     findByEmailOrPhone : (email, phonenumber, callback) => {
         const query = `SELECT * FROM users WHERE email = ? OR phonenumber = ?`;
