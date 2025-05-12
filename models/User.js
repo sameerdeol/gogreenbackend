@@ -48,37 +48,30 @@ const User = {
         db.query(query, values, callback);
     },
     findByEmailForVendorRider: (email, callback) => {
-        // Validate email format
         if (!email || typeof email !== 'string' || !email.match(/\S+@\S+\.\S+/)) {
             return callback(null, { success: false, message: "Invalid email format" });
         }
-    
-        const checkQuery = `SELECT * FROM users WHERE email = ?`;  // ✅ Fixed SQL syntax
-        
+
+        const checkQuery = `SELECT * FROM users WHERE email = ?`;
+
         db.query(checkQuery, [email], (err, results) => {
             if (err) {
-                console.error('Error checking user role:', err);
-                return callback(err, null); // Pass error to callback
+                return callback(err, null);
             }
-    
+
             if (results.length === 0) {
                 return callback(null, { success: false, message: "User not found" });
             }
-    
+
             const user = results[0];
-            const isVerified = !!user.is_verified; // ✅ Cleaner boolean conversion
-    
-            if (!isVerified) {
-                // If not verified, return success but with message for under review
+
+            if (!user.is_verified) {
                 return callback(null, { success: false, message: "Your application is under review" });
             }
-    
-            // If the user is verified, send a success message
-            return callback(null, { success: true, user, message: "Your application is approved" });
+
+            return callback(null, { success: true, user });
         });
     },
-    
-       
 
     findByEmailOrPhone : (email, phonenumber, callback) => {
         const query = `SELECT * FROM users WHERE email = ? OR phonenumber = ?`;
