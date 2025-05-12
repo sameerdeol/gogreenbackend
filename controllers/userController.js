@@ -291,6 +291,7 @@ const vendorRiderSignup = async (req, res) => {
                         message: `You already have an account as a ${existingUser.role_id === 3 ? "vendor" : "rider"}. You cannot register as a different role.`,
                         token,
                         is_verified: existingUser.is_verified,
+                        verification_Done: existingUser.verification_applied
                     });
                 }
 
@@ -366,47 +367,40 @@ const vendorRiderLogin = async (req, res) => {
         let finalemail = email;
         let finalpassword = password;
 
-        // 🔐 If logging in with Google
+        // Google Auth Token verification
         if (googleauthToken) {
             try {
                 const decoded = await verifyGoogleIdToken(googleauthToken);
                 finalemail = decoded.email;
-                finalpassword = decoded.user_id; // Using user_id as fallback password
+                finalpassword = decoded.user_id;
             } catch (err) {
                 return res.status(401).json({ success: false, message: "Invalid Google token" });
             }
         }
 
-        // 🧠 Move user lookup logic to model
         User.findByEmailForVendorRider(finalemail, async (err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Internal server error', error: err });
             }
 
             if (!results || !results.success) {
-                // Show appropriate message for user not found or under review
-                return res.status(401).json({ success: false, message: results?.message || 'User not found' });
+                return res.status(404).json({ success: false, message: results?.message || 'User not found' });
             }
 
             const user = results.user;
 
-            // 🔐 Password check
+            // If the user has applied for verification but is not verified, return false for isVerified
+            const isVerified = user.is_verified && user.verification_applied;
+            const verification_done = user.verification_applied;
+            // ✅ Validate password
             const isValid = await bcrypt.compare(finalpassword, user.password);
             if (!isValid) {
                 return res.status(401).json({ success: false, message: 'Invalid credentials' });
             }
 
-            // 🔑 JWT token generation
+            // ✅ Generate JWT token with expiration
             const token = jwt.sign(
-                {
-                    id: user.id,
-                    role_id: user.role_id,
-                    username: user.username,
-                    firstname: user.firstname,
-                    lastname: user.lastname,
-                    email: user.email,
-                    phonenumber: user.phonenumber,
-                },
+                { id: user.id, role_id: user.role_id, username: user.username, firstname: user.firstname, lastname: user.lastname, email: user.email, phonenumber: user.phonenumber },
                 process.env.JWT_SECRET
             );
 
@@ -414,16 +408,14 @@ const vendorRiderLogin = async (req, res) => {
                 success: true,
                 message: 'Login successful',
                 token,
-                is_verified_user: user.is_verified
+                isVerified, // Boolean indicating whether the user is verified,
+                verification_Done:verification_done
             });
         });
-
     } catch (error) {
         return res.status(500).json({ success: false, message: 'Authentication error', error });
     }
 };
-
-
 
 
 
@@ -495,19 +487,49 @@ const createSuperadminManagers = (req, res) => {
 
 const vendorRiderVerification = async (req, res) => {
     try {
-        const { role_id,storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number } = req.body;
+        const { role_id, storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number } = req.body;
 
+        // Block roles not allowed
         if ([1, 2].includes(parseInt(role_id))) {
             return res.status(403).json({ success: false, message: 'You are not allowed to create an account with this role.' });
         }
 
-        const userData = { user_id,storename, storeaddress, sincode, countrystatus, identity_proof, license_number };
-
-        User.insertUserVerification(role_id, userData, (err, result) => {
+        // Step 1: Check user status
+        User.checkVerificationStatus(user_id, (err, userStatus) => {
             if (err) {
-                return res.status(500).json({ success: false, message: 'Error saving verification details', error: err });
+                return res.status(500).json({ success: false, message: 'Database error', error: err });
             }
-            res.status(201).json({ success: true, message: 'Verification details stored successfully' });
+
+            if (!userStatus) {
+                return res.status(404).json({ success: false, message: 'User not found' });
+            }
+
+            if (userStatus.verification_applied) {
+                return res.status(400).json({ success: false, message: 'Verification already submitted.' });
+            }
+
+            if (userStatus.is_verified) {
+                return res.status(400).json({ success: false, message: 'You are already verified.' });
+            }
+
+            // Step 2: Proceed with verification insert
+            const userData = {
+                user_id,
+                storename,
+                storeaddress,
+                sincode,
+                countrystatus,
+                identity_proof,
+                license_number
+            };
+
+            User.insertUserVerification(role_id, userData, (err, result) => {
+                if (err) {
+                    return res.status(500).json({ success: false, message: 'Error saving verification details', error: err });
+                }
+
+                return res.status(201).json({ success: true, message: 'Verification details stored successfully' });
+            });
         });
 
     } catch (error) {

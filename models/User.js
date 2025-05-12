@@ -362,18 +362,27 @@ const User = {
         db.query(query, [userId], callback);
     },
 
-    insertUserVerification : (role_id, data, callback) => {
+    checkVerificationStatus: (user_id, callback) => {
+        const query = `SELECT verification_applied, is_verified FROM users WHERE id = ?`;
+        db.query(query, [user_id], (err, results) => {
+            if (err) return callback(err, null);
+            if (results.length === 0) return callback(null, null);
+            return callback(null, results[0]);
+        });
+    },
+
+    insertUserVerification: (role_id, data, callback) => {
         let insertQuery;
         let values;
-    
+
         if (role_id == 3) { // Vendor
             insertQuery = `
                 INSERT INTO vendors 
-                (user_id,store_name, store_address, sin_code, country_status, identity_proof) 
+                (user_id, store_name, store_address, sin_code, country_status, identity_proof) 
                 VALUES (?, ?, ?, ?, ?, ?)
             `;
             values = [data.user_id, data.storename, data.storeaddress, data.sincode, data.countrystatus, data.identity_proof];
-    
+
         } else if (role_id == 4) { // Delivery Partner
             insertQuery = `
                 INSERT INTO delivery_partners 
@@ -384,12 +393,24 @@ const User = {
         } else {
             return callback(new Error('Invalid role_id'), null);
         }
-    
+
         db.query(insertQuery, values, (err, result) => {
             if (err) {
                 return callback(err, null);
             }
-            callback(null, result);
+
+            // After successful insert, update verification_applied to TRUE
+            const updateQuery = `
+                UPDATE users 
+                SET verification_applied = TRUE 
+                WHERE id = ?
+            `;
+            db.query(updateQuery, [data.user_id], (updateErr, updateResult) => {
+                if (updateErr) {
+                    return callback(updateErr, null);
+                }
+                callback(null, { insertResult: result, updateResult: updateResult });
+            });
         });
     },
 
