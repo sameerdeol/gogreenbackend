@@ -303,6 +303,7 @@ const vendorRiderSignup = async (req, res) => {
                         : "User already exists but not verified. Complete profile to proceed",
                     token,
                     is_verified: existingUser.is_verified,
+                    verification_Done: existingUser.verification_applied
                 });
             }
 
@@ -346,6 +347,7 @@ const vendorRiderSignup = async (req, res) => {
                     message: "User created successfully",
                     token,
                     is_verified: 0,
+                    verification_Done: existingUser.verification_applied
                 });
             });
         });
