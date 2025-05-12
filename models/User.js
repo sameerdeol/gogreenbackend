@@ -65,10 +65,7 @@ const User = {
 
             const user = results[0];
 
-            if (!user.is_verified) {
-                return callback(null, { success: false, message: "Your application is under review" });
-            }
-
+            // Don't return early — just pass back the user along with the verification info
             return callback(null, { success: true, user });
         });
     },
