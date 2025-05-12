@@ -392,7 +392,7 @@ const vendorRiderLogin = async (req, res) => {
             const user = results.user;
 
             // If the user has applied for verification but is not verified, return false for isVerified
-            const isVerified = user.is_verified && user.verification_applied;
+            const isVerified = user.is_verified;
             const verification_done = user.verification_applied;
             // ✅ Validate password
             const isValid = await bcrypt.compare(finalpassword, user.password);
