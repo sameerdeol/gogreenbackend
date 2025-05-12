@@ -410,7 +410,7 @@ const vendorRiderLogin = async (req, res) => {
                 success: true,
                 message: 'Login successful',
                 token,
-                isVerified, // Boolean indicating whether the user is verified,
+                is_verified:isVerified, // Boolean indicating whether the user is verified,
                 verification_Done:verification_done
             });
         });
