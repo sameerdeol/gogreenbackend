@@ -1,10 +1,13 @@
 const OrderDetails = require("../models/orderDetails");
 const OrderItem = require("../models/orderItem");
 const OrderModel = require("../models/orderModel");
+const notifyVendor = require("../utils/notifyVendor");
+const sendNotification = require("../utils/sendNotification");
+
  
 const createOrder = async (req, res) => {
     try {
-        const { user_id, cart, payment_method, user_address_id } = req.body;
+        const { user_id, cart, payment_method, user_address_id, vendor_id, is_fast_delivery } = req.body;
 
         if (!user_id || !cart || cart.length === 0) {
             console.warn("Invalid order data received");
@@ -14,14 +17,13 @@ const createOrder = async (req, res) => {
         let total_quantity = 0;
         let total_price = 0;
 
-        // Calculate totals
         cart.forEach((item) => {
             total_quantity += item.quantity;
             total_price += item.quantity * item.price;
         });
 
-        // First, insert into OrderDetails to get order_id
-        OrderDetails.addOrder(user_id, total_quantity, total_price, payment_method, user_address_id, async (err, result) => {
+        // Insert into OrderDetails
+        OrderDetails.addOrder(user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, async (err, result) => {
             if (err) {
                 console.error("Error adding order details:", err);
                 return res.status(500).json({ error: "Error adding order details" });
@@ -30,7 +32,7 @@ const createOrder = async (req, res) => {
             const order_id = result.insertId;
 
             try {
-                // Insert each item into OrderItem using order_id
+                // Insert all items
                 const itemPromises = cart.map((item, index) => {
                     const { product_id, quantity, price } = item;
                     const total_item_price = quantity * price;
@@ -39,28 +41,85 @@ const createOrder = async (req, res) => {
                         OrderItem.addItem(order_id, user_id, product_id, quantity, price, total_item_price, (err, result) => {
                             if (err) {
                                 console.error(`Error adding item ${index + 1}:`, err);
-                                reject(err);
-                            } else {
-                                resolve(result);
+                                return reject(err);
                             }
+                            resolve(result);
                         });
                     });
                 });
 
                 await Promise.all(itemPromises);
 
-                console.log("All order items added successfully");
+                // ✅ Now safe to send response
                 res.status(201).json({ message: "Order created successfully", order_id });
+
+                // 🔔 Notify vendor after sending response (non-blocking)
+                notifyVendor(vendor_id, order_id);
+
             } catch (itemErr) {
                 console.error("Error adding order items:", itemErr);
-                res.status(500).json({ error: "Error adding order items" });
+                // ❌ Don't send response here if already sent
             }
         });
 
     } catch (error) {
         console.error("Server error while creating order:", error);
-        res.status(500).json({ error: "Server error" });
+        if (!res.headersSent) {
+            res.status(500).json({ error: "Server error" });
+        }
     }
+};
+
+// accept order by vendor
+const acceptOrder = async (req, res) => {
+    const { order_id, vendor_id } = req.body;
+
+    if (!vendor_id || !order_id) {
+        return res.status(400).json({ error: "Order ID and Vendor ID are required" });
+    }
+
+    // Step 1: Verify vendor owns the order
+    OrderDetails.findOrderByVendor(order_id, vendor_id, (err, results) => {
+        if (err) {
+            console.error("DB error:", err);
+            return res.status(500).json({ error: "Internal server error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(403).json({ error: "Unauthorized to accept this order" });
+        }
+
+        // Step 2: Update order status
+        OrderDetails.updateOrderStatus(order_id, 'accepted', (updateErr) => {
+            if (updateErr) {
+                console.error("Error updating order:", updateErr);
+                return res.status(500).json({ error: "Could not update order status" });
+            }
+
+            // Step 3: Fetch user FCM token
+            OrderDetails.getUserFcmTokenByOrderId(order_id, async (tokenErr, tokenResults) => {
+                if (tokenErr || tokenResults.length === 0 || !tokenResults[0].fcm_token) {
+                    console.warn("FCM token not found or error occurred:", tokenErr);
+                    return res.status(200).json({ message: "Order accepted, notification not sent" });
+                }
+
+                const fcmToken = tokenResults[0].fcm_token;
+                const notification = {
+                    fcmToken,
+                    title: "Order Accepted",
+                    body: `Your order #${order_id} has been accepted by the vendor.`,
+                    data: { order_id: order_id.toString(), type: "order_update" }
+                };
+
+                const notifResult = await sendNotification(notification);
+                if (!notifResult.success) {
+                    console.warn("Notification sending failed:", notifResult.error);
+                }
+
+                return res.status(200).json({ message: "Order accepted successfully" });
+            });
+        });
+    });
 };
 
 const getOrdersByUserId = (req, res) => {
@@ -120,4 +179,4 @@ const getOrdersByUserId = (req, res) => {
 
 
  
- module.exports = { createOrder, getOrdersByUserId };
+ module.exports = { createOrder, getOrdersByUserId, acceptOrder };

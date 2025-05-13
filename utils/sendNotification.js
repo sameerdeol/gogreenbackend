@@ -2,7 +2,7 @@ const { getFirebaseApp } = require('../firebaseKeys/firebaseInit');
 
 const sendNotification = async ({ fcmToken, title, body, data = {} }) => {
     try {
-        const firebaseApp = getFirebaseApp(); // No userType needed if you only use one app
+        const firebaseApp = getFirebaseApp();
         const message = {
             token: fcmToken,
             notification: { title, body },
