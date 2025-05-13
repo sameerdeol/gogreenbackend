@@ -20,11 +20,9 @@ const OrderDetails = {
         db.query(sql, [status, order_id], callback);
     },
     
-    getUserFcmTokenByOrderId: (order_id, callback) => {
+    getUserIdByOrderId: (order_id, callback) => {
         const sql = `
-            SELECT fcm_token FROM users_fcm_token
-            JOIN order_details ON users_fcm_token.user_id = order_details.user_id
-            WHERE order_details.id = ?
+            SELECT user_id FROM order_details WHERE order_details.id = ?
         `;
         db.query(sql, [order_id], callback);
     }

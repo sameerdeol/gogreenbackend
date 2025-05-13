@@ -5,7 +5,7 @@ const {generateUniqueUsername} = require('../middleware/username');
 const path = require('path');
 const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
 const UserFcmToken = require('../models/fcmTokenModel');
-const sendNotification = require('../utils/sendNotification');
+const sendNotificationToUser = require('../utils/sendNotificationToUser');
 const verifyGoogleIdToken = require('../middleware/googleAuthToken');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
@@ -192,11 +192,11 @@ const verifyUser = (req, res) => {
             }
             
             const fcmToken = tokenResult[0].fcm_token;
-
-            const notificationResult = await sendNotification({
+            const notificationResult = await sendNotificationToUser({
                 fcmToken,
                 title: 'Account Verified',
-                body: 'Your account has been successfully verified!'
+                body: 'Your account has been successfully verified!',
+                data: { type: "account_verified" }
             });
 
             if (!notificationResult.success) {

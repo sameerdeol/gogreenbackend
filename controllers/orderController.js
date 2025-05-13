@@ -1,8 +1,8 @@
 const OrderDetails = require("../models/orderDetails");
 const OrderItem = require("../models/orderItem");
 const OrderModel = require("../models/orderModel");
-const notifyVendor = require("../utils/notifyVendor");
-const sendNotification = require("../utils/sendNotification");
+const sendNotificationToUser = require("../utils/sendNotificationToUser");
+
 
  
 const createOrder = async (req, res) => {
@@ -54,7 +54,15 @@ const createOrder = async (req, res) => {
                 res.status(201).json({ message: "Order created successfully", order_id });
 
                 // 🔔 Notify vendor after sending response (non-blocking)
-                notifyVendor(vendor_id, order_id);
+                sendNotificationToUser({
+                    userId: vendor_id,
+                    title: "New Order Received",
+                    body: `You have a new order #${order_id}`,
+                    data: {
+                        order_id: order_id.toString(),
+                        type: "new_order"
+                    }
+                });
 
             } catch (itemErr) {
                 console.error("Error adding order items:", itemErr);
@@ -97,25 +105,25 @@ const acceptOrder = async (req, res) => {
             }
 
             // Step 3: Fetch user FCM token
-            OrderDetails.getUserFcmTokenByOrderId(order_id, async (tokenErr, tokenResults) => {
-                if (tokenErr || tokenResults.length === 0 || !tokenResults[0].fcm_token) {
+            OrderDetails.getUserIdByOrderId(order_id, async (usererr, userresult) => {
+                if (usererr || userresult.length === 0 || !userresult[0].user_id) {
                     console.warn("FCM token not found or error occurred:", tokenErr);
                     return res.status(200).json({ message: "Order accepted, notification not sent" });
                 }
 
-                const fcmToken = tokenResults[0].fcm_token;
-                const notification = {
-                    fcmToken,
+                const userId = userresult[0].user_id;
+
+                const notifResult = await sendNotificationToUser({
+                    userId,
                     title: "Order Accepted",
                     body: `Your order #${order_id} has been accepted by the vendor.`,
                     data: { order_id: order_id.toString(), type: "order_update" }
-                };
+                });
 
-                const notifResult = await sendNotification(notification);
                 if (!notifResult.success) {
                     console.warn("Notification sending failed:", notifResult.error);
                 }
-
+                
                 return res.status(200).json({ message: "Order accepted successfully" });
             });
         });
