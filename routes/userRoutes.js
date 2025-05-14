@@ -16,7 +16,8 @@ const {
     sendOTP,
     resetPassword,
     allVendors,
-    verifyOtp
+    verifyOtp,
+    updateRiderLocation
 } = require('../controllers/userController');
 
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -56,6 +57,7 @@ router.post(['/send-vendorOtp', '/send-riderOtp'], sendOTP);
 router.post(['/verifyotp'], verifyOtp);
 router.post(['/reset-vendorPwd', '/reset-riderPwd'], resetPassword);
 router.post(['/all-vendors'], verifyToken, allVendors);
+router.put('/updateRider-location', verifyToken, updateRiderLocation);
 
 /**
  * User Management Routes (Protected)

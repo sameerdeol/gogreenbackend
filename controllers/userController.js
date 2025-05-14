@@ -815,6 +815,27 @@ const allVendors = (req, res) => {
     });
 };
 
+const updateRiderLocation = (req, res) => {
+    const { user_id, rider_lat, rider_lng } = req.body; // Extract role_id from the request body
+
+    // Step 1: Update the user status
+    User.updateRiderLocation(user_id, rider_lat, rider_lng, (err, user) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'rider not found' });
+        }
+
+        // Step 2: Return success response
+        return res.status(200).json({
+            success: true,
+            message: "rider location updated successfully",
+        });
+    });
+};
 
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp};
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp, updateRiderLocation};

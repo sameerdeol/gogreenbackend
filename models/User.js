@@ -510,7 +510,23 @@ const User = {
             }
             return callback(null, results);
         });
-    } 
+    },
+    updateRiderLocation: (userId, rider_lat, rider_lng, callback) => {
+        const sql = `
+            UPDATE delivery_partners
+            SET rider_lat = ?, rider_lng = ?
+            WHERE user_id = ?;
+        `;
+        
+        db.query(sql, [rider_lat, rider_lng, userId], (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return callback(err, null);
+            }
+            return callback(null, results);
+        });
+    }
+
 };
 
 module.exports = User;
