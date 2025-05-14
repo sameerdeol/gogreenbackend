@@ -184,16 +184,8 @@ const verifyUser = (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: 'User not found or already verified' });
         }
-
-        UserFcmToken.getTokenByUserId(userId, async (err, tokenResult) => {
-            if (err || !tokenResult || tokenResult.length === 0 || !tokenResult[0].fcm_token) {
-                console.warn(`FCM token not found for user ${userId}`);
-                return res.json({ success: true, message: 'User verified, but no FCM token found.' });
-            }
-            
-            const fcmToken = tokenResult[0].fcm_token;
             const notificationResult = await sendNotificationToUser({
-                fcmToken,
+                userId,
                 title: 'Account Verified',
                 body: 'Your account has been successfully verified!',
                 data: { type: "account_verified" }
@@ -208,7 +200,6 @@ const verifyUser = (req, res) => {
             }
 
             res.json({ success: true, message: 'User verified and notification sent.' });
-        });
     });
 };
 
