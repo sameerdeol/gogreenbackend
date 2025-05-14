@@ -423,7 +423,7 @@ const User = {
         if (roleId === 4) {
             query = `
                 SELECT 
-                    u.firstname, u.lastname, u.email, u.phonenumber, u.prefix, 
+                    u.firstname, u.lastname, u.email, u.phonenumber, u.prefix, u.status, 
                     dp.id AS delivery_partners_id, dp.sin_code, dp.license_number, dp.profile_pic 
                 FROM users u 
                 LEFT JOIN delivery_partners dp ON dp.user_id = u.id 
@@ -434,7 +434,7 @@ const User = {
             // Default query for other roles
             query = `
                 SELECT 
-                    u.firstname, u.lastname, u.email, u.phonenumber, 
+                    u.firstname, u.lastname, u.email, u.phonenumber, u.status, 
                     v.id AS vendor_id, v.store_address, v.sin_code, v.store_name, v.profile_pic 
                 FROM users u 
                 LEFT JOIN vendors v ON v.user_id = u.id 
