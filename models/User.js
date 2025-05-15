@@ -547,7 +547,38 @@ const User = {
                 resolve(results[0]);
             });
         });
+    },
+    getNearbyRiders: (vendorLat, vendorLng, radiusInKm = 3) => {
+        return new Promise((resolve, reject) => {
+            const earthRadius = 6371; // km
+
+            const sql = `
+                SELECT 
+                    dp.user_id, 
+                    dp.rider_lat, 
+                    dp.rider_lng,
+                    (
+                        ${earthRadius} * ACOS(
+                            COS(RADIANS(?)) * COS(RADIANS(dp.rider_lat)) *
+                            COS(RADIANS(dp.rider_lng) - RADIANS(?)) +
+                            SIN(RADIANS(?)) * SIN(RADIANS(dp.rider_lat))
+                        )
+                    ) AS distance
+                FROM 
+                    delivery_partners dp
+                HAVING distance <= ?
+                ORDER BY distance ASC;
+            `;
+
+            const params = [vendorLat, vendorLng, vendorLat, radiusInKm];
+
+            db.query(sql, params, (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+            });
+        });
     }
+
 
 };
 

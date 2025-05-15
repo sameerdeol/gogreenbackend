@@ -143,27 +143,50 @@ const acceptOrder = async (req, res) => {
             }
 
             // Step 3: Fetch user FCM token
-            OrderDetails.getUserIdByOrderId(order_id, async (usererr, userresult) => {
-                if (usererr || userresult.length === 0 || !userresult[0].user_id) {
-                    console.warn("FCM token not found or error occurred:", tokenErr);
-                    return res.status(200).json({ message: "Order accepted, notification not sent" });
-                }
+        OrderDetails.getUserIdByOrderId(order_id, async (userErr, userResult) => {
+            if (userErr || userResult.length === 0 || !userResult[0].user_id) {
+                console.warn("User not found or error occurred:", userErr);
+                return res.status(200).json({ message: "Order accepted, notification not sent to user" });
+            }
+            const userId = userResult[0].user_id;
+            const store_name = userResult[0].store_name;
+            const vendor_lat = userResult[0].vendor_lat;
+            const vendor_lng = userResult[0].vendor_lng;
 
-                const userId = userresult[0].user_id;
-                const store_name = userresult[0].store_name;
-                const notifResult = await sendNotificationToUser({
-                    userId,
-                    title: "Order Accepted",
-                    body: `Your order from ${store_name} has been accepted by the vendor.`,
-                    data: { order_id: order_id.toString(), type: "order_update" }
-                });
-
-                if (!notifResult.success) {
-                    console.warn("Notification sending failed:", notifResult.error);
-                }
-                
-                return res.status(200).json({ message: "Order accepted successfully" });
+            // Send notification to user who placed the order
+            const notifResult = await sendNotificationToUser({
+                userId,
+                title: "Order Accepted",
+                body: `Your order from ${store_name} has been accepted by the vendor.`,
+                data: { order_id: order_id.toString(), type: "order_update" }
             });
+
+            if (!notifResult.success) {
+                console.warn("Notification sending to user failed:", notifResult.error);
+            }
+
+            try {
+                // Get nearby riders using async/await (assuming User.getNearbyRiders returns a promise)
+                const nearbyRiders = await User.getNearbyRiders(vendor_lat, vendor_lng, 3);
+                for (const rider of nearbyRiders) {
+                    await sendNotificationToUser({
+                        userId: rider.user_id,  // assuming rider object has user_id
+                        title: "New Delivery Opportunity",
+                        body: `New order #${order_id} is ready for delivery near you.`,
+                        data: {
+                            order_id: order_id.toString(),
+                            type: "delivery_request",
+                            vendor_id: vendor_id.toString(),
+                        }
+                    });
+                }
+            } catch (riderErr) {
+                console.warn("Failed to notify nearby riders:", riderErr);
+            }
+
+            return res.status(200).json({ message: "Order accepted successfully" });
+        });
+
         });
     });
 };
