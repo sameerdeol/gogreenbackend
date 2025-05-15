@@ -559,6 +559,21 @@ const Product = {
         `;
         db.query(sql, [userId], callback);
     },
+    getProductDetailsByIdsAsync: (productIds) => {
+        const placeholders = productIds.map(() => '?').join(',');
+        const sql = `SELECT id, name FROM products WHERE id IN (${placeholders})`;
+
+        return new Promise((resolve, reject) => {
+            db.query(sql, productIds, (err, results) => {
+                if (err) {
+                    console.error("Error while querying product details:", err);
+                    return reject(err);
+                }
+                resolve(results);
+            });
+        });
+    }
+
 
     
 };

@@ -3,6 +3,7 @@ const OrderItem = require("../models/orderItem");
 const OrderModel = require("../models/orderModel");
 const sendNotificationToUser = require("../utils/sendNotificationToUser");
 const User = require('../models/User');
+const Product = require('../models/productModel');
 
  
 const createOrder = async (req, res) => {
@@ -58,13 +59,32 @@ const createOrder = async (req, res) => {
 
                     res.status(201).json({ message: "Order created successfully", order_id });
 
-                    // Fetch user data and address
+                    // Fetch user and address details
                     try {
                         const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
-
                         const username = userdata?.full_name || "User";
                         const addressText = userdata?.full_address || "No address found";
 
+                        // Extract product_ids and fetch their details
+                        const productIds = cart.map(item => item.product_id);
+                        
+                        // Assuming you have a Product model method like this:
+                        // Product.getProductDetailsByIds(productIds, callback)
+                        const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
+
+                        // Map product_id to detail for quick lookup
+                        const productMap = {};
+                        productDetails.forEach(prod => {
+                            productMap[prod.id] = prod;
+                        });
+
+                        // Enrich the cart
+                        const enrichedCart = cart.map(item => ({
+                            quantity: item.quantity,
+                            price: item.price,
+                            product_name: productMap[item.product_id]?.name || 'Unknown Product'
+                        }));
+                        // Send notification with enriched cart
                         sendNotificationToUser({
                             userId: vendor_id,
                             title: "New Order Received",
@@ -72,13 +92,14 @@ const createOrder = async (req, res) => {
                             data: {
                                 order_id: order_id.toString(),
                                 type: "new_order",
-                                username,
-                                address: addressText,
-                                cart: JSON.stringify(cart)
+                                customer:username,
+                                customer_address: addressText,
+                                order_cart: JSON.stringify(enrichedCart) // Must be string for FCM
                             }
                         });
+
                     } catch (fetchErr) {
-                        console.warn("Order created, but failed to fetch user/address for notification:", fetchErr);
+                        console.warn("Order created, but failed to fetch user or product data:", fetchErr);
                     }
                 } catch (itemErr) {
                     console.error("Error adding order items:", itemErr);
