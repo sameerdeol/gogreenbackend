@@ -2,7 +2,7 @@ const OrderDetails = require("../models/orderDetails");
 const OrderItem = require("../models/orderItem");
 const OrderModel = require("../models/orderModel");
 const sendNotificationToUser = require("../utils/sendNotificationToUser");
-
+const User = require('../models/User');
 
  
 const createOrder = async (req, res) => {
@@ -22,54 +22,70 @@ const createOrder = async (req, res) => {
             total_price += item.quantity * item.price;
         });
 
-        // Insert into OrderDetails
-        OrderDetails.addOrder(user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, async (err, result) => {
-            if (err) {
-                console.error("Error adding order details:", err);
-                return res.status(500).json({ error: "Error adding order details" });
-            }
+        OrderDetails.addOrder(
+            user_id,
+            total_quantity,
+            total_price,
+            payment_method,
+            user_address_id,
+            vendor_id,
+            is_fast_delivery,
+            async (err, result) => {
+                if (err) {
+                    console.error("Error adding order details:", err);
+                    return res.status(500).json({ error: "Error adding order details" });
+                }
 
-            const order_id = result.insertId;
+                const order_id = result.insertId;
 
-            try {
-                // Insert all items
-                const itemPromises = cart.map((item, index) => {
-                    const { product_id, quantity, price } = item;
-                    const total_item_price = quantity * price;
+                try {
+                    const itemPromises = cart.map((item, index) => {
+                        const { product_id, quantity, price } = item;
+                        const total_item_price = quantity * price;
 
-                    return new Promise((resolve, reject) => {
-                        OrderItem.addItem(order_id, user_id, product_id, quantity, price, total_item_price, (err, result) => {
-                            if (err) {
-                                console.error(`Error adding item ${index + 1}:`, err);
-                                return reject(err);
-                            }
-                            resolve(result);
+                        return new Promise((resolve, reject) => {
+                            OrderItem.addItem(order_id, user_id, product_id, quantity, price, total_item_price, (err, result) => {
+                                if (err) {
+                                    console.error(`Error adding item ${index + 1}:`, err);
+                                    return reject(err);
+                                }
+                                resolve(result);
+                            });
                         });
                     });
-                });
 
-                await Promise.all(itemPromises);
+                    await Promise.all(itemPromises);
 
-                // ✅ Now safe to send response
-                res.status(201).json({ message: "Order created successfully", order_id });
+                    res.status(201).json({ message: "Order created successfully", order_id });
 
-                // 🔔 Notify vendor after sending response (non-blocking)
-                sendNotificationToUser({
-                    userId: vendor_id,
-                    title: "New Order Received",
-                    body: `You have a new order #${order_id}`,
-                    data: {
-                        order_id: order_id.toString(),
-                        type: "new_order"
+                    // Fetch user data and address
+                    try {
+                        const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
+
+                        const username = userdata?.full_name || "User";
+                        const addressText = userdata?.full_address || "No address found";
+
+                        sendNotificationToUser({
+                            userId: vendor_id,
+                            title: "New Order Received",
+                            body: `You have a new order #${order_id}`,
+                            data: {
+                                order_id: order_id.toString(),
+                                type: "new_order",
+                                username,
+                                address: addressText,
+                                cart: JSON.stringify(cart)
+                            }
+                        });
+                    } catch (fetchErr) {
+                        console.warn("Order created, but failed to fetch user/address for notification:", fetchErr);
                     }
-                });
-
-            } catch (itemErr) {
-                console.error("Error adding order items:", itemErr);
-                // ❌ Don't send response here if already sent
+                } catch (itemErr) {
+                    console.error("Error adding order items:", itemErr);
+                    // Don't send response here, it’s already sent above
+                }
             }
-        });
-
+        );
     } catch (error) {
         console.error("Server error while creating order:", error);
         if (!res.headersSent) {
@@ -77,6 +93,7 @@ const createOrder = async (req, res) => {
         }
     }
 };
+
 
 // accept order by vendor
 const acceptOrder = async (req, res) => {

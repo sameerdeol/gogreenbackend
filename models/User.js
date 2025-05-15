@@ -525,6 +525,28 @@ const User = {
             }
             return callback(null, results);
         });
+    },
+    getUserDetailsByIdAsync: (userId, user_address_id) => {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT 
+                    CONCAT(u.firstname, ' ', u.lastname) AS full_name,
+                    CONCAT_WS(', ', ud.address, ud.type, ud.floor, ud.landmark) AS full_address
+                FROM 
+                    users u
+                JOIN 
+                    user_addresses ud 
+                ON 
+                    ud.user_id = u.id
+                WHERE 
+                    u.id = ? AND ud.id = ?;
+            `;
+
+            db.query(sql, [userId, user_address_id], (err, results) => {
+                if (err) return reject(err);
+                resolve(results[0]);
+            });
+        });
     }
 
 };
