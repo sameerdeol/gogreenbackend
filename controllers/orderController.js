@@ -150,11 +150,11 @@ const acceptOrder = async (req, res) => {
                 }
 
                 const userId = userresult[0].user_id;
-
+                const store_name = userresult[0].store_name;
                 const notifResult = await sendNotificationToUser({
                     userId,
                     title: "Order Accepted",
-                    body: `Your order #${order_id} has been accepted by the vendor.`,
+                    body: `Your order from ${store_name} has been accepted by the vendor.`,
                     data: { order_id: order_id.toString(), type: "order_update" }
                 });
 
