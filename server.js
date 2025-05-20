@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const { exec } = require('child_process');
+
 require('dotenv').config();
 
 // Import Routes
@@ -24,6 +26,33 @@ const app = express();
 app.use(express.json()); // Handles application/json (raw JSON)
 app.use(express.urlencoded({ extended: true })); // Handles form-data (x-www-form-urlencoded)
 app.use(cors());
+
+
+// GitHub Webhook Handler (Place before route definitions or at the end
+app.post('/webhook', (req, res) => {
+    console.log('✅ GitHub webhook triggered!');
+
+    // Step 1: Pull the latest code
+    exec('git pull origin main', (err, stdout, stderr) => {
+        if (err) {
+            console.error('❌ Git pull failed:', err);
+            return res.status(500).send('Git pull failed');
+        }
+
+        console.log('📥 Git Pull Output:', stdout);
+
+        // Step 2: Restart the app using PM2
+        exec('pm2 restart server.js', (err2, stdout2, stderr2) => {
+            if (err2) {
+                console.error('❌ PM2 restart failed:', err2);
+                return res.status(500).send('PM2 restart failed');
+            }
+
+            console.log('🔄 PM2 Restart Output:', stdout2);
+            res.status(200).send('✅ Git pulled and server restarted');
+        });
+    });
+});
 
 // Routes with Prefixes
 app.use('/', userRoutes);
