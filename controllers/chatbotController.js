@@ -10,7 +10,7 @@ const vendorFAQ = [
     { id: 3, q: 'What if I have a delay?', a: 'Report delay via the Delay button in app.' },
   ];
   
-  exports.handleChat = (req, res) => {
+  const handleChat = (req, res) => {
     const { message, state, role_id } = req.body;
   
     // Use role_id 3 for vendor and 4 for delivery_partner
@@ -60,3 +60,4 @@ const vendorFAQ = [
     });
   };
   
+  module.exports = { handleChat };
