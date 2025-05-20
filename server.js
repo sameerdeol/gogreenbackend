@@ -53,9 +53,6 @@ app.post('/webhook', (req, res) => {
         });
     });
 });
-app.get('/test', (req, res) => {
-    res.send("hello first");
-});
 
 // Routes with Prefixes
 app.use('/', userRoutes);
