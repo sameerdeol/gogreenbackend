@@ -117,79 +117,125 @@ const createOrder = async (req, res) => {
 
 
 // accept order by vendor
-const acceptOrder = async (req, res) => {
-    const { order_id, vendor_id } = req.body;
+const updateOrderStatus = async (req, res) => {
+    const { order_id, vendor_id, order_status } = req.body;
 
-    if (!vendor_id || !order_id) {
-        return res.status(400).json({ error: "Order ID and Vendor ID are required" });
+    if (!vendor_id || !order_id || !order_status) {
+        return res.status(400).json({ error: "Order ID, Vendor ID, and Order Status are required" });
     }
 
-    // Step 1: Verify vendor owns the order
-    OrderDetails.findOrderByVendor(order_id, vendor_id, (err, results) => {
-        if (err) {
-            console.error("DB error:", err);
-            return res.status(500).json({ error: "Internal server error" });
-        }
+    try {
+        // Step 1: Verify vendor owns the order
+        const orderResult = await new Promise((resolve, reject) => {
+            OrderDetails.findOrderByVendor(order_id, vendor_id, (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+            });
+        });
 
-        if (results.length === 0) {
-            return res.status(403).json({ error: "Unauthorized to accept this order" });
+        if (orderResult.length === 0) {
+            return res.status(403).json({ error: "Unauthorized to update this order" });
         }
 
         // Step 2: Update order status
-        OrderDetails.updateOrderStatus(order_id, 'accepted', (updateErr) => {
-            if (updateErr) {
-                console.error("Error updating order:", updateErr);
-                return res.status(500).json({ error: "Could not update order status" });
-            }
-
-            // Step 3: Fetch user FCM token
-        OrderDetails.getUserIdByOrderId(order_id, async (userErr, userResult) => {
-            if (userErr || userResult.length === 0 || !userResult[0].user_id) {
-                console.warn("User not found or error occurred:", userErr);
-                return res.status(200).json({ message: "Order accepted, notification not sent to user" });
-            }
-            const userId = userResult[0].user_id;
-            const store_name = userResult[0].store_name;
-            const vendor_lat = userResult[0].vendor_lat;
-            const vendor_lng = userResult[0].vendor_lng;
-
-            // Send notification to user who placed the order
-            const notifResult = await sendNotificationToUser({
-                userId,
-                title: "Order Accepted",
-                body: `Your order from ${store_name} has been accepted by the vendor.`,
-                data: { order_id: order_id.toString(), type: "order_update" }
+        await new Promise((resolve, reject) => {
+            OrderDetails.updateOrderStatus(order_id, order_status, (err) => {
+                if (err) return reject(err);
+                resolve();
             });
+        });
 
-            if (!notifResult.success) {
-                console.warn("Notification sending to user failed:", notifResult.error);
-            }
+        // Step 3: Fetch user info
+        const userResult = await new Promise((resolve, reject) => {
+            OrderDetails.getUserIdByOrderId(order_id, (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        });
 
-            try {
-                // Get nearby riders using async/await (assuming User.getNearbyRiders returns a promise)
+        if (userResult.length === 0 || !userResult[0].user_id) {
+            console.warn("User not found for notification");
+            return res.status(200).json({ message: "Order updated, but user notification skipped" });
+        }
+
+        const { user_id, store_name, vendor_lat, vendor_lng } = userResult[0];
+
+        // Step 4: Handle notification logic
+        const orderIdStr = order_id.toString();
+        const notifications = [];
+
+        switch (order_status) {
+            case 'confirmed&processing':
+                notifications.push(sendNotificationToUser({
+                    userId: user_id,
+                    title: "Order Confirmed",
+                    body: `Your order from ${store_name} is being prepared.`,
+                    data: { order_id: orderIdStr, type: "order_update" }
+                }));
+
+                // Notify nearby riders
                 const nearbyRiders = await User.getNearbyRiders(vendor_lat, vendor_lng, 3);
                 for (const rider of nearbyRiders) {
-                    await sendNotificationToUser({
-                        userId: rider.user_id,  // assuming rider object has user_id
+                    notifications.push(sendNotificationToUser({
+                        userId: rider.user_id,
                         title: "New Delivery Opportunity",
-                        body: `New order #${order_id} is ready for delivery near you.`,
+                        body: `New order #${order_id} is ready for pickup near you.`,
                         data: {
-                            order_id: order_id.toString(),
+                            order_id: orderIdStr,
                             type: "delivery_request",
                             vendor_id: vendor_id.toString(),
                         }
-                    });
+                    }));
                 }
-            } catch (riderErr) {
-                console.warn("Failed to notify nearby riders:", riderErr);
+                break;
+
+            case 'assigned':
+                notifications.push(sendNotificationToUser({
+                    userId: user_id,
+                    title: "Delivery Assigned",
+                    body: `A rider has been assigned to deliver your order.`,
+                    data: { order_id: orderIdStr, type: "order_update" }
+                }));
+                break;
+
+            case 'picked_up':
+                notifications.push(sendNotificationToUser({
+                    userId: user_id,
+                    title: "Order Picked Up",
+                    body: `Your order is on the way!`,
+                    data: { order_id: orderIdStr, type: "order_update" }
+                }));
+                break;
+
+            case 'delivered':
+                notifications.push(sendNotificationToUser({
+                    userId: user_id,
+                    title: "Order Delivered",
+                    body: `Your order has been delivered successfully.`,
+                    data: { order_id: orderIdStr, type: "order_update" }
+                }));
+                break;
+
+            default:
+                console.log("No specific notification for status:", order_status);
+        }
+
+        // Wait for all notifications to send
+        const notifResults = await Promise.allSettled(notifications);
+        notifResults.forEach((result, index) => {
+            if (result.status === "rejected") {
+                console.warn(`Notification #${index + 1} failed:`, result.reason);
             }
-
-            return res.status(200).json({ message: "Order accepted successfully" });
         });
 
-        });
-    });
+        return res.status(200).json({ message: `Order status updated to '${order_status}' successfully` });
+
+    } catch (error) {
+        console.error("Error in updateOrderStatus:", error);
+        return res.status(500).json({ error: "Something went wrong while updating order status" });
+    }
 };
+
 
 const getOrdersByUserId = (req, res) => {
     const { user_id } = req.body;
@@ -248,4 +294,4 @@ const getOrdersByUserId = (req, res) => {
 
 
  
- module.exports = { createOrder, getOrdersByUserId, acceptOrder };
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus };
