@@ -30,21 +30,25 @@ app.use(cors());
 
 // Routes with Prefixes
 app.use('/webhook', webhookHandler);
-app.use('/', userRoutes);
-app.use('/', productRoutes);  // Product-related routes (Prefix with /api)
-app.use('/', productCategoryRoutes);  // Product-related routes (Prefix with /api)
-app.use('/', productSubcategoryRoutes);  // Product-related routes (Prefix with /api)
-app.use('/', productBrandsRoutes);  // Product-related routes (Prefix with /api)
-app.use('/', appBanners);  // Product-related routes (Prefix with /api)
-app.use('/', userAddress);
-app.use('/', dynamicCategory);
-app.use('/', favouriteRoutes);
-app.use("/", orderRoutes);
-app.use("/", searchRoutes);
-app.use("/", productDiscount);
-app.use("/", notificationRoutes);
-app.use('/', chatbotRoutes);
-app.use('/', locationRoutes);
+
+app.use('/users', userRoutes);                      // User-related routes
+app.use('/useraddress', userAddress);               // User address routes
+app.use('/favourites', favouriteRoutes);            // Favourite-related routes
+app.use('/order', orderRoutes);                     // Order-related routes
+app.use('/search', searchRoutes);                   // Search-related routes
+app.use('/notifications', notificationRoutes);      // Notification-related routes
+app.use('/chatbot', chatbotRoutes);                 // Chatbot-related routes
+app.use('/location', locationRoutes);               // Location-related routes
+
+// Product-related routes
+app.use('/products', productRoutes);
+app.use('/category', productCategoryRoutes);
+app.use('/subcategory', productSubcategoryRoutes);
+app.use('/productbrands', productBrandsRoutes);
+app.use('/productdiscount', productDiscount);
+app.use('/banners', appBanners);
+app.use('/dynamiccat', dynamicCategory);
+
 
 
 // Start Server
