@@ -495,6 +495,7 @@ const User = {
                 v.store_name, 
                 v.profile_pic, 
                 v.user_id as vendor_id,
+                v.vendor_thumb,
                 v.vendor_timing,
                 IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
             FROM users u
