@@ -31,6 +31,8 @@ const storage = multer.diskStorage({
             uploadPath = 'uploads/identity_proof/';
         } else if (file.fieldname === 'worker_profilePic') {
             uploadPath = 'uploads/worker_profilePictures/';
+        } else if (file.fieldname === 'vendor_thumbnail') {
+            uploadPath = 'uploads/vendor_thumbnail/';
         }
 
         ensureDir(uploadPath); // Ensure folder exists
@@ -54,7 +56,8 @@ const uploadFields = upload.fields([
     { name: 'subcategory_logo', maxCount: 1 },  // Added brandLogo field
     { name: 'banner_image', maxCount: 1 },  // Added brandLogo field
     { name: 'identity_proof', maxCount: 1 },  // Added brandLogo field
-    { name: 'worker_profilePic', maxCount: 1 }  // Added brandLogo field
+    { name: 'worker_profilePic', maxCount: 1 },  // Added brandLogo field
+    { name: 'vendor_thumbnail', maxCount: 1 }  // Added brandLogo field
 ]);
 
 module.exports = uploadFields;

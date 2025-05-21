@@ -199,7 +199,7 @@ const User = {
             if (err) return callback(err, null);
     
             const userTableFields = ['firstname', 'lastname', 'prefix', 'phonenumber', 'email'];
-            const vendorTableFields = ['store_name', 'store_address', 'sin_code', 'profile_pic'];
+            const vendorTableFields = ['store_name', 'store_address', 'sin_code', 'profile_pic', 'vendor_thumb'];
             const deliveryPartnerTableFields = ['license_number','sin_code', 'profile_pic'];
             const customerTableFields = ['dob','gender'];
     
@@ -435,7 +435,7 @@ const User = {
             query = `
                 SELECT 
                     u.firstname, u.lastname, u.email, u.phonenumber, u.status, 
-                    v.id AS vendor_id, v.store_address, v.sin_code, v.store_name, v.profile_pic 
+                    v.id AS vendor_id, v.store_address, v.sin_code, v.store_name, v.profile_pic, v.vendor_thumb 
                 FROM users u 
                 LEFT JOIN vendors v ON v.user_id = u.id 
                 WHERE u.id = ? AND u.role_id = ?;

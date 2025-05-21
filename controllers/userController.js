@@ -673,6 +673,9 @@ const updateWorkersProfile = (req, res) => {
     const profile_pic = req.files && req.files['worker_profilePic'] 
         ? req.files['worker_profilePic'][0].path 
         : null;
+    const vendor_thumb = req.files && req.files['vendor_thumbnail'] 
+        ? req.files['vendor_thumbnail'][0].path 
+        : null;
 
     if ([1, 2].includes(parseInt(role_id))) {
         return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
@@ -686,7 +689,6 @@ const updateWorkersProfile = (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        console.log(user)
         // ✅ Step: Delete old profile picture if a new one is uploaded
         if (profile_pic && user.profile_pic) {
             const oldPicPath = path.resolve(user.profile_pic);
@@ -696,6 +698,16 @@ const updateWorkersProfile = (req, res) => {
                 }
             });
         }
+
+        if (vendor_thumb && user.vendor_thumb) {
+            const oldThumbPath = path.resolve(user.vendor_thumb);
+            fs.unlink(oldThumbPath, (unlinkErr) => {
+                if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+                    console.error('Failed to delete old vendor thumb:', unlinkErr);
+                }
+            });
+        }
+
 
         User.findByEmailOrPhone(email, phonenumber, (err, existingUser) => {
             if (err) {
@@ -711,7 +723,7 @@ const updateWorkersProfile = (req, res) => {
                 });
             }
 
-            const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob, profile_pic };
+            const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob, profile_pic, vendor_thumb };
 
             User.updateWorkerData(user_id, role_id, userData, (err, results) => {
                 if (err) {
