@@ -363,7 +363,7 @@ const Product = {
     },
 
 
-    findallByVendorId: (vendorID, callback) => {
+    findallByVendorId: (vendorID,searchTerm, callback) => {
         // Base query
         const query = `
             SELECT 
@@ -376,18 +376,23 @@ const Product = {
                 b.description AS brand_description,
                 IFNULL(d.discount_percent, 0) AS discount_percent,
                 ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
-                d.updated_at AS discount_updated_at
+                d.updated_at AS discount_updated_at,
+                CASE 
+                    WHEN ? IS NOT NULL AND p.name LIKE CONCAT('%', ?, '%') THEN 1 
+                    ELSE 0 
+                END AS match_priority
             FROM products p 
             LEFT JOIN product_categories c ON p.category_id = c.id 
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
             LEFT JOIN product_brands b ON p.brand_id = b.id
             LEFT JOIN product_discounts d ON p.id = d.product_id
-            WHERE p.vendor_id = ?;
+            WHERE p.vendor_id = ?
+            ORDER BY match_priority DESC, p.id DESC;
         `;
     
     
         // Corrected `vendorID` usage
-        db.query(query, [vendorID], (err, results) => {
+        db.query(query, [searchTerm, searchTerm, vendorID], (err, results) => {
             if (err) {
                 return callback(err, null);
             }

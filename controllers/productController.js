@@ -115,9 +115,9 @@ const getProductById = (req, res) => {
 
 // Get product by VendorID
 const getallproductsbyvendorID = (req, res) => {
-    const {vendor_id} = req.body;
+    const {vendor_id, searchTerm} = req.body;
 
-    Product.findallByVendorId(vendor_id, (err, product) => {
+    Product.findallByVendorId(vendor_id,searchTerm, (err, product) => {
         if (err || !product) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
