@@ -292,6 +292,61 @@ const getOrdersByUserId = (req, res) => {
     });
 };
 
+const getOrdersByVendorId = (req, res) => {
+    const { vendor_id } = req.body;
+
+    OrderModel.getOrdersByUserId(vendor_id, (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error" });
+
+        if (!results || results.length === 0) {
+            return res.status(200).json({ message: "No order found for this user." });
+        }
+
+        const ordersMap = {};
+
+        results.forEach(row => {
+            const {
+                order_id, user_id, total_quantity, total_price,
+                payment_method, order_created_at,
+                product_id, product_name, product_description,
+                product_price, total_item_price,
+                address, type, floor, landmark,
+                firstname, lastname, phonenumber
+            } = row;
+
+            if (!ordersMap[order_id]) {
+                ordersMap[order_id] = {
+                    order_id,
+                    user_id,
+                    total_quantity,
+                    total_price,
+                    payment_method,
+                    order_created_at,
+                    firstname,
+                    lastname,
+                    phonenumber,
+                    address,
+                    type,
+                    floor,
+                    landmark,
+                    items: []
+                };
+            }
+
+            ordersMap[order_id].items.push({
+                product_id,
+                product_name,
+                product_description,
+                product_price,
+                total_item_price
+            });
+        });
+
+        const groupedOrders = Object.values(ordersMap);
+        res.status(200).json(groupedOrders);
+    });
+};
+
 
  
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus };
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId };

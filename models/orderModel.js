@@ -21,7 +21,7 @@ const Order = {
         db.query(sql, [order_id], callback);
     },
 
-    getOrdersByUserId : (user_id, callback) => {
+    getOrdersByUserId : (vendor_id, callback) => {
         const query = `
             SELECT 
                 OD.id AS order_id,
@@ -29,6 +29,7 @@ const Order = {
                 OD.total_quantity,
                 OD.total_price,
                 OD.payment_method,
+                OD.order_status,
                 OD.created_at AS order_created_at,
                 OI.product_id,
                 OI.total_item_price,
@@ -47,10 +48,10 @@ const Order = {
             JOIN products P ON OI.product_id = P.id
             JOIN users u on OD.user_id = u.id
             JOIN user_addresses UA ON OD.user_address_id = UA.id
-            WHERE OD.user_id = ?;
+            WHERE OD.vendor_id = ?;
         `;
     
-        db.query(query, [user_id], callback);
+        db.query(query, [vendor_id], callback);
     }
 };
  
