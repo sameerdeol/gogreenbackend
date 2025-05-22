@@ -321,6 +321,7 @@ const getOrdersByVendorId = (req, res) => {
                     total_quantity,
                     total_price,
                     payment_method,
+                    order_status,
                     order_created_at,
                     firstname,
                     lastname,
