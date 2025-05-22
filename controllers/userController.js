@@ -724,7 +724,14 @@ const updateWorkersProfile = (req, res) => {
                 });
             }
 
-            const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob, profile_pic, vendor_thumb };
+            const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob };
+
+            // Only add `profile_pic` if uploaded
+            if (profile_pic) userData.profile_pic = profile_pic;
+
+            // Only add `vendor_thumb` if uploaded
+            if (vendor_thumb) userData.vendor_thumb = vendor_thumb;
+
 
             User.updateWorkerData(user_id, role_id, userData, (err, results) => {
                 if (err) {
