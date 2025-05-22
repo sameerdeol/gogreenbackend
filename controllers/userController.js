@@ -670,10 +670,11 @@ const resetPassword = (req, res) => {
 
 const updateWorkersProfile = (req, res) => {
     const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob } = req.body;
-    const profile_pic = req.files && req.files['worker_profilePic'] 
+    const profile_pic = req.files && req.files['worker_profilePic'] && req.files['worker_profilePic'].length > 0 
         ? req.files['worker_profilePic'][0].path 
         : null;
-    const vendor_thumb = req.files && req.files['vendor_thumbnail'] 
+
+    const vendor_thumb = req.files && req.files['vendor_thumbnail'] && req.files['vendor_thumbnail'].length > 0 
         ? req.files['vendor_thumbnail'][0].path 
         : null;
 
