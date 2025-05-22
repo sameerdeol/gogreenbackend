@@ -307,7 +307,7 @@ const getOrdersByVendorId = (req, res) => {
         results.forEach(row => {
             const {
                 order_id, user_id, total_quantity, total_price,
-                payment_method, order_created_at,
+                payment_method, order_created_at,order_status,
                 product_id, product_name, product_description,
                 product_price, total_item_price,
                 address, type, floor, landmark,
