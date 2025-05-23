@@ -2,7 +2,7 @@ const OrderDetails = require("../models/orderDetails");
 const OrderItem = require("../models/orderItem");
 const OrderModel = require("../models/orderModel");
 const sendNotificationToUser = require("../utils/sendNotificationToUser");
-const User = require('../models/User');
+const {User} = require('../models/User');
 const Product = require('../models/productModel');
 
  
@@ -157,8 +157,7 @@ const updateOrderStatus = async (req, res) => {
             console.warn("User not found for notification");
             return res.status(200).json({ message: "Order updated, but user notification skipped" });
         }
-
-        const { user_id, store_name, vendor_lat, vendor_lng } = userResult[0];
+        const { user_id, store_name, vendor_lat, vendor_lng, user_address_id } = userResult[0];
 
         // Step 4: Handle notification logic
         const orderIdStr = order_id.toString();
@@ -175,15 +174,20 @@ const updateOrderStatus = async (req, res) => {
 
                 // Notify nearby riders
                 const nearbyRiders = await User.getNearbyRiders(vendor_lat, vendor_lng, 3);
+                const customerVendorDistance = await User.getTravelDistance(vendor_lat, vendor_lng,user_id,user_address_id);
+                console.log("riders are",nearbyRiders)
+                console.log("vendor and customer distance",customerVendorDistance)
                 for (const rider of nearbyRiders) {
                     notifications.push(sendNotificationToUser({
                         userId: rider.user_id,
                         title: "New Delivery Opportunity",
-                        body: `New order #${order_id} is ready for pickup near you.`,
+                        body: `New order from ${store_name} is ready for pickup near you.`,
                         data: {
                             order_id: orderIdStr,
                             type: "delivery_request",
                             vendor_id: vendor_id.toString(),
+                            distance_from_vendor: rider.distance_km.toString(),
+                            distance_from_vendor_to_customer: customerVendorDistance.distance_km.toString(),
                         }
                     }));
                 }

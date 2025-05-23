@@ -22,7 +22,7 @@ const OrderDetails = {
     
     getUserIdByOrderId: (order_id, callback) => {
         const sql = `
-            SELECT o.user_id,v.store_name,v.vendor_lat,v.vendor_lng
+            SELECT o.user_id,v.store_name,v.vendor_lat,v.vendor_lng,o.user_address_id
             FROM order_details o
             JOIN vendors v on v.user_id=o.vendor_id 
             WHERE o.id = ?

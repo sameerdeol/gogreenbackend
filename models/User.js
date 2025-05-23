@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
-
+const { distanceCustomerVendor, getDistanceMatrix } = require('../utils/distanceService');
 
 
 const updateFields = (data, tableFields) => {
@@ -549,38 +549,86 @@ const User = {
             });
         });
     },
-    getNearbyRiders: (vendorLat, vendorLng, radiusInKm = 3) => {
+    getTravelDistance: async (vendorLat, vendorLng, user_id, user_address_id) => {
         return new Promise((resolve, reject) => {
-            const earthRadius = 6371; // km
-
             const sql = `
-                SELECT 
-                    dp.user_id, 
-                    dp.rider_lat, 
-                    dp.rider_lng,
-                    (
-                        ${earthRadius} * ACOS(
-                            COS(RADIANS(?)) * COS(RADIANS(dp.rider_lat)) *
-                            COS(RADIANS(dp.rider_lng) - RADIANS(?)) +
-                            SIN(RADIANS(?)) * SIN(RADIANS(dp.rider_lat))
-                        )
-                    ) AS distance
-                FROM 
-                    delivery_partners dp
-                HAVING distance <= ?
-                ORDER BY distance ASC;
+                SELECT customer_lat, customer_lng
+                FROM user_addresses
+                WHERE user_id = ? AND id = ?
             `;
-
-            const params = [vendorLat, vendorLng, vendorLat, radiusInKm];
-
-            db.query(sql, params, (err, results) => {
+            db.query(sql, [user_id, user_address_id], async (err, results) => {
                 if (err) return reject(err);
-                resolve(results);
+                if (!results.length) return reject(new Error("Address not found"));
+
+                const { customer_lat, customer_lng } = results[0];
+                try {
+                    const travelData = await distanceCustomerVendor(vendorLat, vendorLng, customer_lat, customer_lng);
+                    resolve(travelData);
+                } catch (err) {
+                    reject(err);
+                }
             });
         });
-    }
+    },
 
+
+getNearbyRiders: async (vendorLat, vendorLng, radiusInKm = 3) => {
+  vendorLat = Number(vendorLat);
+  vendorLng = Number(vendorLng);
+
+  if (isNaN(vendorLat) || isNaN(vendorLng)) {
+    throw new Error("Invalid coordinates");
+  }
+
+  const latDelta = radiusInKm / 111;
+  const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
+
+  const minLat = Number((vendorLat - latDelta).toFixed(6));
+  const maxLat = Number((vendorLat + latDelta).toFixed(6));
+  const minLng = Number((vendorLng - lngDelta).toFixed(6));
+  const maxLng = Number((vendorLng + lngDelta).toFixed(6));
+
+  const sql = `
+    SELECT user_id, rider_lat, rider_lng
+    FROM delivery_partners
+    WHERE rider_lat BETWEEN ? AND ?
+      AND rider_lng BETWEEN ? AND ?
+  `;
+
+  try {
+    const riders = await new Promise((resolve, reject) => {
+      db.query(sql, [minLat, maxLat, minLng, maxLng], (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      });
+    });
+
+    if (!riders.length) return [];
+
+    const distances = await getDistanceMatrix(vendorLat, vendorLng, riders);
+
+    const nearbyRiders = riders
+      .map((rider, index) => {
+        const distMeters = distances[index];
+        if (distMeters !== null && (distMeters / 1000) <= radiusInKm) {
+          return {
+            ...rider,
+            distance_km: ((distMeters / 1000).toFixed(2)),
+          };
+        }
+        return null;
+      })
+      .filter(rider => rider !== null);
+
+    return nearbyRiders;
+
+  } catch (error) {
+    console.error("Error in getNearbyRiders:", error);
+    throw error;
+  }
+}
 
 };
 
-module.exports = User;
+
+module.exports = {User};
