@@ -42,8 +42,32 @@ const getDistanceMatrix = async (vendorLat, vendorLng, riders) => {
 
   const elements = data.rows[0].elements;
 
-  // Return array of distances in meters, or null if route unavailable
-  return elements.map(el => (el.status === 'OK' ? el.distance.value : null));
-}
+  const results = await Promise.all(
+    riders.map(async (rider, index) => {
+      const distance = elements[index]?.status === 'OK' ? elements[index].distance.value : null;
+
+      let polyline = null;
+      try {
+        const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${rider.rider_lat},${rider.rider_lng}&destination=${vendorLat},${vendorLng}&mode=driving&key=${API_KEY}`;
+        const directionsRes = await axios.get(directionsUrl);
+        const route = directionsRes.data.routes[0];
+        if (route?.overview_polyline?.points) {
+          polyline = route.overview_polyline.points;
+        }
+      } catch (err) {
+        console.error(`Directions API error for rider ${rider.rider_id || 'unknown'}:`, err.message);
+      }
+
+      return {
+        rider,
+        distance,
+        polyline
+      };
+    })
+  );
+
+  return results;
+};
+
 
 module.exports = { distanceCustomerVendor, getDistanceMatrix };

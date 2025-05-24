@@ -184,7 +184,7 @@ const updateOrderStatus = async (req, res) => {
                         body: `New order from ${store_name} is ready for pickup near you.`,
                         data: {
                             order_id: orderIdStr,
-                            type: "delivery_request",
+                            type: "new_order",
                             vendor_id: vendor_id.toString(),
                             distance_from_vendor: rider.distance_km.toString(),
                             distance_from_vendor_to_customer: customerVendorDistance.distance_km.toString(),
@@ -350,8 +350,64 @@ const getOrdersByVendorId = (req, res) => {
         const groupedOrders = Object.values(ordersMap);
         res.status(200).json(groupedOrders);
     });
+    
+};
+const getOrderDetails = (req, res) => {
+    const { order_id } = req.body;
+
+    OrderModel.getOrdersByOrderId(order_id, (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error" });
+
+        if (!results || results.length === 0) {
+            return res.status(200).json({ message: "No order found for this user." });
+        }
+        const ordersMap = {};
+
+        results.forEach(row => {
+            const {
+                order_id, user_id, total_quantity, total_price,
+                payment_method, order_created_at,order_status,
+                product_id, product_name, product_description,
+                product_price, total_item_price,
+                address, type, floor, landmark,
+                firstname, lastname, phonenumber
+            } = row;
+
+            if (!ordersMap[order_id]) {
+                ordersMap[order_id] = {
+                    order_id,
+                    user_id,
+                    total_quantity,
+                    total_price,
+                    payment_method,
+                    order_status,
+                    order_created_at,
+                    firstname,
+                    lastname,
+                    phonenumber,
+                    address,
+                    type,
+                    floor,
+                    landmark,
+                    items: []
+                };
+            }
+
+            ordersMap[order_id].items.push({
+                product_id,
+                product_name,
+                product_description,
+                product_price,
+                total_item_price
+            });
+        });
+
+        const groupedOrders = Object.values(ordersMap);
+        res.status(200).json(groupedOrders);
+    });
+    
 };
 
 
  
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId };
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails };

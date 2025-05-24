@@ -605,20 +605,17 @@ const User = {
 
         if (!riders.length) return [];
 
-        const distances = await getDistanceMatrix(vendorLat, vendorLng, riders);
+        // Now get an array of {rider, distance, polyline}
+        const ridersWithDistances = await getDistanceMatrix(vendorLat, vendorLng, riders);
 
-        const nearbyRiders = riders
-        .map((rider, index) => {
-            const distMeters = distances[index];
-            if (distMeters !== null && (distMeters / 1000) <= radiusInKm) {
-            return {
-                ...rider,
-                distance_km: ((distMeters / 1000).toFixed(2)),
-            };
-            }
-            return null;
-        })
-        .filter(rider => rider !== null);
+        // Filter riders within radius and map needed data
+        const nearbyRiders = ridersWithDistances
+        .filter(({ distance }) => distance !== null && (distance / 1000) <= radiusInKm)
+        .map(({ rider, distance, polyline }) => ({
+            ...rider,
+            distance_km: (distance / 1000).toFixed(2),
+            polyline,
+        }));
 
         return nearbyRiders;
 
@@ -627,6 +624,7 @@ const User = {
         throw error;
     }
     }
+
 
 };
 
