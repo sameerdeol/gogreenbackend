@@ -80,7 +80,7 @@ const Order = {
             JOIN products P ON OI.product_id = P.id
             JOIN users u on OD.user_id = u.id
             JOIN user_addresses UA ON OD.user_address_id = UA.id
-            WHERE OD.order_id = ?;
+            WHERE OD.id = ?;
         `;
     
         db.query(query, [vendor_id], callback);
