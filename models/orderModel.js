@@ -81,7 +81,7 @@ const Order = {
             JOIN order_items OI ON OD.id = OI.order_id
             JOIN products P ON OI.product_id = P.id
             JOIN users u on OD.user_id = u.id
-            JOIN vendors v on OD.vendor_id = v.id
+            JOIN vendors v on OD.vendor_id = v.user_id
             JOIN user_addresses UA ON OD.user_address_id = UA.id
             WHERE OD.id = ?;
         `;
