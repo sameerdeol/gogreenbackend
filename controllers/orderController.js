@@ -353,60 +353,64 @@ const getOrdersByVendorId = (req, res) => {
     
 };
 const getOrderDetails = (req, res) => {
-    const { order_id } = req.body;
+  const { order_id } = req.body;
 
-    OrderModel.getOrdersByOrderId(order_id, (err, results) => {
-        if (err) return res.status(500).json({ error: "Database error" });
+  OrderModel.getOrdersByOrderId(order_id, (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
 
-        if (!results || results.length === 0) {
-            return res.status(200).json({ message: "No order found for this user." });
-        }
-        const ordersMap = {};
+    if (!results || results.length === 0) {
+      return res.status(200).json({ message: "No order found for this user." });
+    }
 
-        results.forEach(row => {
-            const {
-                order_id, user_id, total_quantity, total_price,
-                payment_method, order_created_at,order_status,
-                product_id, product_name, product_description,
-                product_price, total_item_price,
-                address, type, floor, landmark,
-                firstname, lastname, phonenumber
-            } = row;
+    const ordersMap = {};
 
-            if (!ordersMap[order_id]) {
-                ordersMap[order_id] = {
-                    order_id,
-                    user_id,
-                    total_quantity,
-                    total_price,
-                    payment_method,
-                    order_status,
-                    order_created_at,
-                    firstname,
-                    lastname,
-                    phonenumber,
-                    address,
-                    type,
-                    floor,
-                    landmark,
-                    items: []
-                };
-            }
+    results.forEach(row => {
+      const {
+        order_id, user_id, total_quantity, total_price,
+        payment_method, order_created_at, order_status,
+        product_id, product_name, product_description,
+        product_price, total_item_price,
+        address, type, floor, landmark,
+        store_name, store_address,
+        firstname, lastname, phonenumber
+      } = row;
 
-            ordersMap[order_id].items.push({
-                product_id,
-                product_name,
-                product_description,
-                product_price,
-                total_item_price
-            });
-        });
+      if (!ordersMap[order_id]) {
+        ordersMap[order_id] = {
+          order_id,
+          user_id,
+          total_quantity,
+          total_price,
+          payment_method,
+          order_status,
+          order_created_at,
+          firstname,
+          lastname,
+          store_name,
+          store_address,
+          phonenumber,
+          address,
+          type,
+          floor,
+          landmark,
+          items: []
+        };
+      }
 
-        const groupedOrders = Object.values(ordersMap);
-        res.status(200).json(groupedOrders);
+      ordersMap[order_id].items.push({
+        product_id,
+        product_name,
+        product_description,
+        product_price,
+        total_item_price
+      });
     });
-    
+
+    const groupedOrders = Object.values(ordersMap);
+    res.status(200).json(groupedOrders);
+  });
 };
+
 
 
  
