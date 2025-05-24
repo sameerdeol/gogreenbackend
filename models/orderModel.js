@@ -64,6 +64,8 @@ const Order = {
                 OD.order_status,
                 OD.created_at AS order_created_at,
                 OI.product_id,
+                v.store_address,
+                v.store_name,
                 OI.total_item_price,
                 P.name AS product_name,
                 P.description AS product_description,
@@ -79,6 +81,7 @@ const Order = {
             JOIN order_items OI ON OD.id = OI.order_id
             JOIN products P ON OI.product_id = P.id
             JOIN users u on OD.user_id = u.id
+            JOIN vendors v on OD.vendor_id = v.id
             JOIN user_addresses UA ON OD.user_address_id = UA.id
             WHERE OD.id = ?;
         `;
