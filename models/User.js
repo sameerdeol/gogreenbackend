@@ -572,61 +572,61 @@ const User = {
     },
 
 
-getNearbyRiders: async (vendorLat, vendorLng, radiusInKm = 3) => {
-  vendorLat = Number(vendorLat);
-  vendorLng = Number(vendorLng);
+    getNearbyRiders: async (vendorLat, vendorLng, radiusInKm = 3) => {
+    vendorLat = Number(vendorLat);
+    vendorLng = Number(vendorLng);
 
-  if (isNaN(vendorLat) || isNaN(vendorLng)) {
-    throw new Error("Invalid coordinates");
-  }
+    if (isNaN(vendorLat) || isNaN(vendorLng)) {
+        throw new Error("Invalid coordinates");
+    }
 
-  const latDelta = radiusInKm / 111;
-  const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
+    const latDelta = radiusInKm / 111;
+    const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
 
-  const minLat = Number((vendorLat - latDelta).toFixed(6));
-  const maxLat = Number((vendorLat + latDelta).toFixed(6));
-  const minLng = Number((vendorLng - lngDelta).toFixed(6));
-  const maxLng = Number((vendorLng + lngDelta).toFixed(6));
+    const minLat = Number((vendorLat - latDelta).toFixed(6));
+    const maxLat = Number((vendorLat + latDelta).toFixed(6));
+    const minLng = Number((vendorLng - lngDelta).toFixed(6));
+    const maxLng = Number((vendorLng + lngDelta).toFixed(6));
 
-  const sql = `
-    SELECT user_id, rider_lat, rider_lng
-    FROM delivery_partners
-    WHERE rider_lat BETWEEN ? AND ?
-      AND rider_lng BETWEEN ? AND ?
-  `;
+    const sql = `
+        SELECT user_id, rider_lat, rider_lng
+        FROM delivery_partners
+        WHERE rider_lat BETWEEN ? AND ?
+        AND rider_lng BETWEEN ? AND ?
+    `;
 
-  try {
-    const riders = await new Promise((resolve, reject) => {
-      db.query(sql, [minLat, maxLat, minLng, maxLng], (err, results) => {
-        if (err) return reject(err);
-        resolve(results);
-      });
-    });
+    try {
+        const riders = await new Promise((resolve, reject) => {
+        db.query(sql, [minLat, maxLat, minLng, maxLng], (err, results) => {
+            if (err) return reject(err);
+            resolve(results);
+        });
+        });
 
-    if (!riders.length) return [];
+        if (!riders.length) return [];
 
-    const distances = await getDistanceMatrix(vendorLat, vendorLng, riders);
+        const distances = await getDistanceMatrix(vendorLat, vendorLng, riders);
 
-    const nearbyRiders = riders
-      .map((rider, index) => {
-        const distMeters = distances[index];
-        if (distMeters !== null && (distMeters / 1000) <= radiusInKm) {
-          return {
-            ...rider,
-            distance_km: ((distMeters / 1000).toFixed(2)),
-          };
-        }
-        return null;
-      })
-      .filter(rider => rider !== null);
+        const nearbyRiders = riders
+        .map((rider, index) => {
+            const distMeters = distances[index];
+            if (distMeters !== null && (distMeters / 1000) <= radiusInKm) {
+            return {
+                ...rider,
+                distance_km: ((distMeters / 1000).toFixed(2)),
+            };
+            }
+            return null;
+        })
+        .filter(rider => rider !== null);
 
-    return nearbyRiders;
+        return nearbyRiders;
 
-  } catch (error) {
-    console.error("Error in getNearbyRiders:", error);
-    throw error;
-  }
-}
+    } catch (error) {
+        console.error("Error in getNearbyRiders:", error);
+        throw error;
+    }
+    }
 
 };
 
