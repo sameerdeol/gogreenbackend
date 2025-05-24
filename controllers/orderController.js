@@ -376,11 +376,7 @@ const getOrderDetails = (req, res) => {
         ordersMap[order_id] = {
           order_id,
           user_id,
-          total_quantity,
-          total_price,
-          payment_method,
           order_status,
-          order_created_at,
           firstname,
           lastname,
           store_name,
@@ -394,21 +390,13 @@ const getOrderDetails = (req, res) => {
         };
       }
 
-      ordersMap[order_id].items.push({
-        product_id,
-        product_name,
-        product_description,
-        product_price,
-        total_item_price
-      });
+      // If there is no item/product-level data, this part can be skipped or handled differently
+      ordersMap[order_id].items.push(row); // or remove this if no item details at all
     });
 
     const groupedOrders = Object.values(ordersMap);
     res.status(200).json(groupedOrders);
   });
 };
-
-
-
  
  module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails };
