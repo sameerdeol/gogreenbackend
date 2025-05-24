@@ -366,10 +366,18 @@ const getOrderDetails = (req, res) => {
 
     results.forEach(row => {
       const {
-        order_id, user_id, order_status,
-        address, type, floor, landmark,
-        store_name, store_address,
-        firstname, lastname, phonenumber
+        order_id,
+        user_id,
+        order_status,
+        address,
+        type,
+        floor,
+        landmark,
+        store_name,
+        store_address,
+        firstname,
+        lastname,
+        phonenumber
       } = row;
 
       if (!ordersMap[order_id]) {
@@ -385,18 +393,15 @@ const getOrderDetails = (req, res) => {
           address,
           type,
           floor,
-          landmark,
-          items: []
+          landmark
         };
       }
-
-      // If there is no item/product-level data, this part can be skipped or handled differently
-      ordersMap[order_id].items.push(row); // or remove this if no item details at all
     });
 
     const groupedOrders = Object.values(ordersMap);
     res.status(200).json(groupedOrders);
   });
 };
+
  
  module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails };
