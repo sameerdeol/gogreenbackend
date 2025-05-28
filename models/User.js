@@ -199,7 +199,7 @@ const User = {
             if (err) return callback(err, null);
     
             const userTableFields = ['firstname', 'lastname', 'prefix', 'phonenumber', 'email'];
-            const vendorTableFields = ['store_name', 'store_address', 'sin_code', 'profile_pic', 'vendor_thumb'];
+            const vendorTableFields = ['store_name', 'store_address', 'sin_code', 'profile_pic', 'vendor_thumb', 'vendor_lng', 'vendor_lat'];
             const deliveryPartnerTableFields = ['license_number','sin_code', 'profile_pic'];
             const customerTableFields = ['dob','gender'];
     

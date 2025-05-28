@@ -669,7 +669,7 @@ const resetPassword = (req, res) => {
 
 
 const updateWorkersProfile = (req, res) => {
-    const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob } = req.body;
+    const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob, vendor_lat, vendor_lng } = req.body;
     const profile_pic = req.files && req.files['worker_profilePic'] && req.files['worker_profilePic'].length > 0 
         ? req.files['worker_profilePic'][0].path 
         : null;
@@ -724,7 +724,7 @@ const updateWorkersProfile = (req, res) => {
                 });
             }
 
-            const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob };
+            const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob, vendor_lat, vendor_lng };
 
             // Only add `profile_pic` if uploaded
             if (profile_pic) userData.profile_pic = profile_pic;
