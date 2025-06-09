@@ -357,7 +357,7 @@ const vendorRiderSignup = async (req, res) => {
 const vendorRiderLogin = async (req, res) => {
   try {
     const { email, password, googleauthToken, role_id } = req.body;
-
+    console.log(req.body)
     if (!role_id) {
       return res.status(401).json({ success: false, message: "role_id is mandatory." });
     }
