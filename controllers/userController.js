@@ -356,9 +356,13 @@ const vendorRiderSignup = async (req, res) => {
 
 const vendorRiderLogin = async (req, res) => {
     try {
-        const { email, password, googleauthToken } = req.body;
+        const { email, password, googleauthToken, role_id } = req.body;
         let finalemail = email;
         let finalpassword = password;
+
+        if (!role_id) {
+            return res.status(401).json({ success: false, message: "Role_id id mandatory." });
+        }
 
         // Google Auth Token verification
         if (googleauthToken) {
@@ -371,7 +375,7 @@ const vendorRiderLogin = async (req, res) => {
             }
         }
 
-        User.findByEmailForVendorRider(finalemail, async (err, results) => {
+        User.findByEmailForVendorRider(finalemail,role_id, async (err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Internal server error', error: err });
             }

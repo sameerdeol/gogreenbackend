@@ -47,14 +47,14 @@ const User = {
     
         db.query(query, values, callback);
     },
-    findByEmailForVendorRider: (email, callback) => {
+    findByEmailForVendorRider: (email,role_id, callback) => {
         if (!email || typeof email !== 'string' || !email.match(/\S+@\S+\.\S+/)) {
             return callback(null, { success: false, message: "Invalid email format" });
         }
 
-        const checkQuery = `SELECT * FROM users WHERE email = ?`;
+        const checkQuery = `SELECT * FROM users WHERE email = ? and role_id =?`;
 
-        db.query(checkQuery, [email], (err, results) => {
+        db.query(checkQuery, [email,role_id], (err, results) => {
             if (err) {
                 return callback(err, null);
             }
