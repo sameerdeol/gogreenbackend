@@ -239,7 +239,111 @@ const searchProduct = {
   
       return callback(null, groupedResults);
     });
+  },
+
+  searchByVendor: (searchTerm, vendor_id, callback) => {
+  if (!vendor_id) {
+    return callback(new Error("vendor_id is required for this search"), null);
   }
+
+  const likeSearchTerm = `%${searchTerm || ''}%`;
+
+  const query = `
+    SELECT 'product' AS type, p.id, 
+          p.name COLLATE utf8mb4_general_ci AS name, 
+          p.description COLLATE utf8mb4_general_ci AS description,
+          p.featured_image COLLATE utf8mb4_general_ci AS image, 
+          NULL AS extra, 
+          NULL AS is_favourite,
+          CASE 
+              WHEN p.name LIKE ? THEN 3
+              WHEN c.name LIKE ? THEN 2
+              ELSE 1
+          END AS relevance
+    FROM products p
+    JOIN product_categories c ON p.category_id = c.id
+    WHERE p.vendor_id = ? AND (p.name LIKE ? COLLATE utf8mb4_general_ci OR c.name LIKE ? COLLATE utf8mb4_general_ci)
+
+    UNION ALL
+
+    SELECT DISTINCT 'category' AS type, pc.id, 
+          pc.name COLLATE utf8mb4_general_ci AS name, 
+          pc.description COLLATE utf8mb4_general_ci AS description,
+          pc.category_logo COLLATE utf8mb4_general_ci AS image,  
+          NULL AS extra, 
+          NULL AS is_favourite,
+          CASE 
+              WHEN pc.name LIKE ? THEN 3 
+              ELSE 1 
+          END AS relevance
+    FROM products p
+    JOIN product_categories pc ON p.category_id = pc.id
+    WHERE p.vendor_id = ? AND pc.name LIKE ? COLLATE utf8mb4_general_ci
+
+    UNION ALL
+
+    SELECT DISTINCT 'subcategory' AS type, ps.id, 
+          ps.name COLLATE utf8mb4_general_ci AS name, 
+          ps.description COLLATE utf8mb4_general_ci AS description, 
+          ps.subcategory_logo COLLATE utf8mb4_general_ci AS image,
+          ps.category_id AS extra, 
+          NULL AS is_favourite,
+          CASE 
+              WHEN ps.name LIKE ? THEN 3 
+              ELSE 1 
+          END AS relevance
+    FROM products p
+    JOIN product_subcategories ps ON p.sub_category = ps.id
+    WHERE p.vendor_id = ? AND ps.name LIKE ? COLLATE utf8mb4_general_ci
+
+    UNION ALL
+
+    SELECT 'vendor_info' AS type, u.id, 
+          v.store_name COLLATE utf8mb4_general_ci AS name, 
+          v.store_address COLLATE utf8mb4_general_ci AS description, 
+          v.profile_pic COLLATE utf8mb4_general_ci AS image,
+          NULL AS extra, 
+          NULL AS is_favourite,
+          CASE 
+              WHEN v.store_name LIKE ? THEN 3 
+              ELSE 1 
+          END AS relevance
+    FROM users u
+    JOIN vendors v ON v.user_id = u.id
+    WHERE v.user_id = ? AND v.store_name LIKE ? COLLATE utf8mb4_general_ci
+
+    ORDER BY relevance DESC;
+  `;
+
+  const values = [
+    // products
+    likeSearchTerm, likeSearchTerm, vendor_id, likeSearchTerm, likeSearchTerm,
+
+    // categories
+    likeSearchTerm, vendor_id, likeSearchTerm,
+
+    // subcategories
+    likeSearchTerm, vendor_id, likeSearchTerm,
+
+    // vendor info
+    likeSearchTerm, vendor_id, likeSearchTerm,
+  ];
+
+  db.query(query, values, (err, results) => {
+    if (err) return callback(err, null);
+
+    const groupedResults = results.reduce((acc, item) => {
+      if (!acc[item.type]) {
+        acc[item.type] = [];
+      }
+      acc[item.type].push(item);
+      return acc;
+    }, {});
+
+    return callback(null, groupedResults);
+  });
+}
+
   
   
 };
