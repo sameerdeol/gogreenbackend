@@ -700,12 +700,8 @@ const changePassword = (req, res) => {
             return res.status(401).json({ success: false, message: 'Old password is incorrect.' });
         }
 
-        // Step 3: Hash the new password
-        const hashedPassword = await bcrypt.hash(String(new_password), 10);
-
-
         // Step 4: Update the password in the database
-        User.updatePassword(user_id, hashedPassword, (err) => {
+        User.updatePassword(user_id, new_password, (err) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error updating password.' });
             }

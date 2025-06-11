@@ -88,11 +88,16 @@ const User = {
     },
 
     updatePassword: (user_id, new_password, callback) => {
-        bcrypt.hash(new_password, 10, (err, hashedPassword) => {
+        bcrypt.hash(String(new_password), 10, (err, hashedPassword) => {
             if (err) return callback(err);
-            db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user_id], callback);
+            db.query(
+                'UPDATE users SET password = ? WHERE id = ?',
+                [hashedPassword, user_id],
+                callback
+            );
         });
     },
+
 
     storeOTP: (email, otp, expiresAt, callback) => {
         // Delete any existing OTP entries for this email (including the flag state)
