@@ -64,7 +64,6 @@ const User = {
             }
 
             const user = results[0];
-
             // Don't return early — just pass back the user along with the verification info
             return callback(null, { success: true, user });
         });

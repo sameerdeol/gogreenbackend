@@ -357,7 +357,6 @@ const vendorRiderSignup = async (req, res) => {
 const vendorRiderLogin = async (req, res) => {
   try {
     const { email, password, googleauthToken, role_id } = req.body;
-    console.log(req.body)
     if (!role_id) {
       return res.status(401).json({ success: false, message: "role_id is mandatory." });
     }
@@ -391,8 +390,8 @@ const vendorRiderLogin = async (req, res) => {
       }
 
       const user = results.user;
+      const isValid = await bcrypt.compare(String(finalpassword), String(user.password));
 
-      const isValid = await bcrypt.compare(finalpassword, user.password);
       if (!isValid) {
         return res.status(401).json({ success: false, message: "Invalid credentials" });
       }
@@ -681,6 +680,70 @@ const resetPassword = (req, res) => {
     });
 };
 
+const changePassword = (req, res) => {
+    const { old_password, new_password, user_id } = req.body;
+
+    if (!user_id || !old_password || !new_password) {
+        return res.status(400).json({ success: false, message: 'Missing required fields.' });
+    }
+
+    // Step 1: Fetch user by ID
+    User.findById(user_id, async (err, user) => {
+        if (err || !user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        // Step 2: Compare old password
+        const isMatch = await bcrypt.compare(String(old_password), String(user.password));
+
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Old password is incorrect.' });
+        }
+
+        // Step 3: Hash the new password
+        const hashedPassword = await bcrypt.hash(String(new_password), 10);
+
+
+        // Step 4: Update the password in the database
+        User.updatePassword(user_id, hashedPassword, (err) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Error updating password.' });
+            }
+
+            // Step 5: Send confirmation email
+            const transporter = nodemailer.createTransport({
+                host: process.env.SMTP_HOST,
+                port: process.env.SMTP_PORT,
+                secure: process.env.SMTP_PORT === '465',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
+                },
+            });
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: user.email,
+                subject: 'Password Changed Successfully',
+                text: `Hi ${user.firstname || 'User'},\n\nYour password has been successfully changed. If you didn't request this change, please contact support immediately.`,
+            };
+
+            transporter.sendMail(mailOptions, (error) => {
+                if (error) {
+                    console.error('Error sending confirmation email:', error);
+                    return res.status(500).json({
+                        success: true,
+                        message: 'Password changed, but failed to send confirmation email.',
+                    });
+                }
+
+                res.json({ success: true, message: 'Password changed successfully and confirmation email sent.' });
+            });
+        });
+    });
+};
+
+
 
 const updateWorkersProfile = (req, res) => {
     const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob, vendor_lat, vendor_lng } = req.body;
@@ -872,4 +935,4 @@ const updateRiderLocation = (req, res) => {
 };
 
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp, updateRiderLocation};
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp, updateRiderLocation, changePassword};
