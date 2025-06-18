@@ -470,8 +470,9 @@ const User = {
                         SUM(order_status = 4) AS completed_orders,
                         SUM(order_status = 5) AS rejected_orders
                     FROM order_details
+                    WHERE order_status IN (4, 5)
                     GROUP BY vendor_id
-                ) od ON od.vendor_id = v.id
+                ) od ON od.vendor_id = v.user_id
 
                 WHERE u.id = ? AND u.role_id = ?;
             `;
