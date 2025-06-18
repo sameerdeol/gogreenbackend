@@ -457,9 +457,9 @@ const User = {
                     v.profile_pic, 
                     v.vendor_thumb,
 
-                    IFNULL(od.total_orders, 0) AS total_orders,
-                    IFNULL(od.completed_orders, 0) AS completed_orders,
-                    IFNULL(od.rejected_orders, 0) AS rejected_orders
+                    CAST(IFNULL(od.total_orders, 0) AS SIGNED) AS total_orders,
+                    CAST(IFNULL(od.completed_orders, 0) AS SIGNED) AS completed_orders,
+                    CAST(IFNULL(od.rejected_orders, 0) AS SIGNED) AS rejected_orders
 
                 FROM users u 
                 LEFT JOIN vendors v ON v.user_id = u.id 
@@ -473,8 +473,7 @@ const User = {
                     WHERE order_status IN (4, 5)
                     GROUP BY vendor_id
                 ) od ON od.vendor_id = v.user_id
-
-                WHERE u.id = ? AND u.role_id = ?;
+                WHERE u.id = ? AND u.role_id = ?
             `;
             queryParams.push(roleId); // Add roleId to parameters
         }else {
