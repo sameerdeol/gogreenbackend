@@ -450,7 +450,7 @@ const User = {
                     u.phonenumber, 
                     u.status,
                     u.custom_id,  
-                    v.id AS vendor_id, 
+                    v.user_id AS vendor_id,
                     v.store_address, 
                     v.sin_code, 
                     v.store_name, 
@@ -473,7 +473,7 @@ const User = {
                     WHERE order_status IN (4, 5)
                     GROUP BY vendor_id
                 ) od ON od.vendor_id = v.user_id
-                WHERE u.id = ? AND u.role_id = ?
+                WHERE u.id = ? AND u.role_id = ?;
             `;
             queryParams.push(roleId); // Add roleId to parameters
         }else {
