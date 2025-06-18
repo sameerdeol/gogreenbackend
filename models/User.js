@@ -30,9 +30,15 @@ const User = {
             callback(null, results[0]); // returns a single user object
         });
     },    
+    checkCustomIdExists : (custom_id, callback) => {
+        db.query('SELECT * FROM users WHERE custom_id = ?', [custom_id], (err, results) => {
+            if (err) return callback(err);
+            callback(null, results.length > 0);
+        });
+    },
 
     insertUser: (userData, callback) => {
-        const allowedFields = ["username", "firstname", "lastname", "password", "prefix", "phonenumber", "email", "role_id", "is_verified"];
+        const allowedFields = ["username", "firstname", "lastname", "password", "prefix", "phonenumber", "email", "role_id", "is_verified", "custom_id"];
         
         // Filter only available fields
         const fields = Object.keys(userData).filter(key => allowedFields.includes(key) && userData[key] !== undefined);
@@ -427,7 +433,7 @@ const User = {
         if (roleId === 4) {
             query = `
                 SELECT 
-                    u.firstname, u.lastname, u.email, u.phonenumber, u.prefix, u.status, 
+                    u.firstname, u.lastname, u.email, u.phonenumber, u.prefix, u.status,u.custom_id, 
                     dp.id AS delivery_partners_id, dp.sin_code, dp.license_number, dp.profile_pic 
                 FROM users u 
                 LEFT JOIN delivery_partners dp ON dp.user_id = u.id 
@@ -438,7 +444,7 @@ const User = {
             // Default query for other roles
             query = `
                 SELECT 
-                    u.firstname, u.lastname, u.email, u.phonenumber, u.status, 
+                    u.firstname, u.lastname, u.email, u.phonenumber, u.status,u.custom_id,  
                     v.id AS vendor_id, v.store_address, v.sin_code, v.store_name, v.profile_pic, v.vendor_thumb 
                 FROM users u 
                 LEFT JOIN vendors v ON v.user_id = u.id 
@@ -449,7 +455,7 @@ const User = {
         }else {
             query = `
                 SELECT 
-                    u.firstname, u.lastname, u.email, u.phonenumber, 
+                    u.firstname, u.lastname, u.email, u.phonenumber,u.custom_id, 
                     c.id AS customer_id, c.dob, c.gender
                 FROM users u 
                 LEFT JOIN customers c ON c.user_id = u.id 

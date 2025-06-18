@@ -9,6 +9,7 @@ const sendNotificationToUser = require('../utils/sendNotificationToUser');
 const verifyGoogleIdToken = require('../middleware/googleAuthToken');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
+const generateCustomId = require('../utils/generateCustomId');
 
 require('dotenv').config();
 
@@ -222,48 +223,72 @@ const vendorRiderSignup = async (req, res) => {
         let finalLastname = lastname;
         let finalPassword = password;
         let hashedPassword = null;
+        let custom_id = null;
 
-        // 🔹 Google Signup
-        if (googleauthToken) {
-            try {
-                const decoded = await verifyGoogleIdToken(googleauthToken);
-                finalEmail = decoded.email;
-                finalFirstname = decoded.name?.split(" ")[0] || "User";
-                finalLastname = decoded.name?.split(" ")[1] || "";
-                finalPassword = decoded.user_id || "defaultUserID";
-                hashedPassword = await bcrypt.hash(finalPassword, 10);
-            } catch (err) {
-                return res.status(401).json({
-                    success: false,
-                    message: "Invalid Google token",
-                });
-            }
-        } else {
-            if (!password || password.trim() === "") {
-                return res.status(400).json({
-                    success: false,
-                    message: "Password is required",
-                });
-            }
-            hashedPassword = await bcrypt.hash(password, 10);
+        // 🔁 Try to generate unique custom_id
+        function tryGenerateUniqueId(attemptsLeft, callback) {
+            if (attemptsLeft === 0) return callback(new Error('Failed to generate unique ID'), null);
+
+            const generatedId  = generateCustomId(role_id);
+            User.checkCustomIdExists(generatedId, (err, exists) => {
+                if (err) return callback(err);
+
+                if (exists) {
+                // Try again with remaining attempts
+                tryGenerateUniqueId(role_id, attemptsLeft - 1, callback);
+                } else {
+                // Unique ID found
+                callback(null, generatedId);
+                }
+            });
         }
 
-        const { username } = generateUniqueUsername(finalFirstname, phonenumber);
-
-        // 🔎 Check if user already exists
-        User.findByEmail(finalEmail, async (err, existingUser) => {
+        tryGenerateUniqueId(5, async (err, uniqueId) => {
             if (err) {
-                return res.status(500).json({
-                    success: false,
-                    message: "Server error while checking existing user",
-                    error: err.message,
-                });
+                return res.status(500).json({ message: 'Failed to generate unique ID', error: err.message });
             }
 
-            if (existingUser) {
-                // ✅ Allow access to token and verification status
-                const token = jwt.sign(
-                    {
+            custom_id = uniqueId;
+
+            // 🔹 Google Signup Flow
+            if (googleauthToken) {
+                try {
+                    const decoded = await verifyGoogleIdToken(googleauthToken);
+                    finalEmail = decoded.email;
+                    finalFirstname = decoded.name?.split(" ")[0] || "User";
+                    finalLastname = decoded.name?.split(" ")[1] || "";
+                    finalPassword = decoded.user_id || "defaultUserID";
+                    hashedPassword = await bcrypt.hash(finalPassword, 10);
+                } catch (err) {
+                    return res.status(401).json({
+                        success: false,
+                        message: "Invalid Google token",
+                    });
+                }
+            } else {
+                if (!password || password.trim() === "") {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Password is required",
+                    });
+                }
+                hashedPassword = await bcrypt.hash(password, 10);
+            }
+
+            const { username } = generateUniqueUsername(finalFirstname, phonenumber);
+
+            // 🔎 Check if user already exists
+            User.findByEmail(finalEmail, (err, existingUser) => {
+                if (err) {
+                    return res.status(500).json({
+                        success: false,
+                        message: "Error checking user existence",
+                        error: err.message,
+                    });
+                }
+
+                if (existingUser) {
+                    const token = jwt.sign({
                         user_id: existingUser.id,
                         username: existingUser.username,
                         email: existingUser.email,
@@ -271,57 +296,53 @@ const vendorRiderSignup = async (req, res) => {
                         firstname: existingUser.firstname,
                         lastname: existingUser.lastname,
                         is_verified: existingUser.is_verified,
-                    },
-                    process.env.JWT_SECRET
-                );
+                    }, process.env.JWT_SECRET);
 
-                // ❌ Block re-registration with a different role
-                if (existingUser.role_id !== role_id) {
-                    return res.status(409).json({
-                        success: false,
-                        message: `You already have an account as a ${existingUser.role_id === 3 ? "vendor" : "rider"}. You cannot register as a different role.`,
+                    if (existingUser.role_id !== role_id) {
+                        return res.status(409).json({
+                            success: false,
+                            message: `You already have an account as a ${existingUser.role_id === 3 ? "vendor" : "rider"}. Cannot register as a different role.`,
+                            token,
+                            is_verified: existingUser.is_verified,
+                            verification_Done: existingUser.verification_applied,
+                        });
+                    }
+
+                    return res.status(200).json({
+                        success: true,
+                        message: existingUser.is_verified
+                            ? "User already exists and is verified"
+                            : "User already exists but not verified. Complete profile.",
                         token,
                         is_verified: existingUser.is_verified,
-                        verification_Done: existingUser.verification_applied
+                        verification_Done: existingUser.verification_applied,
                     });
                 }
 
-                // ✅ Same role - just return token
-                return res.status(200).json({
-                    success: true,
-                    message: existingUser.is_verified
-                        ? "User already exists and is verified"
-                        : "User already exists but not verified. Complete profile to proceed",
-                    token,
-                    is_verified: existingUser.is_verified,
-                    verification_Done: existingUser.verification_applied
-                });
-            }
+                // 🆕 Create new user
+                const userData = {
+                    username,
+                    firstname: finalFirstname,
+                    lastname: finalLastname,
+                    password: hashedPassword,
+                    prefix,
+                    phonenumber,
+                    email: finalEmail,
+                    role_id,
+                    custom_id,
+                    is_verified: 0,
+                };
 
-            // 🆕 Create new user
-            const userData = {
-                username,
-                firstname: finalFirstname,
-                lastname: finalLastname,
-                password: hashedPassword,
-                prefix,
-                phonenumber,
-                email: finalEmail,
-                role_id,
-                is_verified: 0,
-            };
+                User.insertUser(userData, (err, userResult) => {
+                    if (err) {
+                        return res.status(500).json({
+                            success: false,
+                            message: "Error creating user",
+                            error: err.message,
+                        });
+                    }
 
-            User.insertUser(userData, (err, userResult) => {
-                if (err) {
-                    return res.status(500).json({
-                        success: false,
-                        message: "Server error while inserting user",
-                        error: err.message,
-                    });
-                }
-
-                const token = jwt.sign(
-                    {
+                    const token = jwt.sign({
                         user_id: userResult.insertId,
                         username,
                         email: finalEmail,
@@ -329,16 +350,16 @@ const vendorRiderSignup = async (req, res) => {
                         firstname: finalFirstname,
                         lastname: finalLastname,
                         is_verified: 0,
-                    },
-                    process.env.JWT_SECRET
-                );
+                    }, process.env.JWT_SECRET);
 
-                return res.status(201).json({
-                    success: true,
-                    message: "User created successfully",
-                    token,
-                    is_verified: 0,
-                    verification_Done: existingUser.verification_applied
+                    return res.status(201).json({
+                        success: true,
+                        message: "User created successfully",
+                        token,
+                        is_verified: 0,
+                        verification_Done: false,
+                        custom_id,
+                    });
                 });
             });
         });
@@ -350,7 +371,6 @@ const vendorRiderSignup = async (req, res) => {
         });
     }
 };
-
   
 
 
