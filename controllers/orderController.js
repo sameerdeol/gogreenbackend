@@ -164,7 +164,7 @@ const updateOrderStatus = async (req, res) => {
         const notifications = [];
 
         switch (order_status) {
-            case 'confirmed&processing':
+            case 1:
                 notifications.push(sendNotificationToUser({
                     userId: user_id,
                     title: "Order Confirmed",
@@ -193,7 +193,7 @@ const updateOrderStatus = async (req, res) => {
                 }
                 break;
 
-            case 'assigned':
+            case 2:
                 notifications.push(sendNotificationToUser({
                     userId: user_id,
                     title: "Delivery Assigned",
@@ -202,7 +202,7 @@ const updateOrderStatus = async (req, res) => {
                 }));
                 break;
 
-            case 'picked_up':
+            case 3:
                 notifications.push(sendNotificationToUser({
                     userId: user_id,
                     title: "Order Picked Up",
@@ -211,7 +211,7 @@ const updateOrderStatus = async (req, res) => {
                 }));
                 break;
 
-            case 'delivered':
+            case 4:
                 notifications.push(sendNotificationToUser({
                     userId: user_id,
                     title: "Order Delivered",
@@ -219,6 +219,15 @@ const updateOrderStatus = async (req, res) => {
                     data: { order_id: orderIdStr, type: "order_update" }
                 }));
                 break;
+            
+            case 5:
+                notifications.push(sendNotificationToUser({
+                    userId: user_id,
+                    title: "Order Rejected",
+                    body: `Your order from ${store_name} was rejected. Please contact support if needed.`,
+                    data: { order_id: orderIdStr, type: "order_update" }
+                }));
+                break;    
 
             default:
                 console.log("No specific notification for status:", order_status);

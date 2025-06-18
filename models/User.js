@@ -444,12 +444,36 @@ const User = {
             // Default query for other roles
             query = `
                 SELECT 
-                    u.firstname, u.lastname, u.email, u.phonenumber, u.status,u.custom_id,  
-                    v.id AS vendor_id, v.store_address, v.sin_code, v.store_name, v.profile_pic, v.vendor_thumb 
+                    u.firstname, 
+                    u.lastname, 
+                    u.email, 
+                    u.phonenumber, 
+                    u.status,
+                    u.custom_id,  
+                    v.id AS vendor_id, 
+                    v.store_address, 
+                    v.sin_code, 
+                    v.store_name, 
+                    v.profile_pic, 
+                    v.vendor_thumb,
+
+                    IFNULL(od.total_orders, 0) AS total_orders,
+                    IFNULL(od.completed_orders, 0) AS completed_orders,
+                    IFNULL(od.rejected_orders, 0) AS rejected_orders
+
                 FROM users u 
                 LEFT JOIN vendors v ON v.user_id = u.id 
-                WHERE u.id = ? AND u.role_id = ?;
+                LEFT JOIN (
+                    SELECT 
+                        vendor_id,
+                        COUNT(*) AS total_orders,
+                        SUM(order_status = 4) AS completed_orders,
+                        SUM(order_status = 5) AS rejected_orders
+                    FROM order_details
+                    GROUP BY vendor_id
+                ) od ON od.vendor_id = v.id
 
+                WHERE u.id = ? AND u.role_id = ?;
             `;
             queryParams.push(roleId); // Add roleId to parameters
         }else {
