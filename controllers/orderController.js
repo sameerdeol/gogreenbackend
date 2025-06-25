@@ -327,7 +327,7 @@ const getOrdersByVendorId = (req, res) => {
 
         results.forEach(row => {
             const {
-                order_id, user_id, total_quantity, total_price,
+                order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
                 payment_method, order_created_at,order_status,
                 product_id, product_name, product_description,
                 product_price, total_item_price,
@@ -338,6 +338,8 @@ const getOrdersByVendorId = (req, res) => {
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
                     order_id,
+                    order_uid,
+                    preparing_time,
                     user_id,
                     total_quantity,
                     total_price,
