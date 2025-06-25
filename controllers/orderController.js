@@ -424,5 +424,43 @@ const getOrderDetails = (req, res) => {
   });
 };
 
- 
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails };
+
+
+const updateOrderTiming = (req, res) => {
+  const { order_id, update_time, vendor_id } = req.body;
+
+  OrderModel.getOrdertimeByOrderId(order_id, vendor_id, (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+
+    if (!results || results.length === 0) {
+      return res.status(200).json({ message: "No order found for this user." });
+    }
+
+    const currentPreparingTime = results[0].preparing_time || 0;
+    let updatedTime = currentPreparingTime;
+
+    if (update_time.startsWith("+")) {
+      updatedTime += parseInt(update_time.substring(1), 10);
+    } else if (update_time.startsWith("-")) {
+      updatedTime -= parseInt(update_time.substring(1), 10);
+    } else {
+      return res.status(400).json({ message: "Invalid update_time format. Use +5 or -3 etc." });
+    }
+
+    // Ensure time doesn't go negative
+    if (updatedTime < 0) updatedTime = 0;
+
+    OrderModel.updatePreparingTime(order_id, vendor_id, updatedTime, (updateErr) => {
+      if (updateErr) return res.status(500).json({ error: "Failed to update preparing time" });
+
+      return res.status(200).json({
+        message: "Preparing time updated successfully",
+        old_time: currentPreparingTime,
+        new_time: updatedTime,
+      });
+    });
+  });
+};
+
+
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming };

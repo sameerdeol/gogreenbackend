@@ -82,6 +82,16 @@ const Order = {
         `;
     
         db.query(query, [vendor_id], callback);
+    },
+    getOrdertimeByOrderId : (order_id, vendor_id, callback) => {
+        const query = `
+        select preparing_time from order_details where id =?  and vendor_id = ?`;
+
+        db.query(query, [order_id, vendor_id], callback);
+    },    
+    updatePreparingTime: (order_id, vendor_id, newTime, callback) => {
+        const query = `UPDATE order_details SET preparing_time = ? WHERE id = ? AND vendor_id = ?`;
+        db.query(query, [newTime, order_id, vendor_id], callback);
     }
 };
  
