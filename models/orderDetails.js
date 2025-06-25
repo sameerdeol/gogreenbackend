@@ -1,9 +1,9 @@
 const db = require("../config/db");
  
 const OrderDetails = {
-    addOrder: (user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, callback) => {
-        const sql = `INSERT INTO order_details (user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        db.query(sql, [user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery], callback);
+    addOrder: (user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, order_uid, callback) => {
+        const sql = `INSERT INTO order_details (user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, order_uid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+        db.query(sql, [user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, order_uid], callback);
     },
 
     getOrderById: (order_id, callback) => {

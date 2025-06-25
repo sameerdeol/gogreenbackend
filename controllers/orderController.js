@@ -17,6 +17,7 @@ const createOrder = async (req, res) => {
 
         let total_quantity = 0;
         let total_price = 0;
+        const order_uid = `ORD${Date.now()}`;
 
         cart.forEach((item) => {
             total_quantity += item.quantity;
@@ -31,6 +32,7 @@ const createOrder = async (req, res) => {
             user_address_id,
             vendor_id,
             is_fast_delivery,
+            order_uid,
             async (err, result) => {
                 if (err) {
                     console.error("Error adding order details:", err);
@@ -57,7 +59,11 @@ const createOrder = async (req, res) => {
 
                     await Promise.all(itemPromises);
 
-                    res.status(201).json({ message: "Order created successfully", order_id });
+                    res.status(201).json({
+                        message: "Order created successfully",
+                        order_id,
+                        order_uid // return it to the frontend
+                    });
 
                     // Fetch user and address details
                     try {
@@ -90,11 +96,13 @@ const createOrder = async (req, res) => {
                             title: "New Order Received",
                             body: `You have a new order #${order_id}`,
                             data: {
-                                order_id: order_id.toString(),
-                                type: "new_order",
-                                customer:username,
-                                customer_address: addressText,
-                                order_cart: JSON.stringify(enrichedCart) // Must be string for FCM
+                            order_id: order_id.toString(),
+                            order_uid: order_uid.toString(),
+                            type: "new_order",
+                            customer: username.toString(),
+                            customer_address: addressText.toString(),
+                            order_cart: JSON.stringify(enrichedCart), // Already a string
+                            is_fast_delivery: is_fast_delivery.toString()
                             }
                         });
 

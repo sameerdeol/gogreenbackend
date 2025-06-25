@@ -3,6 +3,7 @@ const db = require('../config/db');
 
 // Single reusable function to notify any user by their ID
 const sendNotificationToUser = async ({ userId, title, body, data = {} }) => {
+    console.log(data)
     try {
         // Fetch FCM token
         const [user] = await new Promise((resolve, reject) => {
