@@ -330,9 +330,9 @@ const getOrdersByVendorId = (req, res) => {
                 order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
                 payment_method, order_created_at,order_status,
                 product_id, product_name, product_description,
-                product_price, total_item_price,
+                product_price, food_type, total_item_price,
                 address, type, floor, landmark,
-                firstname, lastname, phonenumber
+                firstname, lastname, phonenumber, is_fast_delivery
             } = row;
 
             if (!ordersMap[order_id]) {
@@ -341,6 +341,7 @@ const getOrdersByVendorId = (req, res) => {
                     order_uid,
                     preparing_time,
                     user_id,
+                    is_fast_delivery,
                     total_quantity,
                     total_price,
                     payment_method,
@@ -362,6 +363,7 @@ const getOrdersByVendorId = (req, res) => {
                 product_name,
                 product_description,
                 product_price,
+                food_type,
                 total_item_price
             });
         });
