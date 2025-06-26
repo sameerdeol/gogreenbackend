@@ -40,13 +40,24 @@ router.post('/appsignup', (req, res) => {
 /**
  * Vendor & Rider verification
  */
-router.post(['/vendor-verification', '/rider-verification'],verifyToken, uploadFields, (req, res, next) => {
+router.post(
+  ['/vendor-verification', '/rider-verification'],
+  uploadFields,
+  (req, res, next) => {
     if (req.files?.identity_proof?.[0]) {
-        req.body.identity_proof = req.files.identity_proof[0].path || null; // ✅ Full URL
+      req.body.identity_proof = req.files.identity_proof[0].path || null;
+    }
+    if (req.files?.worker_profilePic?.[0]) {
+      req.body.worker_profilePic = req.files.worker_profilePic[0].path || null;
+    }
+    if (req.files?.store_image?.[0]) {
+      req.body.store_image = req.files.store_image[0].path || null;
     }
 
     vendorRiderVerification(req, res);
-});
+  }
+);
+
 
 router.post(['/update-vendorPassword', '/update-riderPassword'],verifyToken,updatePassword);
 router.put(['/update-vendorProfile', '/update-riderProfile', '/update-customerProfile'],verifyToken,uploadFields,updateWorkersProfile);

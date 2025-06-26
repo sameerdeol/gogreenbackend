@@ -513,7 +513,7 @@ const createSuperadminManagers = (req, res) => {
 
 const vendorRiderVerification = async (req, res) => {
     try {
-        const { role_id, storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number } = req.body;
+        const { role_id, storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number, worker_profilePic, store_image, business_reg_number } = req.body;
 
         // Block roles not allowed
         if ([1, 2].includes(parseInt(role_id))) {
@@ -546,7 +546,10 @@ const vendorRiderVerification = async (req, res) => {
                 sincode,
                 countrystatus,
                 identity_proof,
-                license_number
+                license_number,
+                worker_profilePic,
+                store_image,
+                business_reg_number, 
             };
 
             User.insertUserVerification(role_id, userData, (err, result) => {
