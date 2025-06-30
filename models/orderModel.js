@@ -140,7 +140,7 @@ const Order = {
         if (!rows.length) return { status: 'not_found' };
 
         const order = rows[0];
-
+        console.log(order)
         if (order.otp_verified) return { status: 'already_verified' };
         if (new Date() > new Date(order.otp_expiry)) return { status: 'expired' };
         if (String(order.otp) !== String(enteredOtp)) return { status: 'invalid' };
