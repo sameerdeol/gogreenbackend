@@ -4,6 +4,8 @@ const OrderModel = require("../models/orderModel");
 const sendNotificationToUser = require("../utils/sendNotificationToUser");
 const {User} = require('../models/User');
 const Product = require('../models/productModel');
+const { generateOtp } = require('../utils/otpGenerator'); // adjust path if needed
+
 
  
 const createOrder = async (req, res) => {
@@ -202,11 +204,25 @@ const updateOrderStatus = async (req, res) => {
                 break;
 
             case 2:
+                const otp = generateOtp();
+                const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins from now
+                console.log(orderIdStr,otp,expiry)
+                // Call model function
+                await OrderModel.updateOtpAndStatus(orderIdStr, otp, expiry);
+                // Notify user
                 notifications.push(sendNotificationToUser({
                     userId: user_id,
                     title: "Delivery Assigned",
                     body: `A rider has been assigned to deliver your order.`,
                     data: { order_id: orderIdStr, type: "order_update" }
+                }));
+
+                // Notify rider
+                notifications.push(sendNotificationToUser({
+                    userId: user_id,
+                    title: "OTP for Vendor",
+                    body: `Show this OTP to the vendor: ${otp}`,
+                    data: { order_id: orderIdStr, type: "otp_info" }
                 }));
                 break;
 
@@ -462,5 +478,44 @@ const updateOrderTiming = (req, res) => {
   });
 };
 
+const verifyOtp = async (req, res) => {
+  try {
+    const { order_id, entered_otp } = req.body;
 
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming };
+    if (!order_id || !entered_otp) {
+      return res.status(400).json({ message: "Missing order_id or entered_otp" });
+    }
+
+    const result = await OrderModel.verifyOtp(order_id, entered_otp);
+    switch (result.status) {
+      case 'not_found':
+        return res.status(404).json({ message: "Order not found" });
+
+      case 'already_verified':
+        return res.status(400).json({ message: "OTP already verified" });
+
+      case 'expired':
+        return res.status(400).json({ message: "OTP has expired" });
+
+      case 'invalid':
+        return res.status(401).json({ message: "Invalid OTP" });
+
+      case 'verified':
+        await sendNotificationToUser({
+          userId: result.user_id,
+          title: "Order Picked Up",
+          body: "Your order is on the way!",
+          data: { order_id: order_id.toString(), type: "order_update" }
+        });
+        return res.status(200).json({ message: "OTP verified successfully. Order picked up." });
+
+      default:
+        return res.status(500).json({ message: "Unexpected error" });
+    }
+  } catch (error) {
+    console.error("verifyOtp error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp};

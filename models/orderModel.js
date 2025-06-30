@@ -92,7 +92,65 @@ const Order = {
     updatePreparingTime: (order_id, vendor_id, newTime, callback) => {
         const query = `UPDATE order_details SET preparing_time = ? WHERE id = ? AND vendor_id = ?`;
         db.query(query, [newTime, order_id, vendor_id], callback);
+    },
+
+    updateOtpAndStatus: (orderId, otp, expiry) => {
+    return new Promise((resolve, reject) => {
+        const sql = `
+        UPDATE order_details 
+        SET otp = ?, otp_expiry = ?, otp_verified = 0, order_status = 2 
+        WHERE id = ?
+        `;
+        db.query(sql, [otp, expiry, orderId], (err, result) => {
+        if (err) return reject(err);
+        resolve(result);
+        });
+    });
+    },
+
+    verifyOtp: async (orderId, enteredOtp) => {
+        const getOtpDetails = () => {
+            return new Promise((resolve, reject) => {
+                db.query(
+                    `SELECT otp, otp_expiry, otp_verified, user_id FROM order_details WHERE id = ?`,
+                    [orderId],
+                    (err, results) => {
+                        if (err) return reject(err);
+                        resolve(results);
+                    }
+                );
+            });
+        };
+
+        const updateStatus = () => {
+            return new Promise((resolve, reject) => {
+                db.query(
+                    `UPDATE order_details SET otp_verified = 1, order_status = 3 WHERE id = ?`,
+                    [orderId],
+                    (err, result) => {
+                        if (err) return reject(err);
+                        resolve(result);
+                    }
+                );
+            });
+        };
+
+        const rows = await getOtpDetails();
+
+        if (!rows.length) return { status: 'not_found' };
+
+        const order = rows[0];
+
+        if (order.otp_verified) return { status: 'already_verified' };
+        if (new Date() > new Date(order.otp_expiry)) return { status: 'expired' };
+        if (String(order.otp) !== String(enteredOtp)) return { status: 'invalid' };
+
+        // Valid OTP, update status
+        await updateStatus();
+
+        return { status: 'verified', user_id: order.user_id };
     }
+
 };
  
  module.exports = Order;
