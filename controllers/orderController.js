@@ -204,7 +204,7 @@ const updateOrderStatus = async (req, res) => {
                 break;
 
             case 2:
-                const otp = generateOtp();
+                const otp = generateOtp(6);
                 const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins from now
                 console.log(orderIdStr,otp,expiry)
                 // Call model function

@@ -10,5 +10,6 @@ router.post('/getorderdetails', verifyToken, getOrderDetails);
 router.post('/getallorderbyvendorid', verifyToken, getOrdersByVendorId);
 router.post('/updateordertiming', updateOrderTiming);
 router.post('/verifyotprider', verifyOtp);
+
  
 module.exports = router;
