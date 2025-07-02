@@ -6,7 +6,7 @@ const {createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, 
 router.post("/createorder",   createOrder);
 router.put('/updateorderstatus',  updateOrderStatus);
 router.post('/getorderbyuserID', verifyToken, getOrdersByUserId);
-router.post('/getorderdetails', verifyToken, getOrderDetails);
+router.post('/getorderdetails', getOrderDetails);
 router.post('/getallorderbyvendorid', verifyToken, getOrdersByVendorId);
 router.post('/updateordertiming', updateOrderTiming);
 router.post('/verifyotprider', verifyOtp);

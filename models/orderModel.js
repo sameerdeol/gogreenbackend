@@ -57,31 +57,66 @@ const Order = {
     
         db.query(query, [vendor_id], callback);
     },
-        getOrdersByOrderId : (vendor_id, callback) => {
+        getOrdersByOrderId : (order_id, callback) => {
         const query = `
             SELECT 
                 OD.id AS order_id,
                 OD.user_id,
+                OD.total_quantity,
+                OD.total_price,
+                OD.payment_method,
+                OD.is_fast_delivery,
                 OD.order_status,
-                v.store_address,
-                v.store_name,
+                OD.created_at,
+
+                U.firstname,
+                U.lastname,
+                U.email,
+                U.prefix,
+                U.phonenumber,
+                U.custom_id AS user_custom_id,
+
                 UA.address,
                 UA.type,
                 UA.floor,
                 UA.landmark,
-                u.firstname,
-                u.lastname,
-                u.phonenumber
-            FROM order_details OD
-            JOIN order_items OI ON OD.id = OI.order_id
-            JOIN products P ON OI.product_id = P.id
-            JOIN users u on OD.user_id = u.id
-            JOIN vendors v on OD.vendor_id = v.user_id
-            JOIN user_addresses UA ON OD.user_address_id = UA.id
-            WHERE OD.id = ?;
+
+                V.store_address,
+                V.store_name,
+                VU.custom_id AS vendor_custom_id,
+
+                R.firstname AS rider_first_name,
+                R.lastname AS rider_last_name,
+                R.custom_id AS rider_custom_id,
+
+                OI.product_quantity,
+                OI.total_item_price,
+                OI.single_item_price,
+
+                P.name AS product_name,
+                P.size AS product_size
+
+            FROM 
+                order_details OD
+            JOIN 
+                users U ON U.id = OD.user_id               -- Customer
+            JOIN 
+                users VU ON VU.id = OD.vendor_id           -- Vendor
+            JOIN 
+                users R ON R.id = OD.rider_id              -- Rider
+            JOIN 
+                user_addresses UA ON UA.id = OD.user_address_id
+            JOIN 
+                vendors V ON V.user_id = OD.vendor_id
+            JOIN 
+                order_items OI ON OI.order_id = OD.id
+            JOIN 
+                products P ON P.id = OI.product_id
+            WHERE 
+                OD.id = ?;
         `;
     
-        db.query(query, [vendor_id], callback);
+        db.query(query, [order_id], callback);
     },
     getOrdertimeByOrderId : (order_id, vendor_id, callback) => {
         const query = `
