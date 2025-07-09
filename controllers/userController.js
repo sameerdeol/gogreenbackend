@@ -591,7 +591,7 @@ const updatePassword = (req, res) => {
 // SEND OTP for forgot password
 const sendOTP = (req, res) => {
     const { email } = req.body;
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const otp =  generateOtp(6);;
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     User.findByEmail(email, (err, user) => {

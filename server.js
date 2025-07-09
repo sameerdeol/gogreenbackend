@@ -24,9 +24,17 @@ const locationRoutes = require('./routes/locationRoutes');
 const app = express();
 
 // Middleware
+// Middleware
 app.use(express.json()); // Handles application/json (raw JSON)
 app.use(express.urlencoded({ extended: true })); // Handles form-data (x-www-form-urlencoded)
-app.use(cors());
+
+// ✅ CORS setup for all origins and headers
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.options('*', cors());
 
 // Routes with Prefixes
 app.use('/webhook', webhookHandler);
