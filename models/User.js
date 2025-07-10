@@ -342,14 +342,14 @@ const User = {
             SELECT u.*, v.* 
             FROM users u
             JOIN vendors v ON u.id = v.user_id
-            WHERE u.is_verified IN (0, 2);
+            WHERE u.is_verified IN (0, 2, 3);
         `;
     
         const deliveryPartnersQuery = `
             SELECT u.*, dp.* 
             FROM users u
             JOIN delivery_partners dp ON u.id = dp.user_id
-            WHERE u.is_verified IN (0, 2);
+            WHERE u.is_verified IN (0, 2, 3);
         `;
     
         db.query(vendorsQuery, (err, vendors) => {
