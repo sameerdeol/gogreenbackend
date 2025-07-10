@@ -364,9 +364,9 @@ const User = {
     },
 
     // Approve verification for a specific user
-    verifyUser: (userId, callback) => {
-        const query = `UPDATE users SET is_verified = 1 WHERE id = ? AND is_verified = 0`;
-        db.query(query, [userId], callback);
+    verifyUser: (userId,verification_status, callback) => {
+        const query = `UPDATE users SET is_verified = ? WHERE id = ? AND is_verified = 0`;
+        db.query(query, [verification_status,userId], callback);
     },
 
     checkVerificationStatus: (user_id, callback) => {

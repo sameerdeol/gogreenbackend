@@ -175,9 +175,9 @@ const getUnverifiedUsers = (req, res) => {
 
 
 const verifyUser = (req, res) => {
-    const userId = req.body.id;
-
-    User.verifyUser(userId, async (err, result) => {
+    const {id,verification_status} = req.body.id;
+    const userId=id;
+    User.verifyUser(userId,verification_status, async (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
