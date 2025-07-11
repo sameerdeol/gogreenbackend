@@ -175,33 +175,71 @@ const getUnverifiedUsers = (req, res) => {
 
 
 const verifyUser = (req, res) => {
-    const {userId,verification_status} = req.body;
-    User.verifyUser(userId,verification_status, async (err, result) => {
+    const { userId, verification_status } = req.body;
+
+    // Check if the status is within the valid range
+    if (![0, 1, 2, 3].includes(verification_status)) {
+        return res.status(400).json({ success: false, message: 'Invalid verification status' });
+    }
+
+    User.verifyUser(userId, verification_status, async (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'User not found or already verified' });
+            return res.status(404).json({ success: false, message: 'User not found or status unchanged' });
         }
+
+        let notificationTitle = '';
+        let notificationBody = '';
+
+        switch (verification_status) {
+            case 0:
+                notificationTitle = 'Verification Pending';
+                notificationBody = 'Your account verification is pending. We’ll notify you once reviewed.';
+                break;
+            case 1:
+                notificationTitle = 'Account Approved';
+                notificationBody = 'Congratulations! Your account has been approved.';
+                break;
+            case 2:
+                notificationTitle = 'Account Rejected';
+                notificationBody = 'We’re sorry, but your account verification was rejected.';
+                break;
+            case 3:
+                notificationTitle = 'Under Review';
+                notificationBody = 'Your account is currently under review. We’ll update you soon.';
+                break;
+        }
+
+        try {
             const notificationResult = await sendNotificationToUser({
                 userId,
-                title: 'Account Verified',
-                body: 'Your account has been successfully verified!',
-                data: { type: "account_verified" }
+                title: notificationTitle,
+                body: notificationBody,
+                data: { type: "account_verification", status: verification_status }
             });
 
             if (!notificationResult.success) {
                 return res.status(500).json({
                     success: true,
-                    message: 'User verified, but failed to send notification',
+                    message: 'Status updated, but failed to send notification',
                     notificationError: notificationResult.error
                 });
             }
 
-            res.json({ success: true, message: 'User verified and notification sent.' });
+            res.json({ success: true, message: 'Status updated and notification sent.' });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Unexpected error during notification',
+                error
+            });
+        }
     });
 };
+
 
 
 const vendorRiderSignup = async (req, res) => {

@@ -77,7 +77,7 @@ router.put('/updateRider-location', verifyToken, updateRiderLocation);
  */
 router.put('/update-user', authenticateToken, updateUser);
 router.get('/unverifiedUsers', authenticateToken, getUnverifiedUsers);
-router.put('/verify-user', authenticateToken, verifyUser);
+router.put('/verify-user', verifyUser);
 
 
 
