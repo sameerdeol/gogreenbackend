@@ -217,8 +217,7 @@ const verifyUser = (req, res) => {
             const notificationResult = await sendNotificationToUser({
                 userId,
                 title: notificationTitle,
-                body: notificationBody,
-                data: { type: "account_verification", status: verification_status }
+                body: notificationBody
             });
 
             if (!notificationResult.success) {
