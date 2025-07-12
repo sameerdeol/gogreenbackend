@@ -79,7 +79,7 @@ router.post(
   uploadFields,
   (req, res, next) => {
     if (req.files?.worker_profilePic?.[0]) {
-      req.body.worker_profilePic = req.files.uworker_profilePicser_image[0].path || null;
+      req.body.worker_profilePic = req.files.worker_profilePic[0].path || null;
     }
     if (req.files?.bussiness_license_number_pic?.[0]) {
       req.body.bussiness_license_number_pic = req.files.bussiness_license_number_pic[0].path || null;
