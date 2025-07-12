@@ -78,8 +78,8 @@ router.post(
   ['/store-bussinessdetils'],
   uploadFields,
   (req, res, next) => {
-    if (req.files?.worker_profilePic?.[0]) {
-      req.body.worker_profilePic = req.files.worker_profilePic[0].path || null;
+    if (req.files?.profile_pic?.[0]) {
+      req.body.profile_pic = req.files.profile_pic[0].path || null;
     }
     if (req.files?.bussiness_license_number_pic?.[0]) {
       req.body.bussiness_license_number_pic = req.files.bussiness_license_number_pic[0].path || null;

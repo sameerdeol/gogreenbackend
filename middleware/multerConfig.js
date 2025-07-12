@@ -35,8 +35,8 @@ const storage = multer.diskStorage({
             uploadPath = 'uploads/vendor_thumbnail/';
         } else if (file.fieldname === 'store_image') {
             uploadPath = 'uploads/store_images/';
-        } else if (file.fieldname === 'user_image') {
-            uploadPath = 'uploads/user_image/';
+        } else if (file.fieldname === 'profile_pic') {
+            uploadPath = 'uploads/profile_pic/';
         } else if (file.fieldname === 'bussiness_license_number_pic') {
             uploadPath = 'uploads/bussiness_license_number_pic/';
         } else if (file.fieldname === 'gst_number_pic') {
@@ -64,7 +64,7 @@ const uploadFields = upload.fields([
     { name: 'subcategory_logo', maxCount: 1 },  // Added brandLogo field
     { name: 'banner_image', maxCount: 1 },  // Added brandLogo field
     { name: 'identity_proof', maxCount: 1 },  // Added brandLogo field
-    { name: 'worker_profilePic', maxCount: 1 },  // Added brandLogo field
+    { name: 'profile_pic', maxCount: 1 },  // Added brandLogo field
     { name: 'vendor_thumbnail', maxCount: 1 },  // Added brandLogo field
     { name: 'store_image', maxCount: 1 },
     { name: 'bussiness_license_number_pic', maxCount: 1 },  // Added brandLogo field
