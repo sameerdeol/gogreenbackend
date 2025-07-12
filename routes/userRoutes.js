@@ -19,7 +19,8 @@ const {
     verifyOtp,
     updateRiderLocation,
     changePassword,
-    storeBusinessDetails
+    storeBusinessDetails,
+    storeAdditionalDetails
 } = require('../controllers/userController');
 
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -75,7 +76,7 @@ router.put('/updateRider-location', verifyToken, updateRiderLocation);
 
 
 router.post(
-  ['/store-bussinessdetils'],
+  ['/store-bussinessdetails'],
   uploadFields,
   (req, res, next) => {
     if (req.files?.profile_pic?.[0]) {
@@ -89,6 +90,23 @@ router.post(
     }
 
       storeBusinessDetails(req, res);
+  }
+);
+router.post(
+  ['/store-additionaldetails'],
+  uploadFields,
+  (req, res, next) => {
+    if (req.files?.food_certificate?.[0]) {
+      req.body.food_certificate = req.files.food_certificate[0].path || null;
+    }
+    if (req.files?.health_inspection_certificate?.[0]) {
+      req.body.health_inspection_certificate = req.files.health_inspection_certificate[0].path || null;
+    }
+    if (req.files?.vendor_insurance_certificate?.[0]) {
+      req.body.vendor_insurance_certificate = req.files.vendor_insurance_certificate[0].path || null;
+    }
+
+      storeAdditionalDetails(req, res);
   }
 );
 

@@ -1012,12 +1012,10 @@ const storeBusinessDetails = async (req, res) => {
             gst_number_pic
         };
 
-        // Filter out undefined/null fields (optional, but cleaner)
         const filteredData = Object.fromEntries(
             Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
         );
 
-        // Call your update/insert function (UPSERT style)
         User.updateStoreDetails(user_id, filteredData, (err, result) => {
             if (err) {
                 console.error('DB Error:', err);
@@ -1025,6 +1023,68 @@ const storeBusinessDetails = async (req, res) => {
                     success: false,
                     message: 'Error saving store details',
                     error: err.message || err
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No user found with the provided user_id'
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Store details stored successfully'
+            });
+        });
+
+    } catch (error) {
+        console.error('Unexpected Server Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        }
+    }
+};
+
+
+const storeAdditionalDetails = async (req, res) => {
+    try {
+        const {
+            user_id,
+            vendor_insurance_certificate,
+            health_inspection_certificate,
+            food_certificate
+        } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({ success: false, message: 'user_id is required' });
+        }
+
+        const userData = {
+            vendor_insurance_certificate,
+            health_inspection_certificate,
+            food_certificate
+        };
+
+        const filteredData = Object.fromEntries(
+            Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
+        );
+
+        User.updateStoreDetails(user_id, filteredData, (err, result) => {
+            if (err) {
+                console.error('DB Error:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error saving store details',
+                    error: err.message || err
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No user found with the provided user_id'
                 });
             }
 
@@ -1044,4 +1104,5 @@ const storeBusinessDetails = async (req, res) => {
 
 
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp, updateRiderLocation, changePassword,     storeBusinessDetails };
+
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp, updateRiderLocation, changePassword,     storeBusinessDetails, storeAdditionalDetails };

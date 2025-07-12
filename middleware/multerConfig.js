@@ -41,6 +41,12 @@ const storage = multer.diskStorage({
             uploadPath = 'uploads/bussiness_license_number_pic/';
         } else if (file.fieldname === 'gst_number_pic') {
             uploadPath = 'uploads/gst_number_pic/';
+        } else if (file.fieldname === 'vendor_insurance_certificate') {
+            uploadPath = 'uploads/vendor_insurance_certificate/';
+        } else if (file.fieldname === 'health_inspection_certificate') {
+            uploadPath = 'uploads/health_inspection_certificate/';
+        } else if (file.fieldname === 'food_certificate') {
+            uploadPath = 'uploads/food_certificate/';
         }
 
         ensureDir(uploadPath); // Ensure folder exists
@@ -69,7 +75,10 @@ const uploadFields = upload.fields([
     { name: 'store_image', maxCount: 1 },
     { name: 'bussiness_license_number_pic', maxCount: 1 },  // Added brandLogo field
     { name: 'gst_number_pic', maxCount: 1 },
-    { name: 'profile_pic', maxCount: 1 }
+    { name: 'profile_pic', maxCount: 1 },
+    { name: 'food_certificate', maxCount: 1 },  // Added brandLogo field
+    { name: 'health_inspection_certificate', maxCount: 1 },
+    { name: 'vendor_insurance_certificate', maxCount: 1 }
 ]);
 
 module.exports = uploadFields;
