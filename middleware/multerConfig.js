@@ -64,11 +64,12 @@ const uploadFields = upload.fields([
     { name: 'subcategory_logo', maxCount: 1 },  // Added brandLogo field
     { name: 'banner_image', maxCount: 1 },  // Added brandLogo field
     { name: 'identity_proof', maxCount: 1 },  // Added brandLogo field
-    { name: 'profile_pic', maxCount: 1 },  // Added brandLogo field
+    { name: 'worker_profilePic', maxCount: 1 },  // Added brandLogo field
     { name: 'vendor_thumbnail', maxCount: 1 },  // Added brandLogo field
     { name: 'store_image', maxCount: 1 },
     { name: 'bussiness_license_number_pic', maxCount: 1 },  // Added brandLogo field
-    { name: 'gst_number_pic', maxCount: 1 }
+    { name: 'gst_number_pic', maxCount: 1 },
+    { name: 'profile_pic', maxCount: 1 }
 ]);
 
 module.exports = uploadFields;
