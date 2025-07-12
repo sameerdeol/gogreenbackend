@@ -125,7 +125,7 @@ const loginadmin = async (req, res) => {
                 process.env.JWT_SECRET
             );
 
-            return res.json({ message: 'Login successful', token });
+            return res.json({ message: 'Login successful', token,admin_id: user.id});
         });
     } catch (err) {
         return res.status(500).json({ message: 'Something went wrong', error: err });
@@ -989,5 +989,59 @@ const updateRiderLocation = (req, res) => {
     });
 };
 
+const storeBusinessDetails = async (req, res) => {
+    try {
+        const {
+            user_id,
+            worker_profilePic,
+            bussiness_license_number,
+            bussiness_license_number_pic,
+            gst_number,
+            gst_number_pic
+        } = req.body;
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp, updateRiderLocation, changePassword};
+        if (!user_id) {
+            return res.status(400).json({ success: false, message: 'user_id is required' });
+        }
+
+        const userData = {
+            worker_profilePic,
+            bussiness_license_number,
+            bussiness_license_number_pic,
+            gst_number,
+            gst_number_pic
+        };
+
+        // Filter out undefined/null fields (optional, but cleaner)
+        const filteredData = Object.fromEntries(
+            Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
+        );
+
+        // Call your update/insert function (UPSERT style)
+        User.updateStoreDetails(user_id, filteredData, (err, result) => {
+            if (err) {
+                console.error('DB Error:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error saving store details',
+                    error: err.message || err
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Store details stored successfully'
+            });
+        });
+
+    } catch (error) {
+        console.error('Unexpected Server Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        }
+    }
+};
+
+
+
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp, updateRiderLocation, changePassword,     storeBusinessDetails };

@@ -657,7 +657,21 @@ const User = {
         console.error("Error in getNearbyRiders:", error);
         throw error;
     }
+    },
+
+    updateStoreDetails: (user_id, data, callback) => {
+        const keys = Object.keys(data);
+        const values = Object.values(data);
+        const setClause = keys.map(key => `${key} = ?`).join(', ');
+
+        const sql = `UPDATE vendors SET ${setClause} WHERE user_id = ?`;
+
+        db.query(sql, [...values, user_id], (err, result) => {
+            if (err) return callback(err);
+            callback(null, result);
+        });
     }
+
 
 
 };

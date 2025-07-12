@@ -18,7 +18,8 @@ const {
     allVendors,
     verifyOtp,
     updateRiderLocation,
-    changePassword
+    changePassword,
+    storeBusinessDetails
 } = require('../controllers/userController');
 
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -71,6 +72,26 @@ router.post(['/reset-vendorPwd', '/reset-riderPwd'], resetPassword);
 router.put(['/chnage-vendorPwd', '/chnage-riderPwd'], changePassword);
 router.post(['/all-vendors'], verifyToken, allVendors);
 router.put('/updateRider-location', verifyToken, updateRiderLocation);
+
+
+router.post(
+  ['/store-bussinessdetils'],
+  uploadFields,
+  (req, res, next) => {
+    if (req.files?.worker_profilePic?.[0]) {
+      req.body.worker_profilePic = req.files.uworker_profilePicser_image[0].path || null;
+    }
+    if (req.files?.bussiness_license_number_pic?.[0]) {
+      req.body.bussiness_license_number_pic = req.files.bussiness_license_number_pic[0].path || null;
+    }
+    if (req.files?.gst_number_pic?.[0]) {
+      req.body.gst_number_pic = req.files.gst_number_pic[0].path || null;
+    }
+
+      storeBusinessDetails(req, res);
+  }
+);
+
 
 /**
  * User Management Routes (Protected)
