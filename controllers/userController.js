@@ -993,7 +993,7 @@ const storeBusinessDetails = async (req, res) => {
     try {
         const {
             user_id,
-            worker_profilePic,
+            profile_pic,
             bussiness_license_number,
             bussiness_license_number_pic,
             gst_number,
@@ -1005,7 +1005,7 @@ const storeBusinessDetails = async (req, res) => {
         }
 
         const userData = {
-            worker_profilePic,
+            profile_pic,
             bussiness_license_number,
             bussiness_license_number_pic,
             gst_number,
