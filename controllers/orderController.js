@@ -360,47 +360,53 @@ const getAllOrders = async (req, res) => {
             );
         }
 
-        // Grouping orders (flat structure with items array)
+        // Grouping orders with nested structure
         const ordersMap = {};
         filtered.forEach(row => {
-            const {
-                order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
-                payment_method, order_created_at, order_status, product_id, product_name, product_description,
-                product_price, food_type, total_item_price, address, type, floor, landmark,
-                firstname, lastname, phonenumber, is_fast_delivery, vendor_id
-            } = row;
-
+            const order_id = row.order_id;
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
-                    order_id,
-                    order_uid,
-                    preparing_time,
-                    user_id,
-                    is_fast_delivery,
-                    total_quantity,
-                    total_price,
-                    payment_method,
-                    order_status,
-                    order_created_at,
-                    firstname,
-                    lastname,
-                    phonenumber,
-                    address,
-                    type,
-                    floor,
-                    landmark,
-                    vendor_id,
-                    items: []
+                    order_id: row.order_id,
+                    user_id: row.user_id,
+                    total_quantity: row.total_quantity,
+                    total_price: row.total_price,
+                    payment_method: row.payment_method,
+                    is_fast_delivery: row.is_fast_delivery,
+                    order_status: row.order_status,
+                    created_at: row.created_at,
+                    user: {
+                        firstname: row.firstname,
+                        lastname: row.lastname,
+                        email: row.email,
+                        prefix: row.prefix,
+                        phonenumber: row.phonenumber,
+                        custom_id: row.user_custom_id
+                    },
+                    vendor: {
+                        store_name: row.store_name,
+                        store_address: row.store_address,
+                        custom_id: row.vendor_custom_id
+                    },
+                    rider: {
+                        firstname: row.rider_first_name,
+                        lastname: row.rider_last_name,
+                        custom_id: row.rider_custom_id
+                    },
+                    address: {
+                        address: row.address,
+                        type: row.type,
+                        floor: row.floor,
+                        landmark: row.landmark
+                    },
+                    products: []
                 };
             }
-
-            ordersMap[order_id].items.push({
-                product_id,
-                product_name,
-                product_description,
-                product_price,
-                food_type,
-                total_item_price
+            ordersMap[order_id].products.push({
+                product_name: row.product_name,
+                product_size: row.product_size,
+                product_quantity: row.product_quantity,
+                total_item_price: row.total_item_price,
+                single_item_price: row.single_item_price
             });
         });
 
