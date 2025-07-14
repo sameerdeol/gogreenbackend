@@ -10,7 +10,6 @@ router.put('/updateorderstatus',  updateOrderStatus);
 router.post('/getorderbyuserID', verifyToken, getOrdersByUserId);
 router.post('/getorderdetails', getOrderDetails);
 router.post('/getallorderbyvendorid', verifyToken, getOrdersByVendorId);
-router.post('/getallorders', checkManagerRole, getAllOrders);
 router.post('/list', getAllOrders);
 router.post('/updateordertiming', updateOrderTiming);
 router.post('/verifyotprider', verifyOtp);
