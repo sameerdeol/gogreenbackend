@@ -36,6 +36,7 @@ router.post('/getproducts/', verifyToken,getProducts);
 
 // Route to update a product by ID - only managers can update products
 router.post('/update-products', verifyToken, uploadFields, updateProductById);
+router.delete('/delete-product', verifyToken, uploadFields, deleteProductById);
 
 // Route to delete a product by ID - only managers can delete products
 router.delete('/products', checkManagerRole, deleteProductById);
