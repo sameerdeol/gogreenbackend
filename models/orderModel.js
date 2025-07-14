@@ -157,6 +157,10 @@ const Order = {
 
                 P.name AS product_name,
                 P.size AS product_size
+                p.featured_image
+
+                GI.image_path
+
 
             FROM 
                 order_details OD
@@ -174,6 +178,8 @@ const Order = {
                 order_items OI ON OI.order_id = OD.id
             JOIN 
                 products P ON P.id = OI.product_id
+            JOIN 
+                gallery_images GI ON GI.product_id = OI.product_id    
         `;
     
         db.query(query, callback);

@@ -342,16 +342,14 @@ const getAllOrders = async (req, res) => {
             return res.status(200).json({ message: "No order found." });
         }
 
-        // Filtering by status
+        // Filtering
         let filtered = results;
         if (status) {
             filtered = filtered.filter(row => String(row.order_status) === String(status));
         }
-        // Filtering by vendor_id
         if (vendor_id) {
             filtered = filtered.filter(row => String(row.vendor_id) === String(vendor_id));
         }
-        // Search by customer name, email, store address, or store name
         if (search) {
             const searchLower = search.toLowerCase();
             filtered = filtered.filter(row =>
@@ -363,8 +361,9 @@ const getAllOrders = async (req, res) => {
             );
         }
 
-        // Grouping orders with nested structure
+        // Grouping orders
         const ordersMap = {};
+
         filtered.forEach(row => {
             const order_id = row.order_id;
             if (!ordersMap[order_id]) {
@@ -404,18 +403,37 @@ const getAllOrders = async (req, res) => {
                     products: []
                 };
             }
-            ordersMap[order_id].products.push({
-                product_name: row.product_name,
-                product_size: row.product_size,
-                product_quantity: row.product_quantity,
-                total_item_price: row.total_item_price,
-                single_item_price: row.single_item_price
-            });
+
+            // Find if product already added (to group gallery images)
+            const existingProduct = ordersMap[order_id].products.find(p => 
+                p.product_name === row.product_name &&
+                p.product_size === row.product_size &&
+                p.product_quantity === row.product_quantity &&
+                p.single_item_price === row.single_item_price
+            );
+
+            if (existingProduct) {
+                // Add additional gallery image if not already added
+                if (row.image_path && !existingProduct.gallery_images.includes(row.image_path)) {
+                    existingProduct.gallery_images.push(row.image_path);
+                }
+            } else {
+                // First time adding this product
+                ordersMap[order_id].products.push({
+                    product_name: row.product_name,
+                    product_size: row.product_size,
+                    product_quantity: row.product_quantity,
+                    total_item_price: row.total_item_price,
+                    single_item_price: row.single_item_price,
+                    featured_image: row.featured_image || null,
+                    gallery_images: row.image_path ? [row.image_path] : []
+                });
+            }
         });
 
-        // Pagination
         const groupedOrders = Object.values(ordersMap);
         const paginated = groupedOrders.slice(offset, offset + limit);
+
         res.status(200).json({
             total: groupedOrders.length,
             page,
@@ -424,6 +442,7 @@ const getAllOrders = async (req, res) => {
         });
     });
 };
+
 const getOrderDetails = (req, res) => {
   const { order_id } = req.body;
 
