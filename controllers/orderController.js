@@ -351,12 +351,15 @@ const getAllOrders = async (req, res) => {
         if (vendor_id) {
             filtered = filtered.filter(row => String(row.vendor_id) === String(vendor_id));
         }
-        // Search by customer name (firstname/lastname)
+        // Search by customer name, email, store address, or store name
         if (search) {
             const searchLower = search.toLowerCase();
             filtered = filtered.filter(row =>
                 (row.firstname && row.firstname.toLowerCase().includes(searchLower)) ||
-                (row.lastname && row.lastname.toLowerCase().includes(searchLower))
+                (row.lastname && row.lastname.toLowerCase().includes(searchLower)) ||
+                (row.email && row.email.toLowerCase().includes(searchLower)) ||
+                (row.store_address && row.store_address.toLowerCase().includes(searchLower)) ||
+                (row.store_name && row.store_name.toLowerCase().includes(searchLower))
             );
         }
 
