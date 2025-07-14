@@ -156,8 +156,8 @@ const Order = {
                 OI.single_item_price,
 
                 P.name AS product_name,
-                P.size AS product_size
-                p.featured_image
+                P.size AS product_size,
+                P.featured_image,
 
                 GI.image_path
 
@@ -179,7 +179,7 @@ const Order = {
             JOIN 
                 products P ON P.id = OI.product_id
             JOIN 
-                gallery_images GI ON GI.product_id = OI.product_id    
+                gallery_images GI ON GI.product_id = OI.product_id
         `;
     
         db.query(query, callback);
