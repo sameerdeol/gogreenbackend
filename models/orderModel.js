@@ -120,66 +120,87 @@ const Order = {
     },
     getAllOrders : (callback) => {
         const query = `
+        SELECT 
+            OD.id AS order_id,
+            OD.user_id,
+            OD.total_quantity,
+            OD.total_price,
+            OD.payment_method,
+            OD.is_fast_delivery,
+            OD.order_status,
+            OD.vendor_id,
+            OD.created_at,
+
+            -- Customer details
+            U.firstname AS user_firstname,
+            U.lastname AS user_lastname,
+            U.email AS user_email,
+            U.prefix AS user_prefix,
+            U.phonenumber AS user_phonenumber,
+            U.custom_id AS user_custom_id,
+
+            -- Address details
+            UA.address AS user_address,
+            UA.type AS address_type,
+            UA.floor AS address_floor,
+            UA.landmark AS address_landmark,
+
+            -- Vendor details
+            V.store_address,
+            V.store_name,
+            V.store_image,
+            VU.custom_id AS vendor_custom_id,
+
+            -- Rider details (optional)
+            R.firstname AS rider_first_name,
+            R.lastname AS rider_last_name,
+            R.custom_id AS rider_custom_id,
+            DP.profile_pic AS rider_profile_pic,
+
+            -- Order item details
+            OI.product_quantity,
+            OI.total_item_price,
+            OI.single_item_price,
+
+            -- Product details
+            P.name AS product_name,
+            P.size AS product_size,
+            P.featured_image,
+
+            -- One gallery image per product
+            GI.image_path AS product_gallery_image
+
+        FROM 
+            order_details OD
+
+        -- Customer
+        JOIN users U ON U.id = OD.user_id
+
+        -- Vendor
+        JOIN users VU ON VU.id = OD.vendor_id
+        JOIN vendors V ON V.user_id = OD.vendor_id
+
+        -- Rider (optional)
+        LEFT JOIN users R ON R.id = OD.rider_id
+        LEFT JOIN delivery_partners DP ON DP.user_id = OD.rider_id
+
+        -- Address
+        JOIN user_addresses UA ON UA.id = OD.user_address_id
+
+        -- Order items and products
+        JOIN order_items OI ON OI.order_id = OD.id
+        JOIN products P ON P.id = OI.product_id
+
+        -- Subquery to get one gallery image per product
+        LEFT JOIN (
             SELECT 
-                OD.id AS order_id,
-                OD.user_id,
-                OD.total_quantity,
-                OD.total_price,
-                OD.payment_method,
-                OD.is_fast_delivery,
-                OD.order_status,
-                OD.vendor_id,
-                OD.created_at,
-
-                U.firstname,
-                U.lastname,
-                U.email,
-                U.prefix,
-                U.phonenumber,
-                U.custom_id AS user_custom_id,
-
-                UA.address,
-                UA.type,
-                UA.floor,
-                UA.landmark,
-
-                V.store_address,
-                V.store_name,
-                VU.custom_id AS vendor_custom_id,
-
-                R.firstname AS rider_first_name,
-                R.lastname AS rider_last_name,
-                R.custom_id AS rider_custom_id,
-
-                OI.product_quantity,
-                OI.total_item_price,
-                OI.single_item_price,
-
-                P.name AS product_name,
-                P.size AS product_size,
-                P.featured_image,
-
-                GI.image_path
-
-
+                product_id,
+                MIN(image_path) AS image_path
             FROM 
-                order_details OD
-            JOIN 
-                users U ON U.id = OD.user_id               -- Customer
-            JOIN 
-                users VU ON VU.id = OD.vendor_id           -- Vendor
-            JOIN 
-                users R ON R.id = OD.rider_id              -- Rider
-            JOIN 
-                user_addresses UA ON UA.id = OD.user_address_id
-            JOIN 
-                vendors V ON V.user_id = OD.vendor_id
-            JOIN 
-                order_items OI ON OI.order_id = OD.id
-            JOIN 
-                products P ON P.id = OI.product_id
-            JOIN 
-                gallery_images GI ON GI.product_id = OI.product_id
+                gallery_images
+            GROUP BY 
+                product_id
+        ) GI ON GI.product_id = OI.product_id
         `;
     
         db.query(query, callback);

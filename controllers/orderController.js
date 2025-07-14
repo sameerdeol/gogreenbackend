@@ -370,12 +370,14 @@ const getAllOrders = async (req, res) => {
                 ordersMap[order_id] = {
                     order_id: row.order_id,
                     user_id: row.user_id,
+                    vendor_id: row.vendor_id,
                     total_quantity: row.total_quantity,
                     total_price: row.total_price,
                     payment_method: row.payment_method,
                     is_fast_delivery: row.is_fast_delivery,
                     order_status: row.order_status,
                     created_at: row.created_at,
+
                     user: {
                         firstname: row.firstname,
                         lastname: row.lastname,
@@ -384,28 +386,34 @@ const getAllOrders = async (req, res) => {
                         phonenumber: row.phonenumber,
                         custom_id: row.user_custom_id
                     },
+
                     vendor: {
                         store_name: row.store_name,
                         store_address: row.store_address,
+                        store_image: row.store_image,
                         custom_id: row.vendor_custom_id
                     },
+
                     rider: {
                         firstname: row.rider_first_name,
                         lastname: row.rider_last_name,
-                        custom_id: row.rider_custom_id
+                        custom_id: row.rider_custom_id,
+                        profile_pic: row.rider_profile_pic
                     },
+
                     address: {
                         address: row.address,
                         type: row.type,
                         floor: row.floor,
                         landmark: row.landmark
                     },
+
                     products: []
                 };
             }
 
             // Find if product already added (to group gallery images)
-            const existingProduct = ordersMap[order_id].products.find(p => 
+            const existingProduct = ordersMap[order_id].products.find(p =>
                 p.product_name === row.product_name &&
                 p.product_size === row.product_size &&
                 p.product_quantity === row.product_quantity &&
@@ -413,12 +421,10 @@ const getAllOrders = async (req, res) => {
             );
 
             if (existingProduct) {
-                // Add additional gallery image if not already added
                 if (row.image_path && !existingProduct.gallery_images.includes(row.image_path)) {
                     existingProduct.gallery_images.push(row.image_path);
                 }
             } else {
-                // First time adding this product
                 ordersMap[order_id].products.push({
                     product_name: row.product_name,
                     product_size: row.product_size,
@@ -442,6 +448,7 @@ const getAllOrders = async (req, res) => {
         });
     });
 };
+
 
 const getOrderDetails = (req, res) => {
   const { order_id } = req.body;
