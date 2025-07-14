@@ -128,6 +128,7 @@ const Order = {
                 OD.payment_method,
                 OD.is_fast_delivery,
                 OD.order_status,
+                OD.vendor_id,
                 OD.created_at,
 
                 U.firstname,
