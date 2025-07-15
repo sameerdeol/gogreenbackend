@@ -535,9 +535,12 @@ const User = {
             FROM users u
             JOIN vendors v ON v.user_id = u.id
             LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
-            WHERE u.is_verified = 1;
+            WHERE u.is_verified = 1
+            AND EXISTS (
+                SELECT 1 FROM products p WHERE p.vendor_id = v.user_id
+            );
         `;
-    
+
         db.query(sql, [user_id], (err, results) => {
             if (err) {
                 console.error("Database error:", err);
@@ -546,6 +549,7 @@ const User = {
             return callback(null, results);
         });
     },
+    
     updateRiderLocation: (userId, rider_lat, rider_lng, callback) => {
         const sql = `
             UPDATE delivery_partners
