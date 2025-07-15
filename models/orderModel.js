@@ -347,7 +347,7 @@ const Order = {
                     product_id
             ) GI ON GI.product_id = OI.product_id
 
-            // WHERE OD.user_id = ?
+              WHERE OD.user_id = ?
 
             ORDER BY OD.created_at DESC
         `;
