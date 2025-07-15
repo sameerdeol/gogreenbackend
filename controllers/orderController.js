@@ -655,4 +655,96 @@ const getOrdersByVendorId = (req, res) => {
     
 };
 
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders};
+const orderHistory = async (req, res) => {
+    const { user_id } = req.body;
+
+    if (!user_id) {
+        return res.status(400).json({ error: "user_id is required" });
+    }
+
+    OrderModel.orderHistorybyUserID(user_id, (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error" });
+
+        if (!results || results.length === 0) {
+            return res.status(200).json({ message: "No order found." });
+        }
+
+        // Group orders by order_id
+        const ordersMap = {};
+
+        results.forEach(row => {
+            const order_id = row.order_id;
+            if (!ordersMap[order_id]) {
+                ordersMap[order_id] = {
+                    order_id: row.order_id,
+                    user_id: row.user_id,
+                    vendor_id: row.vendor_id,
+                    total_quantity: row.total_quantity,
+                    total_price: row.total_price,
+                    payment_method: row.payment_method,
+                    is_fast_delivery: row.is_fast_delivery,
+                    order_status: row.order_status,
+                    created_at: row.created_at,
+
+                    user: {
+                        firstname: row.user_firstname,
+                        lastname: row.user_lastname,
+                        email: row.user_email,
+                        prefix: row.user_prefix,
+                        phonenumber: row.user_phonenumber,
+                        custom_id: row.user_custom_id
+                    },
+
+                    vendor: {
+                        store_name: row.store_name,
+                        store_address: row.store_address,
+                        store_image: row.store_image,
+                        custom_id: row.vendor_custom_id
+                    },
+
+                    address: {
+                        address: row.user_address,
+                        type: row.address_type,
+                        floor: row.address_floor,
+                        landmark: row.address_landmark
+                    },
+
+                    products: []
+                };
+            }
+
+            const existingProduct = ordersMap[order_id].products.find(p =>
+                p.product_name === row.product_name &&
+                p.product_size === row.product_size &&
+                p.product_quantity === row.product_quantity &&
+                p.single_item_price === row.single_item_price
+            );
+
+            if (existingProduct) {
+                if (row.product_gallery_image && !existingProduct.gallery_images.includes(row.product_gallery_image)) {
+                    existingProduct.gallery_images.push(row.product_gallery_image);
+                }
+            } else {
+                ordersMap[order_id].products.push({
+                    product_name: row.product_name,
+                    product_size: row.product_size,
+                    product_quantity: row.product_quantity,
+                    total_item_price: row.total_item_price,
+                    single_item_price: row.single_item_price,
+                    featured_image: row.featured_image || null,
+                    gallery_images: row.product_gallery_image ? [row.product_gallery_image] : []
+                });
+            }
+        });
+
+        const groupedOrders = Object.values(ordersMap);
+
+        res.status(200).json({
+            total: groupedOrders.length,
+            orders: groupedOrders
+        });
+    });
+};
+
+
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory};

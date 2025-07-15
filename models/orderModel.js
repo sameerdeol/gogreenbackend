@@ -271,7 +271,90 @@ const Order = {
         await updateStatus();
 
         return { status: 'verified', user_id: order.user_id };
+    },
+    orderHistorybyUserID: (user_id, callback) => {
+        const query = `
+            SELECT 
+                OD.id AS order_id,
+                OD.order_uid,
+                OD.user_id,
+                OD.total_quantity,
+                OD.total_price,
+                OD.payment_method,
+                OD.is_fast_delivery,
+                OD.order_status,
+                OD.vendor_id,
+                OD.created_at,
+
+                -- Customer details
+                U.firstname AS user_firstname,
+                U.lastname AS user_lastname,
+                U.email AS user_email,
+                U.prefix AS user_prefix,
+                U.phonenumber AS user_phonenumber,
+                U.custom_id AS user_custom_id,
+
+                -- Address details
+                UA.address AS user_address,
+                UA.type AS address_type,
+                UA.floor AS address_floor,
+                UA.landmark AS address_landmark,
+
+                -- Vendor details
+                V.store_address,
+                V.store_name,
+                V.store_image,
+                VU.custom_id AS vendor_custom_id,
+
+                -- Order item details
+                OI.product_quantity,
+                OI.total_item_price,
+                OI.single_item_price,
+
+                -- Product details
+                P.name AS product_name,
+                P.size AS product_size,
+                P.featured_image,
+
+                -- One gallery image per product
+                GI.image_path AS product_gallery_image
+
+            FROM 
+                order_details OD
+
+            -- Customer
+            JOIN users U ON U.id = OD.user_id
+
+            -- Vendor
+            JOIN users VU ON VU.id = OD.vendor_id
+            JOIN vendors V ON V.user_id = OD.vendor_id
+
+            -- Address
+            JOIN user_addresses UA ON UA.id = OD.user_address_id
+
+            -- Order items and products
+            JOIN order_items OI ON OI.order_id = OD.id
+            JOIN products P ON P.id = OI.product_id
+
+            -- Subquery to get one gallery image per product
+            LEFT JOIN (
+                SELECT 
+                    product_id,
+                    MIN(image_path) AS image_path
+                FROM 
+                    gallery_images
+                GROUP BY 
+                    product_id
+            ) GI ON GI.product_id = OI.product_id
+
+            // WHERE OD.user_id = ?
+
+            ORDER BY OD.created_at DESC
+        `;
+
+        db.query(query, [user_id], callback);
     }
+
 
 };
  
