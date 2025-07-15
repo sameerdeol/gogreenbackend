@@ -13,7 +13,7 @@ router.post('/getallorderbyvendorid', verifyToken, getOrdersByVendorId);
 router.post('/list', getAllOrders);
 router.post('/updateordertiming', updateOrderTiming);
 router.post('/verifyotprider', verifyOtp);
-router.post('/orderhistorybyuserid', );
+router.post('/orderhistorybyuserid', orderHistory);
 
  
 module.exports = router;
