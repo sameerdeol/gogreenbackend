@@ -668,7 +668,6 @@ const orderHistory = async (req, res) => {
         if (!results || results.length === 0) {
             return res.status(200).json({ message: "No order found." });
         }
-        console.log(results)
         // Group orders by order_id
         const ordersMap = {};
 
@@ -677,6 +676,7 @@ const orderHistory = async (req, res) => {
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
                     order_id: row.order_id,
+                    order_uid: row.order_uid,
                     user_id: row.user_id,
                     vendor_id: row.vendor_id,
                     total_quantity: row.total_quantity,
