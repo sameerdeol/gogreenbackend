@@ -436,9 +436,35 @@ const changePassword = (req, res) => {
     });
 };
 
+const workersProfile = (req, res) => {
+    const { role_id, user_id } = req.body;
+
+    // Check if the role_id is restricted
+    if ([1, 2].includes(parseInt(role_id))) {
+        return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
+    }
+
+    // Step 1: Find the user by ID
+    User.userProfile(user_id, role_id, (err, user) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+    
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+    
+        return res.status(200).json({
+            success: true,
+            message: "User profile retrieved successfully",
+            data: user
+        });
+    });
+};
 
 
 // Vendor and rider logic has been moved to vendorController.js and riderController.js
 
 
-module.exports = { loginadmin, updateUser, appsignup, getUnverifiedUsers, verifyUser, updatePassword, resetPassword, sendOTP, verifyOtp, changePassword };
+module.exports = { loginadmin, updateUser, appsignup, getUnverifiedUsers, verifyUser, updatePassword, resetPassword, sendOTP, verifyOtp, changePassword, workersProfile};

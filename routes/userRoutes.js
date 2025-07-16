@@ -6,6 +6,7 @@ const {
     verifyUser,
     getUnverifiedUsers,
     createSuperadminManagers,
+    workersProfile
 } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const router = express.Router();
@@ -24,6 +25,8 @@ router.post('/appsignup', (req, res) => {
 router.put('/update-user', authenticateToken, updateUser);
 router.get('/unverifiedUsers', authenticateToken, getUnverifiedUsers);
 router.put('/verify-user', verifyUser);
+router.post(['/vendor-profile', '/rider-profile', '/customer-profile'], verifyToken,workersProfile);
+
 
 /**
  * Create Superadmins & Managers
