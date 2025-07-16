@@ -1,0 +1,565 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { User } = require('../models/User');
+const { generateUniqueUsername } = require('../middleware/username');
+const generateCustomId = require('../utils/generateCustomId');
+const path = require('path');
+const fs = require('fs');
+require('dotenv').config();
+
+const vendorSignup = async (req, res) => {
+    try {
+        req.body.role_id = 3;
+        const {
+            firstname,
+            lastname,
+            email,
+            password,
+            role_id,
+            phonenumber,
+            prefix,
+            googleauthToken,
+        } = req.body;
+
+        let finalEmail = email;
+        let finalFirstname = firstname;
+        let finalLastname = lastname;
+        let finalPassword = password;
+        let hashedPassword = null;
+        let custom_id = null;
+
+        function tryGenerateUniqueId(attemptsLeft, callback) {
+            if (attemptsLeft === 0) return callback(new Error('Failed to generate unique ID'), null);
+            const generatedId = generateCustomId(role_id);
+            User.checkCustomIdExists(generatedId, (err, exists) => {
+                if (err) return callback(err);
+                if (exists) {
+                    tryGenerateUniqueId(attemptsLeft - 1, callback);
+                } else {
+                    callback(null, generatedId);
+                }
+            });
+        }
+
+        tryGenerateUniqueId(5, async (err, uniqueId) => {
+            if (err) {
+                return res.status(500).json({ message: 'Failed to generate unique ID', error: err.message });
+            }
+            custom_id = uniqueId;
+            if (googleauthToken) {
+                try {
+                    const decoded = await require('../middleware/googleAuthToken')(googleauthToken);
+                    finalEmail = decoded.email;
+                    finalFirstname = decoded.name?.split(" ")[0] || "User";
+                    finalLastname = decoded.name?.split(" ")[1] || "";
+                    finalPassword = decoded.user_id || "defaultUserID";
+                    hashedPassword = await bcrypt.hash(finalPassword, 10);
+                } catch (err) {
+                    return res.status(401).json({
+                        success: false,
+                        message: "Invalid Google token",
+                    });
+                }
+            } else {
+                if (!password || password.trim() === "") {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Password is required",
+                    });
+                }
+                hashedPassword = await bcrypt.hash(password, 10);
+            }
+            const { username } = generateUniqueUsername(finalFirstname, phonenumber);
+            User.findByEmail(finalEmail, (err, existingUser) => {
+                if (err) {
+                    return res.status(500).json({
+                        success: false,
+                        message: "Error checking user existence",
+                        error: err.message,
+                    });
+                }
+                if (existingUser) {
+                    const token = jwt.sign({
+                        user_id: existingUser.id,
+                        username: existingUser.username,
+                        email: existingUser.email,
+                        role_id: existingUser.role_id,
+                        firstname: existingUser.firstname,
+                        lastname: existingUser.lastname,
+                        is_verified: existingUser.is_verified,
+                    }, process.env.JWT_SECRET);
+                    if (existingUser.role_id !== 3) {
+                        return res.status(409).json({
+                            success: false,
+                            message: `You already have an account as a ${existingUser.role_id === 3 ? "vendor" : "rider"}. Cannot register as a different role.`,
+                            token,
+                            is_verified: existingUser.is_verified,
+                            verification_Done: existingUser.verification_applied,
+                        });
+                    }
+                    return res.status(200).json({
+                        success: true,
+                        message: existingUser.is_verified
+                            ? "User already exists and is verified"
+                            : "User already exists but not verified. Complete profile.",
+                        token,
+                        is_verified: existingUser.is_verified,
+                        verification_Done: existingUser.verification_applied,
+                    });
+                }
+                const userData = {
+                    username,
+                    firstname: finalFirstname,
+                    lastname: finalLastname,
+                    password: hashedPassword,
+                    prefix,
+                    phonenumber,
+                    email: finalEmail,
+                    role_id: 3,
+                    custom_id,
+                    is_verified: 0,
+                };
+                User.insertUser(userData, (err, userResult) => {
+                    if (err) {
+                        return res.status(500).json({
+                            success: false,
+                            message: "Error creating user",
+                            error: err.message,
+                        });
+                    }
+                    const token = jwt.sign({
+                        user_id: userResult.insertId,
+                        username,
+                        email: finalEmail,
+                        role_id: 3,
+                        firstname: finalFirstname,
+                        lastname: finalLastname,
+                        is_verified: 0,
+                    }, process.env.JWT_SECRET);
+                    return res.status(201).json({
+                        success: true,
+                        message: "User created successfully",
+                        token,
+                        is_verified: 0,
+                        verification_Done: false,
+                        custom_id,
+                    });
+                });
+            });
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+        });
+    }
+};
+
+const vendorLogin = async (req, res) => {
+    try {
+        req.body.role_id = 3;
+        const { email, password, googleauthToken, role_id } = req.body;
+        if (!role_id) {
+            return res.status(401).json({ success: false, message: "role_id is mandatory." });
+        }
+        let finalemail = email;
+        let finalpassword = password;
+        if (googleauthToken) {
+            try {
+                const decoded = await require('../middleware/googleAuthToken')(googleauthToken);
+                finalemail = decoded.email;
+                finalpassword = decoded.user_id;
+            } catch (err) {
+                return res.status(401).json({ success: false, message: "Invalid Google token" });
+            }
+        }
+        if (!finalemail || !finalpassword) {
+            return res.status(400).json({ success: false, message: "Email and password are required." });
+        }
+        User.findByEmailForVendorRider(finalemail, 3, async (err, results) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: "Internal server error", error: err });
+            }
+            if (!results || !results.success) {
+                return res.status(404).json({ success: false, message: results?.message || "User not found" });
+            }
+            const user = results.user;
+            const isValid = await bcrypt.compare(String(finalpassword), String(user.password));
+            if (!isValid) {
+                return res.status(401).json({ success: false, message: "Invalid credentials" });
+            }
+            const token = jwt.sign(
+                {
+                    user_id: user.id,
+                    role_id: user.role_id,
+                    username: user.username,
+                    firstname: user.firstname,
+                    lastname: user.lastname,
+                    email: user.email,
+                    phonenumber: user.phonenumber
+                },
+                process.env.JWT_SECRET
+            );
+            return res.json({
+                success: true,
+                message: "Login successful",
+                token,
+                is_verified: user.is_verified,
+                verification_applied: user.verification_applied
+            });
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: "Authentication error", error });
+    }
+};
+
+const vendorVerification = async (req, res) => {
+    try {
+        req.body.role_id = 3;
+        const { role_id, storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number, worker_profilePic, store_image, business_reg_number } = req.body;
+        if ([1, 2].includes(parseInt(role_id))) {
+            return res.status(403).json({ success: false, message: 'You are not allowed to create an account with this role.' });
+        }
+        User.checkVerificationStatus(user_id, (err, userStatus) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Database error', error: err });
+            }
+            if (!userStatus) {
+                return res.status(404).json({ success: false, message: 'User not found' });
+            }
+            if (userStatus.verification_applied) {
+                return res.status(400).json({ success: false, message: 'Verification already submitted.' });
+            }
+            if (userStatus.is_verified) {
+                return res.status(400).json({ success: false, message: 'You are already verified.' });
+            }
+            const userData = {
+                user_id,
+                storename,
+                storeaddress,
+                sincode,
+                countrystatus,
+                identity_proof,
+                license_number,
+                worker_profilePic,
+                store_image,
+                business_reg_number, 
+            };
+            User.insertUserVerification(role_id, userData, (err, result) => {
+                if (err) {
+                    return res.status(500).json({ success: false, message: 'Error saving verification details', error: err });
+                }
+                return res.status(201).json({ success: true, message: 'Verification details stored successfully' });
+            });
+        });
+    } catch (error) {
+        console.error(error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Server Error' });
+        }
+    }
+};
+
+const updateVendorProfile = (req, res) => {
+    req.body.role_id = 3;
+    const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob, vendor_lat, vendor_lng } = req.body;
+    const profile_pic = req.files && req.files['worker_profilePic'] && req.files['worker_profilePic'].length > 0 
+        ? req.files['worker_profilePic'][0].path 
+        : null;
+    const vendor_thumb = req.files && req.files['vendor_thumbnail'] && req.files['vendor_thumbnail'].length > 0 
+        ? req.files['vendor_thumbnail'][0].path 
+        : null;
+    if ([1, 2].includes(parseInt(role_id))) {
+        return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
+    }
+    User.userProfile(user_id,role_id, (err, user) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        if (profile_pic && user.profile_pic) {
+            const oldPicPath = path.resolve(user.profile_pic);
+            fs.unlink(oldPicPath, (unlinkErr) => {
+                if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+                    console.error('Failed to delete old profile pic:', unlinkErr);
+                }
+            });
+        }
+        if (vendor_thumb && user.vendor_thumb) {
+            const oldThumbPath = path.resolve(user.vendor_thumb);
+            fs.unlink(oldThumbPath, (unlinkErr) => {
+                if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+                    console.error('Failed to delete old vendor thumb:', unlinkErr);
+                }
+            });
+        }
+        User.findByEmailOrPhone(email, phonenumber, (err, existingUser) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: "Server error", error: err });
+            }
+            if (existingUser && existingUser.id !== user_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: existingUser.email === email
+                        ? "This email is already in use by another user."
+                        : "This phone number is already in use by another user."
+                });
+            }
+            const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob, vendor_lat, vendor_lng };
+            if (profile_pic) userData.profile_pic = profile_pic;
+            if (vendor_thumb) userData.vendor_thumb = vendor_thumb;
+            User.updateWorkerData(user_id, role_id, userData, (err, results) => {
+                if (err) {
+                    if (err.code === 'ER_DUP_ENTRY') {
+                        return res.status(400).json({
+                            success: false,
+                            message: err.sqlMessage.includes('email')
+                                ? "This email is already registered with another user."
+                                : "This phone number is already registered with another user."
+                        });
+                    }
+                    return res.status(500).json({ success: false, message: 'Database query failed', error: err });
+                }
+                res.status(200).json({ success: true, message: 'User updated successfully' });
+            });
+        });
+    });
+};
+
+const vendorProfile = (req, res) => {
+    req.body.role_id = 3;
+    const { role_id, user_id } = req.body;
+    if ([1, 2].includes(parseInt(role_id))) {
+        return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
+    }
+    User.userProfile(user_id, role_id, (err, user) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "User profile retrieved successfully",
+            data: user
+        });
+    });
+};
+
+const vendorStatus = (req, res) => {
+    req.body.role_id = 3;
+    const { user_id, status, role_id } = req.body;
+    if ([1, 2].includes(parseInt(role_id))) {
+        return res.status(403).json({ success: false, message: 'You are not allowed to update the status.' });
+    }
+    User.userStatus(user_id, status, (err, user) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "User status updated successfully",
+        });
+    });
+};
+
+const allVendors = (req, res) => {
+    const {user_id} = req.body;
+    User.allVendors(user_id,(err, users) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: 'Database error',
+                error: err
+            });
+        }
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No vendors found'
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: 'Vendors retrieved successfully',
+            data: users
+        });
+    });
+};
+
+const allVendorsforAdmin = (req, res) => {
+    User.getallVendorsForAdmin(null,(err, users) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: 'Database error',
+                error: err
+            });
+        }
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No vendors found'
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: 'Vendors retrieved successfully',
+            data: users
+        });
+    });
+};
+
+const allVendorsforAdminbyVendorID = (req, res) => {
+    const { vendor_id } = req.params;
+    if (!vendor_id || isNaN(vendor_id)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid or missing vendor_id'
+        });
+    }
+    User.getallVendorsForAdmin(vendor_id, (err, users) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: 'Database error',
+                error: err
+            });
+        }
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: 'Vendor retrieved successfully',
+            data: users[0]
+        });
+    });
+};
+
+const storeBusinessDetails = async (req, res) => {
+    try {
+        const {
+            user_id,
+            profile_pic,
+            bussiness_license_number,
+            bussiness_license_number_pic,
+            gst_number,
+            gst_number_pic
+        } = req.body;
+        if (!user_id) {
+            return res.status(400).json({ success: false, message: 'user_id is required' });
+        }
+        const userData = {
+            profile_pic,
+            bussiness_license_number,
+            bussiness_license_number_pic,
+            gst_number,
+            gst_number_pic
+        };
+        const filteredData = Object.fromEntries(
+            Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
+        );
+        User.updateStoreDetails(user_id, filteredData, (err, result) => {
+            if (err) {
+                console.error('DB Error:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error saving store details',
+                    error: err.message || err
+                });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No user found with the provided user_id'
+                });
+            }
+            return res.status(200).json({
+                success: true,
+                message: 'Store details stored successfully'
+            });
+        });
+    } catch (error) {
+        console.error('Unexpected Server Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        }
+    }
+};
+
+const storeAdditionalDetails = async (req, res) => {
+    try {
+        const {
+            user_id,
+            vendor_insurance_certificate,
+            health_inspection_certificate,
+            food_certificate
+        } = req.body;
+        if (!user_id) {
+            return res.status(400).json({ success: false, message: 'user_id is required' });
+        }
+        const userData = {
+            vendor_insurance_certificate,
+            health_inspection_certificate,
+            food_certificate
+        };
+        const filteredData = Object.fromEntries(
+            Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
+        );
+        User.updateStoreDetails(user_id, filteredData, (err, result) => {
+            if (err) {
+                console.error('DB Error:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error saving store details',
+                    error: err.message || err
+                });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No user found with the provided user_id'
+                });
+            }
+            return res.status(200).json({
+                success: true,
+                message: 'Store details stored successfully'
+            });
+        });
+    } catch (error) {
+        console.error('Unexpected Server Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        }
+    }
+};
+
+module.exports = {
+    vendorSignup,
+    vendorLogin,
+    vendorVerification,
+    updateVendorProfile,
+    vendorProfile,
+    vendorStatus,
+    allVendors,
+    allVendorsforAdmin,
+    allVendorsforAdminbyVendorID,
+    storeBusinessDetails,
+    storeAdditionalDetails
+}; 

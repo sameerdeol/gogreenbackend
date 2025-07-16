@@ -6,6 +6,8 @@ require('dotenv').config();
 
 // Import Routes
 const userRoutes = require('./routes/userRoutes');
+const vendorRoutes = require('./routes/vendorRoutes');
+const riderRoutes = require('./routes/riderRoutes');
 const webhookHandler = require('./utils/webhook');
 const productRoutes = require('./routes/productRoutes');
 const productCategoryRoutes = require('./routes/productCategoryRoutes');
@@ -40,6 +42,8 @@ app.options('*', cors());
 app.use('/webhook', webhookHandler);
 
 app.use('/users', userRoutes);                      // User-related routes
+app.use('/vendors', vendorRoutes);                  // Vendor-related routes
+app.use('/riders', riderRoutes);                    // Rider-related routes
 app.use('/useraddress', userAddress);               // User address routes
 app.use('/favourites', favouriteRoutes);            // Favourite-related routes
 app.use('/order', orderRoutes);                     // Order-related routes
