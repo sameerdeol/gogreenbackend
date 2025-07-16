@@ -9,6 +9,7 @@ const {
     workersProfile
 } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/authMiddleware');
+const { verifyToken } = require('../middleware/authroization');
 const router = express.Router();
 
 /**
