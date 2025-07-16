@@ -674,9 +674,105 @@ const User = {
             if (err) return callback(err);
             callback(null, result);
         });
-    }
+    },
 
+    getallVendorsForAdmin: (vendor_id, callback) => {
+        let sql = `
+            SELECT 
+                u.custom_id,
+                u.role_id,
+                u.username,
+                u.is_verified,
+                u.verification_applied,
+                u.status,
+                u.firstname, 
+                u.lastname, 
+                u.email, 
+                u.prefix, 
+                u.phonenumber,
+                v.country_status,
+                v.business_reg_number,
+                v.store_image,
+                v.identity_proof,
+                v.vendor_thumb,
+                v.vendor_timing,
+                v.vendor_lat,
+                v.vendor_lng,
+                v.bussiness_license_number,
+                v.bussiness_license_number_pic,
+                v.gst_number,
+                v.gst_number_pic,
+                v.vendor_insurance_certificate,
+                v.health_inspection_certificate,
+                v.food_certificate,
+                v.store_address, 
+                v.sin_code, 
+                v.store_name, 
+                v.profile_pic, 
+                v.user_id AS vendor_id
+            FROM users u
+            JOIN vendors v ON v.user_id = u.id
+            WHERE u.role_id = 3
+        `;
 
+        // Add conditionally WHERE clause if vendor_id is provided
+        const params = [];
+        if (vendor_id) {
+            sql += ` AND u.id = ?`;
+            params.push(vendor_id);
+        }
+
+        db.query(sql, params, (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return callback(err, null);
+            }
+            return callback(null, results);
+        });
+    },
+
+    getallRidersForAdmin: (vendor_id, callback) => {
+        let sql = `
+            SELECT 
+                u.custom_id,
+                u.role_id,
+                u.username,
+                u.is_verified,
+                u.verification_applied,
+                u.status,
+                u.firstname, 
+                u.lastname, 
+                u.email, 
+                u.prefix, 
+                u.phonenumber,
+                r.identity_proof,
+                r.country_status,
+                r.sin_code,
+                r.license_number,
+                r.profile_pic,
+                r.rider_lat,
+                r.rider_lng,
+                r.user_id AS rider_id
+            FROM users u
+            JOIN delivery_partners r ON r.user_id = u.id
+            WHERE u.role_id = 4
+        `;
+
+        // Add conditionally WHERE clause if vendor_id is provided
+        const params = [];
+        if (vendor_id) {
+            sql += ` AND u.id = ?`;
+            params.push(vendor_id);
+        }
+
+        db.query(sql, params, (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return callback(err, null);
+            }
+            return callback(null, results);
+        });
+    },
 
 };
 

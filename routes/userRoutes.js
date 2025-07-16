@@ -20,7 +20,11 @@ const {
     updateRiderLocation,
     changePassword,
     storeBusinessDetails,
-    storeAdditionalDetails
+    storeAdditionalDetails,
+    allVendorsforAdmin,
+    allVendorsforAdminbyVendorID,
+    allRidersforAdminbyRiderID,
+    allRidersforAdmin
 } = require('../controllers/userController');
 
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -138,5 +142,9 @@ router.post('/createadmins', authenticateToken, (req, res) => {
 });
 
 router.post('/adminlogin',loginadmin);
+router.get('/getallvendorsforadmin',allVendorsforAdmin);
+router.get('/getallvendorsforadminbyID/:vendor_id',allVendorsforAdminbyVendorID);
+router.get('/getallridersforadmin',allRidersforAdmin);
+router.get('/getallridersforadminbyID/:rider_id',allRidersforAdminbyRiderID);
 
 module.exports = router;

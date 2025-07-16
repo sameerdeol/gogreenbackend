@@ -1102,7 +1102,129 @@ const storeAdditionalDetails = async (req, res) => {
     }
 };
 
+const allVendorsforAdmin = (req, res) => {
+    User.getallVendorsForAdmin(null,(err, users) => {   // ✅ Pass a callback here
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: 'Database error',
+                error: err
+            });
+        }
+
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No vendors found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Vendors retrieved successfully',
+            data: users
+        });
+    });
+};
 
 
+const allVendorsforAdminbyVendorID = (req, res) => {
+    const { vendor_id } = req.params;
 
-module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp, updateRiderLocation, changePassword,     storeBusinessDetails, storeAdditionalDetails };
+    if (!vendor_id || isNaN(vendor_id)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid or missing vendor_id'
+        });
+    }
+
+    User.getallVendorsForAdmin(vendor_id, (err, users) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: 'Database error',
+                error: err
+            });
+        }
+
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Vendor retrieved successfully',
+            data: users[0]  // return the single vendor object
+        });
+    });
+};
+
+const allRidersforAdmin = (req, res) => {
+    User.getallRidersForAdmin(null,(err, users) => {   // ✅ Pass a callback here
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: 'Database error',
+                error: err
+            });
+        }
+
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No Rider found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Riders retrieved successfully',
+            data: users
+        });
+    });
+};
+
+
+const allRidersforAdminbyRiderID = (req, res) => {
+    const { rider_id } = req.params;
+
+    if (!rider_id || isNaN(rider_id)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid or missing vendor_id'
+        });
+    }
+
+    User.getallRidersForAdmin(rider_id, (err, users) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: 'Database error',
+                error: err
+            });
+        }
+
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rider not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Rider retrieved successfully',
+            data: users[0]  // return the single vendor object
+        });
+    });
+};
+
+
+module.exports = { uploadFields, loginadmin , updateUser,appsignup, getUnverifiedUsers,verifyUser,vendorRiderSignup,createSuperadminManagers, vendorRiderVerification,vendorRiderLogin, updatePassword, updateWorkersProfile, workersProfile, workerStatus ,resetPassword, sendOTP, allVendors, verifyOtp, updateRiderLocation, changePassword,     storeBusinessDetails, storeAdditionalDetails, allVendorsforAdmin, allVendorsforAdminbyVendorID, allRidersforAdminbyRiderID, allRidersforAdmin};
