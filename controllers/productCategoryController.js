@@ -1,16 +1,19 @@
 const ProductCategory = require('../models/productCategoryModel');
 const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
-const fs = require('fs');
+const deleteS3Image = require('../utils/deleteS3Image');
+const uploadToS3 = require('../utils/s3Upload');
 
 // Create a new category
-const createCategory = (req, res) => {
+const createCategory = async (req, res) => {
     console.log("Received Files:", req.files); // Debugging output
     console.log("Received Body:", req.body); // Check if form fields exist
 
     const { name, description } = req.body;
-    const categoryLogo = req.files && req.files['category_logo'] 
-        ? req.files['category_logo'][0].path 
-        : null;
+    let categoryLogo = null;
+    if (req.files && req.files['category_logo']) {
+        const file = req.files['category_logo'][0];
+        categoryLogo = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+    }
 
     if (!name) {
         return res.status(400).json({ success: false, message: 'Category name is required.' });
@@ -70,7 +73,7 @@ const getCategoryById = (req, res) => {
 };
 
 // Update category by ID
-const updateCategoryById = (req, res) => {
+const updateCategoryById = async (req, res) => {
     const { id, name, description, status } = req.body;
 
     if (!id) {
@@ -78,7 +81,7 @@ const updateCategoryById = (req, res) => {
     }
 
     // Fetch existing category
-    ProductCategory.findById(id, (err, category) => {
+    ProductCategory.findById(id, async (err, category) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching category', error: err });
         }
@@ -100,16 +103,12 @@ const updateCategoryById = (req, res) => {
         // Check if a new category logo was uploaded
         if (req.files && req.files['category_logo']) {
             console.log("✅ New category logo uploaded");
-            const newCategoryLogo = req.files['category_logo'][0].path;
+            const file = req.files['category_logo'][0];
+            const newCategoryLogo = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
             updateFields.category_logo = newCategoryLogo;
-
-            // Delete old logo from server
+            // Delete old logo from S3
             if (categoryObject.category_logo) {
-                const oldLogoPath = categoryObject.category_logo;
-                fs.unlink(oldLogoPath, (err) => {
-                    if (err) console.error('❌ Error deleting old category logo:', err);
-                    else console.log('🗑️ Old category logo deleted successfully');
-                });
+                await deleteS3Image(categoryObject.category_logo);
             }
         }
 
@@ -134,11 +133,11 @@ const updateCategoryById = (req, res) => {
 
 
 // Delete category by ID
-const deleteCategoryById = (req, res) => {
+const deleteCategoryById = async (req, res) => {
     const { id } = req.body;
     if (!id) return res.status(400).json({ success: false, message: 'Category ID is required.' });
 
-    ProductCategory.findById(id, (err, category) => {
+    ProductCategory.findById(id, async (err, category) => {
         if (err) {
             console.error("Error fetching category:", err); // 🔍 Log errors
             return res.status(500).json({ success: false, message: 'Error fetching category', error: err });
@@ -149,12 +148,9 @@ const deleteCategoryById = (req, res) => {
             return res.status(404).json({ success: false, message: 'Category not found.' });
         }
 
-        // Delete category logo from server before deleting the category
+        // Delete category logo from S3 before deleting the category
         if (category.category_logo) {
-            fs.unlink(category.category_logo, (err) => {
-                if (err) console.error('Error deleting category logo:', err);
-                else console.log('Category logo deleted successfully');
-            });
+            await deleteS3Image(category.category_logo);
         }
 
         ProductCategory.delete(id, (err, result) => {

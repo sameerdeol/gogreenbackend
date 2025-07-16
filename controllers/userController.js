@@ -7,7 +7,8 @@ const uploadFields = require('../middleware/multerConfig'); // Import Multer set
 const UserFcmToken = require('../models/fcmTokenModel');
 const sendNotificationToUser = require('../utils/sendNotificationToUser');
 const verifyGoogleIdToken = require('../middleware/googleAuthToken');
-const fs = require('fs');
+const deleteS3Image = require('../utils/deleteS3Image');
+const uploadToS3 = require('../utils/s3Upload');
 const nodemailer = require('nodemailer');
 const generateCustomId = require('../utils/generateCustomId');
 
@@ -132,17 +133,36 @@ const loginadmin = async (req, res) => {
     }
 };
 
-const updateUser = (req, res) => {
+const updateUser = async (req, res) => {
     const userData = req.body;
     const { role_id } = req.user;
     const user_id=28;
-    User.updateUser(user_id,role_id,userData, (err, results) => {
+    // Fetch user profile to get old image
+    User.userProfile(user_id, role_id, async (err, user) => {
         if (err) {
             return res.status(500).json({ error: 'Database query failed' });
         }
-        else{
-            res.status(200).json({ message: 'User updated successfully' });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
         }
+        // If new profile_pic is uploaded, delete old one from S3 and upload new one
+        let profile_pic = null;
+        if (req.files && req.files['profile_pic'] && req.files['profile_pic'].length > 0) {
+            const file = req.files['profile_pic'][0];
+            profile_pic = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+            if (user.profile_pic) {
+                await deleteS3Image(user.profile_pic);
+            }
+        }
+        if (profile_pic) userData.profile_pic = profile_pic;
+        User.updateUser(user_id,role_id,userData, (err, results) => {
+            if (err) {
+                return res.status(500).json({ error: 'Database query failed' });
+            }
+            else{
+                res.status(200).json({ message: 'User updated successfully' });
+            }
+        });
     });
 };
 const getUnverifiedUsers = (req, res) => {

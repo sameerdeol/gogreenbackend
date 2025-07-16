@@ -4,7 +4,8 @@ const { User } = require('../models/User');
 const { generateUniqueUsername } = require('../middleware/username');
 const generateCustomId = require('../utils/generateCustomId');
 const path = require('path');
-const fs = require('fs');
+const deleteS3Image = require('../utils/deleteS3Image');
+const uploadToS3 = require('../utils/s3Upload');
 require('dotenv').config();
 
 const riderSignup = async (req, res) => {
@@ -261,19 +262,23 @@ const riderVerification = async (req, res) => {
     }
 };
 
-const updateRiderProfile = (req, res) => {
+const updateRiderProfile = async (req, res) => {
     req.body.role_id = 4;
     const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob, vendor_lat, vendor_lng } = req.body;
-    const profile_pic = req.files && req.files['worker_profilePic'] && req.files['worker_profilePic'].length > 0 
-        ? req.files['worker_profilePic'][0].path 
-        : null;
-    const vendor_thumb = req.files && req.files['vendor_thumbnail'] && req.files['vendor_thumbnail'].length > 0 
-        ? req.files['vendor_thumbnail'][0].path 
-        : null;
+    let profile_pic = null;
+    let vendor_thumb = null;
+    if (req.files && req.files['worker_profilePic'] && req.files['worker_profilePic'].length > 0) {
+        const file = req.files['worker_profilePic'][0];
+        profile_pic = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+    }
+    if (req.files && req.files['vendor_thumbnail'] && req.files['vendor_thumbnail'].length > 0) {
+        const file = req.files['vendor_thumbnail'][0];
+        vendor_thumb = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+    }
     if ([1, 2].includes(parseInt(role_id))) {
         return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
     }
-    User.userProfile(user_id,role_id, (err, user) => {
+    User.userProfile(user_id,role_id, async (err, user) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
@@ -281,20 +286,10 @@ const updateRiderProfile = (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
         if (profile_pic && user.profile_pic) {
-            const oldPicPath = path.resolve(user.profile_pic);
-            fs.unlink(oldPicPath, (unlinkErr) => {
-                if (unlinkErr && unlinkErr.code !== 'ENOENT') {
-                    console.error('Failed to delete old profile pic:', unlinkErr);
-                }
-            });
+            await deleteS3Image(user.profile_pic);
         }
         if (vendor_thumb && user.vendor_thumb) {
-            const oldThumbPath = path.resolve(user.vendor_thumb);
-            fs.unlink(oldThumbPath, (unlinkErr) => {
-                if (unlinkErr && unlinkErr.code !== 'ENOENT') {
-                    console.error('Failed to delete old vendor thumb:', unlinkErr);
-                }
-            });
+            await deleteS3Image(user.vendor_thumb);
         }
         User.findByEmailOrPhone(email, phonenumber, (err, existingUser) => {
             if (err) {

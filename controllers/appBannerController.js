@@ -1,14 +1,17 @@
 const AppBanner = require('../models/appBannerModel');
 const uploadFields = require('../middleware/multerConfig');
-const fs = require('fs');
+const deleteS3Image = require('../utils/deleteS3Image');
+const uploadToS3 = require('../utils/s3Upload');
 
 // Create a new app banner
-const createBanner = (req, res) => {
+const createBanner = async (req, res) => {
 
     const { title, status } = req.body;
-    const image = req.files && req.files['banner_image']
-        ? req.files['banner_image'][0].path
-        : null;
+    let image = null;
+    if (req.files && req.files['banner_image']) {
+        const file = req.files['banner_image'][0];
+        image = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+    }
 
     if (!title || !image) {
         return res.status(400).json({ success: false, message: 'Title and image are required.' });
@@ -47,7 +50,7 @@ const getBannerById = (req, res) => {
 };
 
 // Update banner by ID
-const updateBannerById = (req, res) => {
+const updateBannerById = async (req, res) => {
     const { id, title, status } = req.body;
 
     if (!id) {
@@ -55,7 +58,7 @@ const updateBannerById = (req, res) => {
     }
 
     // Step 1: Fetch Existing Banner
-    AppBanner.findById(id, (err, results) => {
+    AppBanner.findById(id, async (err, results) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching banner', error: err });
         }
@@ -74,18 +77,13 @@ const updateBannerById = (req, res) => {
 
         // Step 2: Handle Image Upload (if applicable)
         if (req.files && req.files['banner_image']) {
-            const newImage = req.files['banner_image'][0].path;
-            const oldImagePath = existingBanner.image_url; // ✅ Store old image path
-
-            updateFields.image_url = newImage; // ✅ Update new image URL
-
-            // Step 3: Delete Old Image (if exists)
-            if (oldImagePath && fs.existsSync(oldImagePath)) {
-                try {
-                    fs.unlinkSync(oldImagePath); // ✅ Ensures synchronous deletion
-                } catch (unlinkError) {
-                    console.error('Error deleting old image:', unlinkError);
-                }
+            const file = req.files['banner_image'][0];
+            const newImage = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+            const oldImageUrl = existingBanner.image_url;
+            updateFields.image_url = newImage;
+            // Delete old image from S3
+            if (oldImageUrl) {
+                await deleteS3Image(oldImageUrl);
             }
         }
 
@@ -106,26 +104,23 @@ const updateBannerById = (req, res) => {
 
 
 // Delete banner by ID
-const deleteBannerById = (req, res) => {
+const deleteBannerById = async (req, res) => {
     const { id } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Banner ID is required.' });
     }
 
-    AppBanner.findById(id, (err, banner) => {
+    AppBanner.findById(id, async (err, banner) => {
         if (err) return res.status(500).json({ success: false, message: 'Error fetching banner', error: err });
 
         if (!banner.length) {
             return res.status(404).json({ success: false, message: 'Banner not found' });
         }
-        console.log("banner is",banner[0])
         const existingBanner = banner[0];
 
         if (existingBanner.image_url) {
-            fs.unlink(existingBanner.image_url, (err) => {
-                if (err) console.error('Error deleting image:', err);
-            });
+            await deleteS3Image(existingBanner.image_url);
         }
 
         AppBanner.delete(id, (err) => {

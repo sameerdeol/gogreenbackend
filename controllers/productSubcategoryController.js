@@ -1,16 +1,19 @@
 const ProductSubcategory = require('../models/productSubcategoryModel');
 const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
-const fs = require('fs');
+const deleteS3Image = require('../utils/deleteS3Image');
+const uploadToS3 = require('../utils/s3Upload');
 
 // Create a new subcategory
-const createSubcategory = (req, res) => {
+const createSubcategory = async (req, res) => {
     console.log("Received Files:", req.files);
     console.log("Received Body:", req.body);
 
     const { name, category_id, description } = req.body;
-    const sub_category_logo = req.files && req.files['subcategory_logo']
-        ? req.files['subcategory_logo'][0].path
-        : null;
+    let sub_category_logo = null;
+    if (req.files && req.files['subcategory_logo']) {
+        const file = req.files['subcategory_logo'][0];
+        sub_category_logo = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+    }
 
     if (!name || !category_id) {
         return res.status(400).json({ success: false, message: 'Name and category_id are required.' });
@@ -120,7 +123,7 @@ const getSubcategoryById = (req, res) => {
 };
 
 // Update subcategory by ID
-const updateSubcategoryById = (req, res) => {
+const updateSubcategoryById = async (req, res) => {
     const { id, name, category_id, description, status } = req.body;
 
     if (!id) {
@@ -128,7 +131,7 @@ const updateSubcategoryById = (req, res) => {
     }
 
     // Fetch existing subcategory
-    ProductSubcategory.findById(id, (err, subcategory) => {
+    ProductSubcategory.findById(id, async (err, subcategory) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching subcategory', error: err });
         }
@@ -151,16 +154,12 @@ const updateSubcategoryById = (req, res) => {
         // Check if a new subcategory logo was uploaded
         if (req.files && req.files['subcategory_logo']) {
             console.log("✅ New subcategory logo uploaded");
-            const newSubcategoryLogo = req.files['subcategory_logo'][0].path;
+            const file = req.files['subcategory_logo'][0];
+            const newSubcategoryLogo = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
             updateFields.subcategory_logo = newSubcategoryLogo;
-
-            // Delete old logo from server
+            // Delete old logo from S3
             if (subcategoryObject.subcategory_logo) {
-                const oldLogoPath = subcategoryObject.subcategory_logo;
-                fs.unlink(oldLogoPath, (err) => {
-                    if (err) console.error('❌ Error deleting old subcategory logo:', err);
-                    else console.log('🗑️ Old subcategory logo deleted successfully');
-                });
+                await deleteS3Image(subcategoryObject.subcategory_logo);
             }
         }
 
@@ -183,14 +182,14 @@ const updateSubcategoryById = (req, res) => {
 };
 
 // Delete subcategory by ID
-const deleteSubcategoryById = (req, res) => {
+const deleteSubcategoryById = async (req, res) => {
     const { id } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Subcategory ID is required.' });
     }
 
-    ProductSubcategory.findById(id, (err, subcategory) => {
+    ProductSubcategory.findById(id, async (err, subcategory) => {
         if (err) {
             console.error("Error fetching subcategory:", err); // Debugging log
             return res.status(500).json({ success: false, message: 'Error fetching subcategory', error: err });
@@ -201,12 +200,9 @@ const deleteSubcategoryById = (req, res) => {
             return res.status(404).json({ success: false, message: 'Subcategory not found.' });
         }
 
-        // Delete subcategory logo from server before deleting the subcategory
+        // Delete subcategory logo from S3 before deleting the subcategory
         if (subcategory.subcategory_logo) {
-            fs.unlink(subcategory.subcategory_logo, (err) => {
-                if (err) console.error('Error deleting subcategory logo:', err);
-                else console.log('Subcategory logo deleted successfully');
-            });
+            await deleteS3Image(subcategory.subcategory_logo);
         }
 
         ProductSubcategory.delete(id, (err, result) => {

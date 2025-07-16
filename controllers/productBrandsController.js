@@ -1,12 +1,17 @@
 const ProductBrand = require('../models/productBrandModel');
 const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
-const fs = require('fs');
+const deleteS3Image = require('../utils/deleteS3Image');
+const uploadToS3 = require('../utils/s3Upload');
 
 // Create a new product brand
-const createProductBrand = (req, res) => {
+const createProductBrand = async (req, res) => {
     console.log(req.files);
     const { name, description,category_id } = req.body;
-    const brandLogo = req.files?.brand_logo?.[0]?.path || null;
+    let brandLogo = null;
+    if (req.files?.brand_logo?.[0]) {
+        const file = req.files.brand_logo[0];
+        brandLogo = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+    }
 
     ProductBrand.create(name, description,category_id, brandLogo, (err, result) => {
         if (err) {
@@ -44,7 +49,7 @@ const getProductBrandById = (req, res) => {
     });
 };
 
-const updateProductBrandById = (req, res) => {
+const updateProductBrandById = async (req, res) => {
     const { id, name, description, categoryid, status } = req.body;
     
     if (!id) {
@@ -58,30 +63,25 @@ const updateProductBrandById = (req, res) => {
     if (status !== undefined) updateFields.status = status;
 
     // Check if a new brand logo was uploaded
-    if (req.files?.brand_logo) {
-        const newBrandLogo = req.files.brand_logo[0].path;
+    if (req.files?.brand_logo?.[0]) {
+        const file = req.files.brand_logo[0];
+        const newBrandLogo = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
         updateFields.brand_logo = newBrandLogo;
-
-        // Fetch existing brand to delete old logo
-        ProductBrand.findById(id, (err, brand) => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Error fetching product brand', error: err });
-            }
-
-            // Ensure brand is an object, not an array
-            const brandObject = Array.isArray(brand) ? brand[0] : brand;
-
-            if (!brandObject) {
-                return res.status(404).json({ success: false, message: 'Product brand not found' });
-            }
-
-            // Delete old logo if it exists
-            if (brandObject.brand_logo) {
-                fs.unlink(brandObject.brand_logo, (err) => {
-                    if (err) console.error('❌ Error deleting old brand logo:', err);
-                    else console.log('🗑️ Old brand logo deleted successfully');
-                });
-            }
+        // Fetch existing brand to delete old logo from S3
+        await new Promise((resolve) => {
+            ProductBrand.findById(id, async (err, brand) => {
+                if (err) {
+                    return res.status(500).json({ success: false, message: 'Error fetching product brand', error: err });
+                }
+                const brandObject = Array.isArray(brand) ? brand[0] : brand;
+                if (!brandObject) {
+                    return res.status(404).json({ success: false, message: 'Product brand not found' });
+                }
+                if (brandObject.brand_logo) {
+                    await deleteS3Image(brandObject.brand_logo);
+                }
+                resolve();
+            });
         });
     }
 
@@ -108,7 +108,7 @@ const updateProductBrandById = (req, res) => {
 
 
 // Delete product brand by ID
-const deleteProductBrandById = (req, res) => {
+const deleteProductBrandById = async (req, res) => {
     const { id } = req.body;
 
     if (!id) {
@@ -116,7 +116,7 @@ const deleteProductBrandById = (req, res) => {
     }
 
     // Fetch existing product brand to delete old logo
-    ProductBrand.findById(id, (err, brand) => {
+    ProductBrand.findById(id, async (err, brand) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching product brand', error: err });
         }
@@ -130,10 +130,7 @@ const deleteProductBrandById = (req, res) => {
 
         // Delete old brand logo if it exists
         if (brandObject.brand_logo) {
-            fs.unlink(brandObject.brand_logo, (err) => {
-                if (err) console.error('❌ Error deleting old brand logo:', err);
-                else console.log('🗑️ Old brand logo deleted successfully');
-            });
+            await deleteS3Image(brandObject.brand_logo);
         }
 
         // Now delete the product brand

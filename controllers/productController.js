@@ -2,12 +2,12 @@ const Product = require('../models/productModel');
 const GalleryImage = require('../models/galleryImage');
 const uploadFields = require('../middleware/multerConfig'); // Import Multer setup
 const {extractUpdatedData, handleFeaturedImage} = require('../utils/productUtils'); // Import Multer setup
-const fs = require('fs');
-const path = require('path');
+const deleteS3Image = require('../utils/deleteS3Image');
+const uploadToS3 = require('../utils/s3Upload');
 const db = require('../config/db');
 
 // Create a new product
-const createProduct = (req, res) => {
+const createProduct = async (req, res) => {
     try {
         let { vendor_id, name, description, price, category, sub_category,
             stock, manufacturer_details, title, subtitle, size, fast_delivery_available, 
@@ -31,8 +31,18 @@ const createProduct = (req, res) => {
         }
 
         // Handle file uploads
-        const featuredImage = req.files['featuredImage'] ? `uploads/featured-images/${req.files['featuredImage'][0].filename}` : null;
-        const galleryImages = req.files['galleryImages'] ? req.files['galleryImages'].map(file => `uploads/gallery-images/${file.filename}`) : [];
+        let featuredImage = null;
+        if (req.files['featuredImage']) {
+            const file = req.files['featuredImage'][0];
+            featuredImage = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+        }
+        let galleryImages = [];
+        if (req.files['galleryImages']) {
+            for (const file of req.files['galleryImages']) {
+                const url = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+                galleryImages.push(url);
+            }
+        }
 
         // Insert product into MySQL
         Product.create(
@@ -160,8 +170,7 @@ const getProducts = (req, res) => {
 
 
 // Update product by ID
-
-const updateProductById = (req, res) => {
+const updateProductById = async (req, res) => {
     const { id, vendor_id } = req.body;
 
     if (!id) {
@@ -177,15 +186,29 @@ const updateProductById = (req, res) => {
         }
     }
 
-    Product.findById(id, vendor_id, (findErr, existingProduct) => {
+    Product.findById(id, vendor_id, async (findErr, existingProduct) => {
         if (findErr || !existingProduct) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
         const updatedData = extractUpdatedData(req.body);
-        handleFeaturedImage(req, existingProduct, updatedData);
-
-        const newGalleryImages = req.files?.['galleryImages']?.map(file => file.path) || [];
+        // Handle featured image update
+        if (req.files['featuredImage']) {
+            const file = req.files['featuredImage'][0];
+            const newFeaturedImage = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+            updatedData.featured_image = newFeaturedImage;
+            if (existingProduct.featured_image) {
+                await deleteS3Image(existingProduct.featured_image);
+            }
+        }
+        // Handle gallery images update
+        let newGalleryImages = [];
+        if (req.files['galleryImages']) {
+            for (const file of req.files['galleryImages']) {
+                const url = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+                newGalleryImages.push(url);
+            }
+        }
 
         Product.updateById(id, updatedData, (err) => {
             if (err) {
@@ -203,15 +226,11 @@ const updateProductById = (req, res) => {
 
             const handleGallery = (cb) => {
                 if (newGalleryImages.length > 0) {
-                    GalleryImage.findByProductId(id, (galleryErr, existingGallery) => {
+                    GalleryImage.findByProductId(id, async (galleryErr, existingGallery) => {
                         if (galleryErr) return cb(galleryErr);
-
-                        existingGallery.forEach(img => {
-                            fs.unlink(path.join(__dirname, '..', img.image_path), (err) => {
-                                if (err) console.error("Error deleting gallery image:", err);
-                            });
-                        });
-
+                        for (const img of existingGallery) {
+                            await deleteS3Image(img.image_path);
+                        }
                         GalleryImage.deleteByProductId(id, (deleteErr) => {
                             if (deleteErr) return cb(deleteErr);
                             GalleryImage.create(id, newGalleryImages, cb);
@@ -252,7 +271,7 @@ const updateProductById = (req, res) => {
 
 
 // Delete product by ID
-const deleteProductById = (req, res) => {
+const deleteProductById = async (req, res) => {
     const { id,user_id } = req.body;
 
     if (!id) {
@@ -260,26 +279,21 @@ const deleteProductById = (req, res) => {
     }
 
     // Fetch product details before deletion
-    Product.findById(id,user_id, (findErr, product) => {
+    Product.findById(id,user_id, async (findErr, product) => {
         if (findErr || !product) {
             return res.status(404).json({ success: false, message: 'Product not found.' });
         }
         // Delete the featured image
         if (product.featured_image) {
-            fs.unlink(path.join(__dirname, '..', product.featured_image), (err) => {
-                if (err) console.error("Error deleting featured image:", err);
-            });
+            await deleteS3Image(product.featured_image);
         }
 
         // Delete associated gallery images
-        GalleryImage.findByProductId(id, (galleryErr, galleryImages) => {
+        GalleryImage.findByProductId(id, async (galleryErr, galleryImages) => {
             if (!galleryErr && galleryImages.length > 0) {
-                galleryImages.forEach(img => {
-                    fs.unlink(path.join(__dirname, '..', img.image_path), (err) => {
-                        if (err) console.error("Error deleting gallery image:", err);
-                    });
-                });
-
+                for (const img of galleryImages) {
+                    await deleteS3Image(img.image_path);
+                }
                 // Delete gallery images from database
                 GalleryImage.deleteByProductId(id, (deleteErr) => {
                     if (deleteErr) {

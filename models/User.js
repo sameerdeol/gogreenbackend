@@ -30,6 +30,15 @@ const User = {
             callback(null, results[0]); // returns a single user object
         });
     },    
+    findByEmailforAdmin: (email, callback) => {
+        const query = `SELECT * FROM users WHERE email = ? AND role_id IN (1, 2)`;
+        db.query(query, [email], (err, results) => {
+            if (err) return callback(err, null);
+            if (results.length === 0) return callback(null, null);
+            callback(null, results[0]); // returns a single user object
+        });
+    },
+  
     checkCustomIdExists : (custom_id, callback) => {
         db.query('SELECT * FROM users WHERE custom_id = ?', [custom_id], (err, results) => {
             if (err) return callback(err);
