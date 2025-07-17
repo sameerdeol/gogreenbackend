@@ -438,26 +438,34 @@ const storeBusinessDetails = async (req, res) => {
     try {
         const {
             user_id,
-            profile_pic,
             bussiness_license_number,
-            bussiness_license_number_pic,
-            gst_number,
-            gst_number_pic
+            gst_number
         } = req.body;
+
         if (!user_id) {
             return res.status(400).json({ success: false, message: 'user_id is required' });
         }
-        const userData = {
-            profile_pic,
-            bussiness_license_number,
-            bussiness_license_number_pic,
-            gst_number,
-            gst_number_pic
+
+        const fileUpload = async (fieldName) => {
+            if (req.files && req.files[fieldName]) {
+                const file = req.files[fieldName][0];
+                return await uploadToS3(file.buffer, file.originalname, fieldName, file.mimetype);
+            }
+            return undefined;
         };
-        console.log("userdata",userData)
+
+        const userData = {
+            bussiness_license_number,
+            gst_number,
+            profile_pic: await fileUpload('profile_pic'),
+            bussiness_license_number_pic: await fileUpload('bussiness_license_number_pic'),
+            gst_number_pic: await fileUpload('gst_number_pic')
+        };
+
         const filteredData = Object.fromEntries(
             Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
         );
+
         User.updateStoreDetails(user_id, filteredData, (err, result) => {
             if (err) {
                 console.error('DB Error:', err);
@@ -478,6 +486,7 @@ const storeBusinessDetails = async (req, res) => {
                 message: 'Store details stored successfully'
             });
         });
+
     } catch (error) {
         console.error('Unexpected Server Error:', error);
         if (!res.headersSent) {
@@ -486,25 +495,34 @@ const storeBusinessDetails = async (req, res) => {
     }
 };
 
+const uploadToS3 = require('../utils/uploadToS3'); // adjust path as needed
+
 const storeAdditionalDetails = async (req, res) => {
     try {
-        const {
-            user_id,
-            vendor_insurance_certificate,
-            health_inspection_certificate,
-            food_certificate
-        } = req.body;
+        const { user_id } = req.body;
+
         if (!user_id) {
             return res.status(400).json({ success: false, message: 'user_id is required' });
         }
-        const userData = {
-            vendor_insurance_certificate,
-            health_inspection_certificate,
-            food_certificate
+
+        const fileUpload = async (fieldName) => {
+            if (req.files && req.files[fieldName]) {
+                const file = req.files[fieldName][0];
+                return await uploadToS3(file.buffer, file.originalname, fieldName, file.mimetype);
+            }
+            return undefined;
         };
+
+        const userData = {
+            vendor_insurance_certificate: await fileUpload('vendor_insurance_certificate'),
+            health_inspection_certificate: await fileUpload('health_inspection_certificate'),
+            food_certificate: await fileUpload('food_certificate')
+        };
+
         const filteredData = Object.fromEntries(
             Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
         );
+
         User.updateStoreDetails(user_id, filteredData, (err, result) => {
             if (err) {
                 console.error('DB Error:', err);
@@ -514,24 +532,32 @@ const storeAdditionalDetails = async (req, res) => {
                     error: err.message || err
                 });
             }
+
             if (result.affectedRows === 0) {
                 return res.status(404).json({
                     success: false,
                     message: 'No user found with the provided user_id'
                 });
             }
+
             return res.status(200).json({
                 success: true,
                 message: 'Store details stored successfully'
             });
         });
+
     } catch (error) {
         console.error('Unexpected Server Error:', error);
         if (!res.headersSent) {
-            res.status(500).json({ success: false, message: 'Server error', error: error.message });
+            res.status(500).json({
+                success: false,
+                message: 'Server error',
+                error: error.message
+            });
         }
     }
 };
+
 
 
 const createVendorType = async (req, res) => {
@@ -551,7 +577,6 @@ const createVendorType = async (req, res) => {
 
     // Inject uploaded image URL into body
     req.body.vendor_type_image = vendor_type_image;
-    console.log("bosy is",req.body)
     User.createvendortype(req.body, (err, result) => {
       if (err) {
         return res.status(500).json({ status: false, error: 'Failed to create vendor type' });
