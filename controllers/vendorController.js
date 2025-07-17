@@ -643,11 +643,18 @@ const updateVendorType = async (req, res) => {
                 return res.status(500).json({ success: false, message: 'Error updating vendor type', error: err });
             }
 
-            const updatedVendorTypeObject = Array.isArray(updatedVendorType) ? updatedVendorType[0] : updatedVendorType;
+            User.getVendorTypeById(id, (err, finalData) => {
+                if (err) {
+                    return res.status(500).json({ success: false, message: 'Error fetching updated data', error: err });
+                }
 
-            res.status(200).json({
-                success: true,
-                message: 'Vendor type updated successfully',
+                const finalVendorType = Array.isArray(finalData) ? finalData[0] : finalData;
+
+                res.status(200).json({
+                    success: true,
+                    message: 'Vendor type updated successfully',
+                    data: finalVendorType
+                });
             });
         });
     });
