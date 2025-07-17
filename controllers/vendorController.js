@@ -495,8 +495,6 @@ const storeBusinessDetails = async (req, res) => {
     }
 };
 
-const uploadToS3 = require('../utils/uploadToS3'); // adjust path as needed
-
 const storeAdditionalDetails = async (req, res) => {
     try {
         const { user_id } = req.body;
