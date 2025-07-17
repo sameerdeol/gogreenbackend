@@ -782,6 +782,30 @@ const User = {
             return callback(null, results);
         });
     },
+    createvendortype: (data, callback) => {
+        const sql = 'INSERT INTO vendor_type (vendor_type, status, vendor_type_image) VALUES (?, ?, ?)';
+        db.query(sql, [data.vendor_type, data.status, data.vendor_type_image], callback);
+    },
+
+    getAllvendortype: (callback) => {
+        const sql = 'SELECT * FROM vendor_type';
+        db.query(sql, callback);
+    },
+
+    updatevendortype: (id, data, callback) => {
+        const sql = 'UPDATE vendor_type SET vendor_type = ?, status = ?, vendor_type_image = ? WHERE id = ?';
+        db.query(sql, [data.vendor_type, data.status, data.vendor_type_image, id], callback);
+    },
+
+    deletevendortype: (id, callback) => {
+        const sql = 'DELETE FROM vendor_type WHERE id = ?';
+        db.query(sql, [id], callback);
+    },
+    getVendorTypeById: (id, callback) => {
+        const sql = 'SELECT * FROM vendor_type where id = ?';
+        db.query(sql, [id],callback);
+    },
+    
 
 };
 

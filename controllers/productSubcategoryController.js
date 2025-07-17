@@ -5,8 +5,6 @@ const uploadToS3 = require('../utils/s3Upload');
 
 // Create a new subcategory
 const createSubcategory = async (req, res) => {
-    console.log("Received Files:", req.files);
-    console.log("Received Body:", req.body);
 
     const { name, category_id, description } = req.body;
     let sub_category_logo = null;

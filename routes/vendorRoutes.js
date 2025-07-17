@@ -5,11 +5,10 @@ const { verifyToken } = require('../middleware/authroization');
 const router = express.Router();
 
 // Vendor Type CRUD Endpoints
-const vendorTypeController = require('../controllers/vendorTypeController');
-router.post('/type', vendorTypeController.createVendorType);
-router.get('/type', vendorTypeController.getAllVendorTypes);
-router.put('/type/:id', vendorTypeController.updateVendorType);
-router.delete('/type/:id', vendorTypeController.deleteVendorType);
+router.post('/type', uploadFields, vendorController.createVendorType);
+router.get('/type', vendorController.getAllVendorTypes);
+router.put('/type/:id', uploadFields, vendorController.updateVendorType);
+router.delete('/type/:id', vendorController.deleteVendorType);
 
 router.post('/vendor-verification', uploadFields, vendorController.vendorVerification);
 router.post('/update-vendorPassword', verifyToken, vendorController.updateVendorProfile);

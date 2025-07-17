@@ -28,6 +28,7 @@ function getS3Folder(fieldname) {
         case 'vendor_insurance_certificate': return 'vendor_insurance_certificate/';
         case 'health_inspection_certificate': return 'health_inspection_certificate/';
         case 'food_certificate': return 'food_certificate/';
+        case 'vendor_type_image': return 'vendor_type_image/';
         default: return '';
     }
 }

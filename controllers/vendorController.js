@@ -532,6 +532,149 @@ const storeAdditionalDetails = async (req, res) => {
     }
 };
 
+
+const createVendorType = async (req, res) => {
+  try {
+    let vendor_type_image = null;
+
+    // Upload to S3 if image is provided
+    if (req.files && req.files['vendor_type_image']) {
+      const file = req.files['vendor_type_image'][0];
+      vendor_type_image = await uploadToS3(
+        file.buffer,
+        file.originalname,
+        file.fieldname,
+        file.mimetype
+      );
+    }
+
+    // Inject uploaded image URL into body
+    req.body.vendor_type_image = vendor_type_image;
+
+    User.createvendortype(req.body, (err, result) => {
+      if (err) {
+        return res.status(500).json({ status: false, error: 'Failed to create vendor type' });
+      }
+      res.status(201).json({
+        status: true,
+        message: 'Vendor type created',
+        id: result.insertId
+      });
+    });
+
+  } catch (error) {
+    console.error('Error in createVendorType:', error);
+    res.status(500).json({ status: false, error: 'Server error' });
+  }
+};
+
+
+const getAllVendorTypes = (req, res) => {
+  User.getAllvendortype((err, results) => {
+    if (err) {
+      return res.status(500).json({ status: false, error: 'Failed to fetch vendor types' });
+    }
+    res.status(200).json({ status: true, data: results });
+  });
+};
+
+const updateVendorType = async (req, res) => {
+    const { id, name, description, status } = req.body;
+
+    if (!id) {
+        return res.status(400).json({ success: false, message: 'Vendor type ID is required.' });
+    }
+
+    // Fetch existing vendor type
+    User.getVendorTypeById(id, async (err, vendorType) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Error fetching vendor type', error: err });
+        }
+
+        const vendorTypeObject = Array.isArray(vendorType) ? vendorType[0] : vendorType;
+
+        if (!vendorTypeObject) {
+            return res.status(404).json({ success: false, message: 'Vendor type not found' });
+        }
+
+        const updateFields = {
+            name: name !== undefined ? name : vendorTypeObject.name,
+            description: description !== undefined ? description : vendorTypeObject.description,
+            status: status !== undefined ? status : vendorTypeObject.status,
+            vendor_type_image: vendorTypeObject.vendor_type_image, // retain existing image unless replaced
+        };
+
+        // Check if a new image was uploaded
+        if (req.files && req.files['vendor_type_image']) {
+            const file = req.files['vendor_type_image'][0];
+            const newImageUrl = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+            updateFields.vendor_type_image = newImageUrl;
+
+            // Optionally delete the old image from S3
+            if (vendorTypeObject.vendor_type_image) {
+                await deleteS3Image(vendorTypeObject.vendor_type_image);
+            }
+        }
+
+        // Perform the update
+        User.updatevendortype(id, updateFields, (err, updatedVendorType) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Error updating vendor type', error: err });
+            }
+
+            const updatedVendorTypeObject = Array.isArray(updatedVendorType) ? updatedVendorType[0] : updatedVendorType;
+
+            res.status(200).json({
+                success: true,
+                message: 'Vendor type updated successfully',
+                vendorType: updatedVendorTypeObject,
+            });
+        });
+    });
+};
+
+
+const deleteVendorType = async (req, res) => {
+    const { id } = req.params;
+    if (!id) {
+        return res.status(400).json({ status: false, message: 'Vendor type ID is required.' });
+    }
+
+    // 1. Get vendor type from DB to retrieve image key
+    User.getVendorTypeById(id, async (err, vendorType) => {
+        if (err) {
+            console.error("Error fetching vendor type:", err);
+            return res.status(500).json({ status: false, message: 'Error fetching vendor type', error: err });
+        }
+
+        if (!vendorType || vendorType.length === 0) {
+            return res.status(404).json({ status: false, message: 'Vendor type not found.' });
+        }
+
+        // 2. Delete image from S3
+        const imageKey = vendorType[0].vendor_type_image;
+        if (imageKey) {
+            try {
+                await deleteS3Image(imageKey);
+            } catch (s3Error) {
+                console.error("Failed to delete image from S3:", s3Error);
+                // Optionally return or just log the error and continue
+            }
+        }
+
+        // 3. Delete vendor type from DB
+        User.deletevendortype(id, (err, result) => {
+            if (err) {
+                console.error("Error deleting vendor type:", err);
+                return res.status(500).json({ status: false, message: 'Error deleting vendor type', error: err });
+            }
+            res.status(200).json({ status: true, message: 'Vendor type deleted successfully.' });
+        });
+    });
+};
+
+
+
 module.exports = {
     vendorSignup,
     vendorLogin,
@@ -543,5 +686,9 @@ module.exports = {
     allVendorsforAdmin,
     allVendorsforAdminbyVendorID,
     storeBusinessDetails,
-    storeAdditionalDetails
+    storeAdditionalDetails,
+    createVendorType,
+    getAllVendorTypes,
+    updateVendorType,
+    deleteVendorType
 }; 

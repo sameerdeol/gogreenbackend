@@ -5,8 +5,6 @@ const uploadToS3 = require('../utils/s3Upload');
 
 // Create a new category
 const createCategory = async (req, res) => {
-    console.log("Received Files:", req.files); // Debugging output
-    console.log("Received Body:", req.body); // Check if form fields exist
 
     const { name, description } = req.body;
     let categoryLogo = null;
