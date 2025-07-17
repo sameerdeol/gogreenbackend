@@ -45,6 +45,6 @@ router.post('/createadmins', authenticateToken, (req, res) => {
 });
 
 router.post('/adminlogin',loginadmin);
-router.post('/addbankdetails',userBankDetails);
+router.post('/addbankdetails', uploadFields, userBankDetails);
 
 module.exports = router;
