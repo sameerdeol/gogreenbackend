@@ -603,7 +603,7 @@ const getAllVendorTypes = (req, res) => {
 };
 
 const updateVendorType = async (req, res) => {
-    const id = req.params;
+    const {id} = req.params;
     const {name, description, status } = req.body;
 
     if (!id) {
