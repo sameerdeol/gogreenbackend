@@ -11,6 +11,7 @@ const {
 } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const { verifyToken } = require('../middleware/authroization');
+const uploadFields = require('../middleware/multerConfig');
 const router = express.Router();
 
 /**
