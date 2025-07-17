@@ -218,7 +218,7 @@ const vendorLogin = async (req, res) => {
 const vendorVerification = async (req, res) => {
     try {
         req.body.role_id = 3;
-        const { role_id, storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number, worker_profilePic, store_image, business_reg_number } = req.body;
+        const { role_id, storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number, worker_profilePic, store_image, business_reg_number, vendor_type_id } = req.body;
         if ([1, 2].includes(parseInt(role_id))) {
             return res.status(403).json({ success: false, message: 'You are not allowed to create an account with this role.' });
         }
@@ -245,7 +245,8 @@ const vendorVerification = async (req, res) => {
                 license_number,
                 worker_profilePic,
                 store_image,
-                business_reg_number, 
+                business_reg_number,
+                vendor_type_id 
             };
             User.insertUserVerification(role_id, userData, (err, result) => {
                 if (err) {

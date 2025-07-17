@@ -394,10 +394,10 @@ const User = {
         if (role_id == 3) { // Vendor
             insertQuery = `
                 INSERT INTO vendors 
-                (user_id, store_name, store_address, sin_code, country_status, identity_proof, profile_pic, store_image, business_reg_number ) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (user_id, store_name, store_address, sin_code, country_status, identity_proof, profile_pic, store_image, business_reg_number, vendor_type_id ) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            values = [data.user_id, data.storename, data.storeaddress, data.sincode, data.countrystatus, data.identity_proof, data.worker_profilePic, data.store_image, data.business_reg_number];
+            values = [data.user_id, data.storename, data.storeaddress, data.sincode, data.countrystatus, data.identity_proof, data.worker_profilePic, data.store_image, data.business_reg_number, data.vendor_type_id];
 
         } else if (role_id == 4) { // Delivery Partner
             insertQuery = `
