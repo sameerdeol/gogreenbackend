@@ -603,7 +603,8 @@ const getAllVendorTypes = (req, res) => {
 };
 
 const updateVendorType = async (req, res) => {
-    const { id, name, description, status } = req.body;
+    const id = req.params;
+    const {name, description, status } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Vendor type ID is required.' });
