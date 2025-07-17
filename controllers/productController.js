@@ -171,7 +171,7 @@ const getProducts = (req, res) => {
 
 // Update product by ID
 const updateProductById = async (req, res) => {
-    const { id, vendor_id } = req.body;
+    const { id, vendor_id, existingGalleryImages = [] } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Product ID is required.' });
@@ -225,15 +225,25 @@ const updateProductById = async (req, res) => {
             };
 
             const handleGallery = (cb) => {
-                if (newGalleryImages.length > 0) {
+                if (newGalleryImages.length > 0 || existingGalleryImages.length > 0) {
                     GalleryImage.findByProductId(id, async (galleryErr, existingGallery) => {
                         if (galleryErr) return cb(galleryErr);
-                        for (const img of existingGallery) {
+
+                        // Find images to delete (those not in existingGalleryImages)
+                        const imagesToDelete = existingGallery.filter(img => !existingGalleryImages.includes(img.image_path));
+
+                        // Delete only the removed images from S3
+                        for (const img of imagesToDelete) {
                             await deleteS3Image(img.image_path);
                         }
+
+                        // Delete all from DB first (or only ones being removed depending on logic)
                         GalleryImage.deleteByProductId(id, (deleteErr) => {
                             if (deleteErr) return cb(deleteErr);
-                            GalleryImage.create(id, newGalleryImages, cb);
+
+                            // Recreate with kept + new images
+                            const finalGallery = [...existingGalleryImages, ...newGalleryImages];
+                            GalleryImage.create(id, finalGallery, cb);
                         });
                     });
                 } else cb(null);
@@ -265,9 +275,6 @@ const updateProductById = async (req, res) => {
         });
     });
 };
-
-
-
 
 
 // Delete product by ID
