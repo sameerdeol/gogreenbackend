@@ -603,14 +603,13 @@ const getAllVendorTypes = (req, res) => {
 };
 
 const updateVendorType = async (req, res) => {
-    const {id} = req.params;
-    const {name, description, status } = req.body;
+    const { id } = req.params;
+    const { name, description, status } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Vendor type ID is required.' });
     }
 
-    // Fetch existing vendor type
     User.getVendorTypeById(id, async (err, vendorType) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error fetching vendor type', error: err });
@@ -622,12 +621,19 @@ const updateVendorType = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Vendor type not found' });
         }
 
-        const updateFields = {
-            name: name !== undefined ? name : vendorTypeObject.name,
-            description: description !== undefined ? description : vendorTypeObject.description,
-            status: status !== undefined ? status : vendorTypeObject.status,
-            vendor_type_image: vendorTypeObject.vendor_type_image, // retain existing image unless replaced
-        };
+        const updateFields = {};
+
+        if (name !== undefined && name !== null && name !== '') {
+            updateFields.name = name;
+        }
+
+        if (description !== undefined && description !== null) {
+            updateFields.description = description;
+        }
+
+        if (status !== undefined && status !== null) {
+            updateFields.status = status;
+        }
 
         // Check if a new image was uploaded
         if (req.files && req.files['vendor_type_image']) {
@@ -635,13 +641,16 @@ const updateVendorType = async (req, res) => {
             const newImageUrl = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
             updateFields.vendor_type_image = newImageUrl;
 
-            // Optionally delete the old image from S3
+            // Optionally delete old image
             if (vendorTypeObject.vendor_type_image) {
                 await deleteS3Image(vendorTypeObject.vendor_type_image);
             }
         }
 
-        // Perform the update
+        if (Object.keys(updateFields).length === 0) {
+            return res.status(400).json({ success: false, message: 'No fields provided to update.' });
+        }
+
         User.updatevendortype(id, updateFields, (err, updatedVendorType) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error updating vendor type', error: err });
