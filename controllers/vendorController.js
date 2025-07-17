@@ -647,7 +647,6 @@ const updateVendorType = async (req, res) => {
             res.status(200).json({
                 success: true,
                 message: 'Vendor type updated successfully',
-                vendorType: updatedVendorTypeObject,
             });
         });
     });
