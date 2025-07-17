@@ -454,6 +454,7 @@ const storeBusinessDetails = async (req, res) => {
             gst_number,
             gst_number_pic
         };
+        console.log("userdata",userData)
         const filteredData = Object.fromEntries(
             Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
         );
