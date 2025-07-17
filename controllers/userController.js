@@ -485,6 +485,7 @@ const workersProfile = (req, res) => {
 
 
 const userBankDetails = async (req, res) => {
+    console.log("body",req.body)
     try {
         const {
             user_id,
