@@ -484,7 +484,72 @@ const workersProfile = (req, res) => {
 };
 
 
+const userBankDetails = async (req, res) => {
+    try {
+        const {
+            user_id,
+            role_id,
+            account_holder_name,
+            transit_number,
+            institution_number,
+            account_number
+        } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({ success: false, message: 'user_id is required' });
+        }
+
+        const fileUpload = async (fieldName) => {
+            if (req.files && req.files[fieldName]) {
+                const file = req.files[fieldName][0];
+                return await uploadToS3(file.buffer, file.originalname, fieldName, file.mimetype);
+            }
+            return undefined;
+        };
+
+        const userData = {
+            role_id,
+            account_holder_name,
+            transit_number,
+            institution_number,
+            account_number,
+            void_cheque: await fileUpload('void_cheque')
+        };
+
+        const filteredData = Object.fromEntries(
+            Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
+        );
+
+        User.addBankDetails(user_id, filteredData, (err, result) => {
+            if (err) {
+                console.error('DB Error:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Error saving bank details',
+                    error: err.message || err
+                });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No user found with the provided user_id'
+                });
+            }
+            return res.status(200).json({
+                success: true,
+                message: 'Bank details stored successfully'
+            });
+        });
+
+    } catch (error) {
+        console.error('Unexpected Server Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        }
+    }
+};
+
 // Vendor and rider logic has been moved to vendorController.js and riderController.js
 
 
-module.exports = { loginadmin, updateUser, appsignup, getUnverifiedUsers, verifyUser, updatePassword, resetPassword, sendOTP, verifyOtp, changePassword, workersProfile};
+module.exports = { loginadmin, updateUser, appsignup, getUnverifiedUsers, verifyUser, updatePassword, resetPassword, sendOTP, verifyOtp, changePassword, workersProfile, userBankDetails};

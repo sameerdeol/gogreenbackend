@@ -6,7 +6,8 @@ const {
     verifyUser,
     getUnverifiedUsers,
     createSuperadminManagers,
-    workersProfile
+    workersProfile,
+    userBankDetails
 } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const { verifyToken } = require('../middleware/authroization');
@@ -44,5 +45,6 @@ router.post('/createadmins', authenticateToken, (req, res) => {
 });
 
 router.post('/adminlogin',loginadmin);
+router.post('/addbankdetails',userBankDetails);
 
 module.exports = router;

@@ -29,6 +29,7 @@ function getS3Folder(fieldname) {
         case 'health_inspection_certificate': return 'health_inspection_certificate/';
         case 'food_certificate': return 'food_certificate/';
         case 'vendor_type_image': return 'vendor_type_image/';
+        case 'void_cheque': return 'void_cheque/';
         default: return '';
     }
 }

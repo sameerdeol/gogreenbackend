@@ -20,7 +20,8 @@ const uploadFields = upload.fields([
     { name: 'food_certificate', maxCount: 1 },
     { name: 'health_inspection_certificate', maxCount: 1 },
     { name: 'vendor_insurance_certificate', maxCount: 1 },
-    { name: 'vendor_type_image', maxCount: 1 }
+    { name: 'vendor_type_image', maxCount: 1 },
+    { name: 'void_cheque', maxCount: 1 }
 ]);
 
 module.exports = uploadFields;

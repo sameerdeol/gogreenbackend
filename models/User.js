@@ -805,7 +805,42 @@ const User = {
         const sql = 'SELECT * FROM vendor_type where id = ?';
         db.query(sql, [id],callback);
     },
-    
+    addBankDetails:(user_id, data, callback) => {
+        const {
+            role_id,
+            account_holder_name,
+            transit_number,
+            institution_number,
+            account_number,
+            void_cheque
+        } = data;
+
+        const query = `
+            INSERT INTO users_bank_details 
+            (user_id, role_id, account_holder_name, transit_number, institution_number, account_number, void_cheque)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+                role_id = VALUES(role_id),
+                account_holder_name = VALUES(account_holder_name),
+                transit_number = VALUES(transit_number),
+                institution_number = VALUES(institution_number),
+                account_number = VALUES(account_number),
+                void_cheque = VALUES(void_cheque),
+                updated_at = CURRENT_TIMESTAMP
+        `;
+
+        const values = [
+            user_id,
+            role_id,
+            account_holder_name,
+            transit_number,
+            institution_number,
+            account_number,
+            void_cheque
+        ];
+
+        db.query(query, values, callback);
+    }
 
 };
 
