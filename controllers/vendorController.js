@@ -551,7 +551,7 @@ const createVendorType = async (req, res) => {
 
     // Inject uploaded image URL into body
     req.body.vendor_type_image = vendor_type_image;
-
+    console.log("bosy is",req.body)
     User.createvendortype(req.body, (err, result) => {
       if (err) {
         return res.status(500).json({ status: false, error: 'Failed to create vendor type' });
