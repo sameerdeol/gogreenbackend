@@ -595,13 +595,23 @@ const createVendorType = async (req, res) => {
 
 
 const getAllVendorTypes = (req, res) => {
+  const filter = req.query.filter; // 'active' or undefined
+
   User.getAllvendortype((err, results) => {
     if (err) {
       return res.status(500).json({ status: false, error: 'Failed to fetch vendor types' });
     }
+
+    if (filter === 'active') {
+      const activeVendorTypes = results.filter(type => type.status === 1);
+      return res.status(200).json({ status: true, data: activeVendorTypes });
+    }
+
+    // Default: return all
     res.status(200).json({ status: true, data: results });
   });
 };
+
 
 const updateVendorType = async (req, res) => {
     const { id } = req.params;
