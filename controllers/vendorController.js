@@ -604,7 +604,7 @@ const getAllVendorTypes = (req, res) => {
 
 const updateVendorType = async (req, res) => {
     const { id } = req.params;
-    const { name, description, status } = req.body;
+    const { vendor_type, status } = req.body;
 
     if (!id) {
         return res.status(400).json({ success: false, message: 'Vendor type ID is required.' });
@@ -621,34 +621,20 @@ const updateVendorType = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Vendor type not found' });
         }
 
-        const updateFields = {};
+        const updateFields = {
+            vendor_type: vendor_type !== undefined ? vendor_type : vendorTypeObject.vendor_type,
+            status: status !== undefined ? status : vendorTypeObject.status,
+            vendor_type_image: vendorTypeObject.vendor_type_image,
+        };
 
-        if (name !== undefined && name !== null && name !== '') {
-            updateFields.name = name;
-        }
-
-        if (description !== undefined && description !== null) {
-            updateFields.description = description;
-        }
-
-        if (status !== undefined && status !== null) {
-            updateFields.status = status;
-        }
-
-        // Check if a new image was uploaded
         if (req.files && req.files['vendor_type_image']) {
             const file = req.files['vendor_type_image'][0];
             const newImageUrl = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
             updateFields.vendor_type_image = newImageUrl;
 
-            // Optionally delete old image
             if (vendorTypeObject.vendor_type_image) {
                 await deleteS3Image(vendorTypeObject.vendor_type_image);
             }
-        }
-
-        if (Object.keys(updateFields).length === 0) {
-            return res.status(400).json({ success: false, message: 'No fields provided to update.' });
         }
 
         User.updatevendortype(id, updateFields, (err, updatedVendorType) => {
@@ -666,6 +652,7 @@ const updateVendorType = async (req, res) => {
         });
     });
 };
+
 
 
 const deleteVendorType = async (req, res) => {
