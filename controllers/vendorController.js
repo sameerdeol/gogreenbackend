@@ -403,51 +403,50 @@ const allVendors = (req, res) => {
 };
 
 const allVendorsforAdmin = (req, res) => {
-  const filter = req.query.filter; // 'active'
-  const filters = {};
+    const filter = req.query.filter; // 'active' or undefined
 
-  if (filter === 'active') {
-    filters.status = 1; // only active users
-  }
+    User.getallVendorsForAdmin(null, (err, users) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: 'Database error',
+                error: err
+            });
+        }
 
-  User.getallVendorsForAdmin(filters, (err, users) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({
-        success: false,
-        message: 'Database error',
-        error: err
-      });
-    }
+        if (filter === 'active') {
+            // Filter verified vendors (status = 1 or is_verified = 1 depending on your data)
+            const allVendors = users.filter(vendor => vendor.status === 1);
 
-    if (!users || users.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'No vendors found'
-      });
-    }
+            // Return only specific fields
+            const filteredData = allVendors.map(vendor => ({
+                store_image: vendor.store_image,
+                store_name: vendor.store_name,
+                vendor_id: vendor.vendor_id
+            }));
 
-    if (filter === 'active') {
-      const lightData = users.map(user => ({
-        store_image: user.store_image,
-        store_name: user.store_name,
-        vendor_id: user.vendor_id
-      }));
-      return res.status(200).json({
-        success: true,
-        message: 'Active vendors retrieved successfully',
-        data: lightData
-      });
-    }
+            return res.status(200).json({
+                success: true,
+                message: 'Active vendors retrieved successfully',
+                data: filteredData
+            });
+        }
 
-    return res.status(200).json({
-      success: true,
-      message: 'All vendors retrieved successfully',
-      data: users
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No vendors found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Vendors retrieved successfully',
+            data: users
+        });
     });
-  });
 };
-
 
 
 const allVendorsforAdminbyVendorID = (req, res) => {

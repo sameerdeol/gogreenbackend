@@ -715,7 +715,7 @@ const User = {
         });
     },
 
-    getallVendorsForAdmin: (filters, callback) => {
+    getallVendorsForAdmin: (vendor_id, callback) => {
         let sql = `
             SELECT 
                 u.custom_id,
@@ -752,19 +752,14 @@ const User = {
                 v.user_id AS vendor_id
             FROM users u
             JOIN vendors v ON v.user_id = u.id
-            WHERE u.role_id = 3 AND u.is_verified = 1
+            WHERE u.role_id = 3 and u.is_verified = 1
         `;
 
+        // Add conditionally WHERE clause if vendor_id is provided
         const params = [];
-
-        if (filters?.vendor_id) {
+        if (vendor_id) {
             sql += ` AND u.id = ?`;
-            params.push(filters.vendor_id);
-        }
-
-        if (filters?.status !== undefined) {
-            sql += ` AND u.status = ?`;
-            params.push(filters.status);
+            params.push(vendor_id);
         }
 
         db.query(sql, params, (err, results) => {
@@ -775,7 +770,6 @@ const User = {
             return callback(null, results);
         });
     },
-
 
     getallRidersForAdmin: (vendor_id, callback) => {
         let sql = `
