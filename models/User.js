@@ -752,7 +752,7 @@ const User = {
                 v.user_id AS vendor_id
             FROM users u
             JOIN vendors v ON v.user_id = u.id
-            WHERE u.role_id = 3 AND is_verified = 1
+            WHERE u.role_id = 3 AND u.is_verified = 1
         `;
 
         // Add conditionally WHERE clause if vendor_id is provided
