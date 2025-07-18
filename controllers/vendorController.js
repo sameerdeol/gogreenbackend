@@ -403,9 +403,14 @@ const allVendors = (req, res) => {
 };
 
 const allVendorsforAdmin = (req, res) => {
-  const filter = req.query.filter;
+  const filter = req.query.filter; // 'active'
+  const filters = {};
 
-  User.getallVendorsForAdmin((err, users) => {
+  if (filter === 'active') {
+    filters.status = 1; // only active users
+  }
+
+  User.getallVendorsForAdmin(filters, (err, users) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({
@@ -423,22 +428,18 @@ const allVendorsforAdmin = (req, res) => {
     }
 
     if (filter === 'active') {
-      const activeVendors = users
-        .filter(user => user.status === "1")
-        .map(user => ({
-          store_image: user.store_image,
-          store_name: user.store_name,
-          vendor_id: user.vendor_id
-        }));
-
+      const lightData = users.map(user => ({
+        store_image: user.store_image,
+        store_name: user.store_name,
+        vendor_id: user.vendor_id
+      }));
       return res.status(200).json({
         success: true,
         message: 'Active vendors retrieved successfully',
-        data: activeVendors
+        data: lightData
       });
     }
 
-    // Default: return all vendors
     return res.status(200).json({
       success: true,
       message: 'All vendors retrieved successfully',
@@ -446,6 +447,7 @@ const allVendorsforAdmin = (req, res) => {
     });
   });
 };
+
 
 
 const allVendorsforAdminbyVendorID = (req, res) => {
