@@ -403,28 +403,50 @@ const allVendors = (req, res) => {
 };
 
 const allVendorsforAdmin = (req, res) => {
-    User.getallVendorsForAdmin(null,(err, users) => {
-        if (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({
-                success: false,
-                message: 'Database error',
-                error: err
-            });
-        }
-        if (!users || users.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'No vendors found'
-            });
-        }
-        return res.status(200).json({
-            success: true,
-            message: 'Vendors retrieved successfully',
-            data: users
-        });
+  const filter = req.query.filter;
+
+  User.getallVendorsForAdmin((err, users) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({
+        success: false,
+        message: 'Database error',
+        error: err
+      });
+    }
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No vendors found'
+      });
+    }
+
+    if (filter === 'active') {
+      const activeVendors = users
+        .filter(user => user.status === 1)
+        .map(user => ({
+          store_image: user.store_image,
+          store_name: user.store_name,
+          vendor_id: user.vendor_id
+        }));
+
+      return res.status(200).json({
+        success: true,
+        message: 'Active vendors retrieved successfully',
+        data: activeVendors
+      });
+    }
+
+    // Default: return all vendors
+    return res.status(200).json({
+      success: true,
+      message: 'All vendors retrieved successfully',
+      data: users
     });
+  });
 };
+
 
 const allVendorsforAdminbyVendorID = (req, res) => {
     const { vendor_id } = req.params;
