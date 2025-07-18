@@ -246,7 +246,7 @@ const vendorVerification = async (req, res) => {
                 worker_profilePic,
                 store_image,
                 business_reg_number,
-                vendor_type_id 
+                vendor_type_id: Array.isArray(vendor_type_id) ? vendor_type_id.join(',') : vendor_type_id
             };
             User.insertUserVerification(role_id, userData, (err, result) => {
                 if (err) {
