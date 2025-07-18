@@ -567,6 +567,7 @@ const User = {
                 v.store_name, 
                 v.profile_pic, 
                 v.user_id as vendor_id,
+                v.store_image,
                 v.vendor_thumb,
                 v.vendor_start_time,
                 v.vendor_close_time,
