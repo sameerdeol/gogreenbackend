@@ -218,50 +218,70 @@ const vendorLogin = async (req, res) => {
 const vendorVerification = async (req, res) => {
     try {
         req.body.role_id = 3;
-        const { role_id, storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number, worker_profilePic, store_image, business_reg_number, vendor_type_id } = req.body;
+        const { role_id, storename, storeaddress, sincode, countrystatus, user_id, license_number, business_reg_number, vendor_type_id } = req.body;
+
         if ([1, 2].includes(parseInt(role_id))) {
             return res.status(403).json({ success: false, message: 'You are not allowed to create an account with this role.' });
         }
-        User.checkVerificationStatus(user_id, (err, userStatus) => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Database error', error: err });
+
+        const fileUpload = async (fieldName) => {
+            if (req.files && req.files[fieldName]) {
+                const file = req.files[fieldName][0];
+                return await uploadToS3(file.buffer, file.originalname, fieldName, file.mimetype);
             }
-            if (!userStatus) {
-                return res.status(404).json({ success: false, message: 'User not found' });
-            }
-            if (userStatus.verification_applied) {
-                return res.status(400).json({ success: false, message: 'Verification already submitted.' });
-            }
-            if (userStatus.is_verified) {
-                return res.status(400).json({ success: false, message: 'You are already verified.' });
-            }
-            const userData = {
-                user_id,
-                storename,
-                storeaddress,
-                sincode,
-                countrystatus,
-                identity_proof,
-                license_number,
-                worker_profilePic,
-                store_image,
-                business_reg_number,
-                vendor_type_id: Array.isArray(vendor_type_id) ? vendor_type_id.join(',') : vendor_type_id
-            };
-            User.insertUserVerification(role_id, userData, (err, result) => {
-                if (err) {
-                    return res.status(500).json({ success: false, message: 'Error saving verification details', error: err });
-                }
-                return res.status(201).json({ success: true, message: 'Verification details stored successfully' });
+            return undefined;
+        };
+
+        // Wrap callback in Promise
+        const userStatus = await new Promise((resolve, reject) => {
+            User.checkVerificationStatus(user_id, (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
             });
         });
+
+        if (!userStatus) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        if (userStatus.verification_applied) {
+            return res.status(400).json({ success: false, message: 'Verification already submitted.' });
+        }
+        if (userStatus.is_verified) {
+            return res.status(400).json({ success: false, message: 'You are already verified.' });
+        }
+
+        const userData = {
+            user_id,
+            storename,
+            storeaddress,
+            sincode,
+            countrystatus,
+            identity_proof: await fileUpload('identity_proof'),
+            license_number,
+            worker_profilePic: await fileUpload('worker_profilePic'),
+            store_image: await fileUpload('store_image'),
+            business_reg_number,
+            vendor_type_id: Array.isArray(vendor_type_id) ? vendor_type_id.join(',') : vendor_type_id
+        };
+
+        // Wrap insertUserVerification in a Promise too
+        await new Promise((resolve, reject) => {
+            User.insertUserVerification(role_id, userData, (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        });
+
+        return res.status(201).json({ success: true, message: 'Verification details stored successfully' });
+
     } catch (error) {
         console.error(error);
         if (!res.headersSent) {
-            res.status(500).json({ success: false, message: 'Server Error' });
+            return res.status(500).json({ success: false, message: 'Server Error' });
         }
     }
 };
+
 
 const updateVendorProfile = async (req, res) => {
     req.body.role_id = 3;
