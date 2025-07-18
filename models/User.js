@@ -568,7 +568,8 @@ const User = {
                 v.profile_pic, 
                 v.user_id as vendor_id,
                 v.vendor_thumb,
-                v.vendor_timing,
+                v.vendor_start_time,
+                v.vendor_close_time
                 IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
             FROM users u
             JOIN vendors v ON v.user_id = u.id
