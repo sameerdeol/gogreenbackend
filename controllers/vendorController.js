@@ -218,7 +218,7 @@ const vendorLogin = async (req, res) => {
 const vendorVerification = async (req, res) => {
     try {
         req.body.role_id = 3;
-        const { role_id, storename, storeaddress, sincode, countrystatus, user_id, license_number, business_reg_number, vendor_type_id } = req.body;
+        const { role_id, storename, storeaddress, sincode, countrystatus, user_id, license_number, business_reg_number, vendor_type_id, vendor_start_time, vendor_close_time } = req.body;
 
         if ([1, 2].includes(parseInt(role_id))) {
             return res.status(403).json({ success: false, message: 'You are not allowed to create an account with this role.' });
@@ -261,7 +261,9 @@ const vendorVerification = async (req, res) => {
             worker_profilePic: await fileUpload('worker_profilePic'),
             store_image: await fileUpload('store_image'),
             business_reg_number,
-            vendor_type_id: Array.isArray(vendor_type_id) ? vendor_type_id.join(',') : vendor_type_id
+            vendor_type_id: Array.isArray(vendor_type_id) ? vendor_type_id.join(',') : vendor_type_id,
+            vendor_start_time,
+            vendor_close_time
         };
 
         // Wrap insertUserVerification in a Promise too
