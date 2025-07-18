@@ -424,7 +424,7 @@ const allVendorsforAdmin = (req, res) => {
 
     if (filter === 'active') {
       const activeVendors = users
-        .filter(user => user.status === 1)
+        .filter(user => user.status === "1")
         .map(user => ({
           store_image: user.store_image,
           store_name: user.store_name,
