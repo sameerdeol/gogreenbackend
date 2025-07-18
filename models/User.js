@@ -417,10 +417,22 @@ const User = {
         } else if (role_id == 4) { // Delivery Partner
             insertQuery = `
                 INSERT INTO delivery_partners 
-                (user_id, license_number, sin_code, country_status, identity_proof) 
-                VALUES (?, ?, ?, ?, ?)
+                (user_id, license_number, license_expiry_date, rider_license_image, profile_pic, vehicle_owner_name, vehicle_registration_number, vehicle_type, registraion_expiry_date, registration_doc, identity_proof) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            values = [data.user_id, data.license_number, data.sincode, data.countrystatus, data.identity_proof];
+            values = [
+                data.user_id,
+                data.license_number,
+                data.license_expiry_date,
+                data.rider_license_image,
+                data.worker_profilePic,
+                data.vehicle_owner_name,
+                data.vehicle_registration_number,
+                data.vehicle_type,
+                data.registraion_expiry_date,
+                data.registration_doc,
+                data.identity_proof
+            ];
         } else {
             return callback(new Error('Invalid role_id'), null);
         }

@@ -218,10 +218,24 @@ const riderLogin = async (req, res) => {
 const riderVerification = async (req, res) => {
     try {
         req.body.role_id = 4;
-        const { role_id, storename, storeaddress, sincode, countrystatus, identity_proof, user_id, license_number, worker_profilePic, store_image, business_reg_number } = req.body;
+        const {
+            role_id,
+            user_id,
+            license_number,
+            license_expiry_date,
+            rider_license_image,
+            vehicle_owner_name,
+            vehicle_registration_number,
+            vehicle_type,
+            registraion_expiry_date,
+            registration_doc,
+            identity_proof
+        } = req.body;
+
         if ([1, 2].includes(parseInt(role_id))) {
             return res.status(403).json({ success: false, message: 'You are not allowed to create an account with this role.' });
         }
+
         User.checkVerificationStatus(user_id, (err, userStatus) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Database error', error: err });
@@ -235,18 +249,21 @@ const riderVerification = async (req, res) => {
             if (userStatus.is_verified) {
                 return res.status(400).json({ success: false, message: 'You are already verified.' });
             }
+
             const userData = {
                 user_id,
-                storename,
-                storeaddress,
-                sincode,
-                countrystatus,
-                identity_proof,
                 license_number,
                 worker_profilePic,
-                store_image,
-                business_reg_number, 
+                license_expiry_date,
+                rider_license_image,
+                vehicle_owner_name,
+                vehicle_registration_number,
+                vehicle_type,
+                registraion_expiry_date,
+                registration_doc,
+                identity_proof
             };
+
             User.insertUserVerification(role_id, userData, (err, result) => {
                 if (err) {
                     return res.status(500).json({ success: false, message: 'Error saving verification details', error: err });
@@ -261,6 +278,7 @@ const riderVerification = async (req, res) => {
         }
     }
 };
+
 
 const updateRiderProfile = async (req, res) => {
     req.body.role_id = 4;
