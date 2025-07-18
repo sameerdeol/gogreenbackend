@@ -223,54 +223,65 @@ const riderVerification = async (req, res) => {
             user_id,
             license_number,
             license_expiry_date,
-            rider_license_image,
             vehicle_owner_name,
             vehicle_registration_number,
             vehicle_type,
-            registraion_expiry_date,
-            registration_doc,
-            identity_proof
+            registraion_expiry_date
         } = req.body;
 
         if ([1, 2].includes(parseInt(role_id))) {
             return res.status(403).json({ success: false, message: 'You are not allowed to create an account with this role.' });
         }
 
-        User.checkVerificationStatus(user_id, (err, userStatus) => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Database error', error: err });
+        const fileUpload = async (fieldName) => {
+            if (req.files && req.files[fieldName]) {
+                const file = req.files[fieldName][0];
+                return await uploadToS3(file.buffer, file.originalname, fieldName, file.mimetype);
             }
-            if (!userStatus) {
-                return res.status(404).json({ success: false, message: 'User not found' });
-            }
-            if (userStatus.verification_applied) {
-                return res.status(400).json({ success: false, message: 'Verification already submitted.' });
-            }
-            if (userStatus.is_verified) {
-                return res.status(400).json({ success: false, message: 'You are already verified.' });
-            }
+            return undefined;
+        };
 
-            const userData = {
-                user_id,
-                license_number,
-                worker_profilePic,
-                license_expiry_date,
-                rider_license_image,
-                vehicle_owner_name,
-                vehicle_registration_number,
-                vehicle_type,
-                registraion_expiry_date,
-                registration_doc,
-                identity_proof
-            };
-
-            User.insertUserVerification(role_id, userData, (err, result) => {
-                if (err) {
-                    return res.status(500).json({ success: false, message: 'Error saving verification details', error: err });
-                }
-                return res.status(201).json({ success: true, message: 'Verification details stored successfully' });
+        // Convert callback to Promise
+        const userStatus = await new Promise((resolve, reject) => {
+            User.checkVerificationStatus(user_id, (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
             });
         });
+
+        if (!userStatus) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        if (userStatus.verification_applied) {
+            return res.status(400).json({ success: false, message: 'Verification already submitted.' });
+        }
+        if (userStatus.is_verified) {
+            return res.status(400).json({ success: false, message: 'You are already verified.' });
+        }
+
+        const userData = {
+            user_id,
+            license_number,
+            license_expiry_date,
+            worker_profilePic: await fileUpload('worker_profilePic'),
+            rider_license_image: await fileUpload('rider_license_image'),
+            vehicle_owner_name,
+            vehicle_registration_number,
+            vehicle_type,
+            registraion_expiry_date,
+            registration_doc: await fileUpload('registration_doc'),
+            identity_proof: await fileUpload('identity_proof')
+        };
+
+        await new Promise((resolve, reject) => {
+            User.insertUserVerification(role_id, userData, (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        });
+
+        return res.status(201).json({ success: true, message: 'Verification details stored successfully' });
+
     } catch (error) {
         console.error(error);
         if (!res.headersSent) {
