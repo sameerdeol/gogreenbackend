@@ -161,11 +161,14 @@ const vendorLogin = async (req, res) => {
     try {
         req.body.role_id = 3;
         const { email, password, googleauthToken, role_id } = req.body;
+
         if (!role_id) {
             return res.status(401).json({ success: false, message: "role_id is mandatory." });
         }
+
         let finalemail = email;
         let finalpassword = password;
+
         if (googleauthToken) {
             try {
                 const decoded = await require('../middleware/googleAuthToken')(googleauthToken);
@@ -175,21 +178,32 @@ const vendorLogin = async (req, res) => {
                 return res.status(401).json({ success: false, message: "Invalid Google token" });
             }
         }
+
         if (!finalemail || !finalpassword) {
             return res.status(400).json({ success: false, message: "Email and password are required." });
         }
+
         User.findByEmailForVendorRider(finalemail, 3, async (err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: "Internal server error", error: err });
             }
+
             if (!results || !results.success) {
                 return res.status(404).json({ success: false, message: results?.message || "User not found" });
             }
+
             const user = results.user;
+
+            // ❌ Block only if deactivated by admin
+            if (user.status === 0 && user.deactivated_by === 'admin') {
+                return res.status(403).json({ success: false, message: "You have been deactivated by admin." });
+            }
+
             const isValid = await bcrypt.compare(String(finalpassword), String(user.password));
             if (!isValid) {
                 return res.status(401).json({ success: false, message: "Invalid credentials" });
             }
+
             const token = jwt.sign(
                 {
                     user_id: user.id,
@@ -202,6 +216,7 @@ const vendorLogin = async (req, res) => {
                 },
                 process.env.JWT_SECRET
             );
+
             return res.json({
                 success: true,
                 message: "Login successful",
@@ -214,6 +229,7 @@ const vendorLogin = async (req, res) => {
         return res.status(500).json({ success: false, message: "Authentication error", error });
     }
 };
+
 
 const vendorVerification = async (req, res) => {
     try {
@@ -357,12 +373,26 @@ const vendorProfile = (req, res) => {
 };
 
 const vendorStatus = (req, res) => {
-    req.body.role_id = 3;
     const { user_id, status, role_id } = req.body;
-    if ([1, 2].includes(parseInt(role_id))) {
-        return res.status(403).json({ success: false, message: 'You are not allowed to update the status.' });
+
+    if (!user_id || typeof status === 'undefined' || !role_id) {
+        return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
-    User.userStatus(user_id, status, (err, user) => {
+
+    let deactivated_by = null;
+
+    // Only when deactivating (status = 0)
+    if (parseInt(status) === 0) {
+        if ([1, 2].includes(parseInt(role_id))) {
+            deactivated_by = 'admin';
+        } else if (parseInt(role_id) === 3) {
+            deactivated_by = 'self';
+        } else {
+            return res.status(403).json({ success: false, message: 'Invalid role for status update.' });
+        }
+    }
+
+    User.userStatus(user_id, status, deactivated_by, (err, user) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ success: false, message: 'Database error', error: err });
@@ -376,6 +406,8 @@ const vendorStatus = (req, res) => {
         });
     });
 };
+
+
 
 const allVendors = (req, res) => {
     const {user_id} = req.body;

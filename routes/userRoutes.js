@@ -9,6 +9,7 @@ const {
     workersProfile,
     userBankDetails
 } = require('../controllers/userController');
+const vendorController = require('../controllers/vendorController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const { verifyToken } = require('../middleware/authroization');
 const uploadFields = require('../middleware/multerConfig');
@@ -47,5 +48,6 @@ router.post('/createadmins', authenticateToken, (req, res) => {
 
 router.post('/adminlogin',loginadmin);
 router.post('/addbankdetails', uploadFields, userBankDetails);
+router.post('/vendor-statusbyadmin', vendorController.vendorStatus);
 
 module.exports = router;

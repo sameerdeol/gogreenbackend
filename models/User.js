@@ -536,20 +536,12 @@ const User = {
         });
     },     
 
-    userStatus: (userId, status, callback) => {
-        const sql = `
-            UPDATE users 
-            SET status = ? 
-            WHERE id = ?;
-        `;
-        
-        // Run the query
-        db.query(sql, [status, userId], (err, results) => {
-            if (err) {
-                console.error("Database error:", err);
-                return callback(err, null);
-            }
-            return callback(null, results); // Return results
+    userStatus: (user_id, status, deactivated_by, callback) => {
+        let sql = `UPDATE vendors SET status = ?, deactivated_by = ? WHERE id = ?`;
+        db.query(sql, [status, deactivated_by, user_id], (err, result) => {
+            if (err) return callback(err);
+            if (result.affectedRows === 0) return callback(null, null);
+            callback(null, true);
         });
     },
 
