@@ -537,7 +537,7 @@ const User = {
     },     
 
     userStatus: (user_id, status, deactivated_by, callback) => {
-        let sql = `UPDATE vendors SET status = ?, deactivated_by = ? WHERE id = ?`;
+        let sql = `UPDATE users SET status = ?, deactivated_by = ? WHERE id = ?`;
         db.query(sql, [status, deactivated_by, user_id], (err, result) => {
             if (err) return callback(err);
             if (result.affectedRows === 0) return callback(null, null);
