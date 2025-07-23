@@ -26,7 +26,7 @@ router.post('/appsignup', (req, res) => {
 /**
  * User Management Routes (Protected)
  */
-router.put('/update-user', authenticateToken, updateUser);
+router.put('/update-user', updateUser);
 router.get('/unverifiedUsers', authenticateToken, getUnverifiedUsers);
 router.put('/verify-user', verifyUser);
 router.post(['/vendor-profile', '/rider-profile', '/customer-profile'], verifyToken,workersProfile);
