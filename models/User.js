@@ -503,7 +503,7 @@ const User = {
             query = `
                 SELECT 
                     u.firstname, u.lastname, u.email, u.phonenumber, u.prefix, u.status,u.custom_id, 
-                    dp.id AS delivery_partners_id, dp.sin_code, dp.license_number, dp.profile_pic 
+                    dp.id AS delivery_partners_id, dp.sin_code, dp.license_number, dp.profile_pic, dp.license_number, other_phone_number, dob, address,  
                 FROM users u 
                 LEFT JOIN delivery_partners dp ON dp.user_id = u.id 
                 WHERE u.id = ? AND u.role_id = ?;
