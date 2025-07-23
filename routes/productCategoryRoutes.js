@@ -12,7 +12,7 @@ const {
 } = require('../controllers/productCategoryController');
 
 // Route to create a new category - only managers can create categories
-router.post('/categories', checkManagerRole,uploadFields, createCategory);
+router.post('/categories',uploadFields, createCategory);
 
 // Route to get a category by ID
 router.get('/categories/:id', verifyToken,getCategoryById);

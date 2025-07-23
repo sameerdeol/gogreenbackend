@@ -34,25 +34,33 @@ const Order = {
                 OD.payment_method,
                 OD.order_status,
                 OD.created_at AS order_created_at,
+
                 OI.product_id,
                 OI.total_item_price,
+
                 P.name AS product_name,
                 P.description AS product_description,
                 P.price AS product_price,
                 P.food_type,
+
                 UA.address,
                 UA.type,
                 UA.floor,
                 UA.landmark,
+
                 u.firstname,
                 u.lastname,
                 u.phonenumber
+
             FROM order_details OD
-            JOIN order_items OI ON OD.id = OI.order_id
-            JOIN products P ON OI.product_id = P.id
-            JOIN users u on OD.user_id = u.id
-            JOIN user_addresses UA ON OD.user_address_id = UA.id
-            WHERE OD.vendor_id = ?;
+
+            LEFT JOIN order_items OI ON OD.id = OI.order_id
+            LEFT JOIN products P ON OI.product_id = P.id
+            LEFT JOIN users u ON OD.user_id = u.id
+            LEFT JOIN user_addresses UA ON OD.user_address_id = UA.id
+
+            WHERE OD.vendor_id = ?
+            ;
         `;
     
         db.query(query, [vendor_id], callback);
