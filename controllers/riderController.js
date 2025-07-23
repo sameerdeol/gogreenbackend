@@ -353,38 +353,50 @@ const riderPersonalDetails = async (req, res) => {
 
 const updateRiderProfile = async (req, res) => {
     req.body.role_id = 4;
-    const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob, vendor_lat, vendor_lng } = req.body;
+
+    const {
+        role_id,
+        firstname,
+        lastname,
+        email,
+        sin_code,
+        phonenumber,
+        user_id,
+        prefix,
+        license_number,
+        dob
+    } = req.body;
+
     let profile_pic = null;
-    let vendor_thumb = null;
-    if (req.files && req.files['worker_profilePic'] && req.files['worker_profilePic'].length > 0) {
-        const file = req.files['worker_profilePic'][0];
+
+    if (req.files && req.files['profile_pic'] && req.files['profile_pic'].length > 0) {
+        const file = req.files['profile_pic'][0];
         profile_pic = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
     }
-    if (req.files && req.files['vendor_thumbnail'] && req.files['vendor_thumbnail'].length > 0) {
-        const file = req.files['vendor_thumbnail'][0];
-        vendor_thumb = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
-    }
+
     if ([1, 2].includes(parseInt(role_id))) {
-        return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
+        return res.status(403).json({ success: false, message: 'You are not allowed to update this user.' });
     }
-    User.userProfile(user_id,role_id, async (err, user) => {
+
+    User.userProfile(user_id, role_id, async (err, user) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
+
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
+
         if (profile_pic && user.profile_pic) {
             await deleteS3Image(user.profile_pic);
         }
-        if (vendor_thumb && user.vendor_thumb) {
-            await deleteS3Image(user.vendor_thumb);
-        }
+
         User.findByEmailOrPhone(email, phonenumber, (err, existingUser) => {
             if (err) {
                 return res.status(500).json({ success: false, message: "Server error", error: err });
             }
-            if (existingUser && existingUser.id !== user_id) {
+
+            if (existingUser && parseInt(existingUser.id) !== parseInt(user_id)) {
                 return res.status(400).json({
                     success: false,
                     message: existingUser.email === email
@@ -392,9 +404,20 @@ const updateRiderProfile = async (req, res) => {
                         : "This phone number is already in use by another user."
                 });
             }
-            const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob, vendor_lat, vendor_lng };
+
+            const userData = {
+                firstname,
+                prefix,
+                phonenumber,
+                email,
+                sin_code,
+                license_number,
+                lastname,
+                dob
+            };
+
             if (profile_pic) userData.profile_pic = profile_pic;
-            if (vendor_thumb) userData.vendor_thumb = vendor_thumb;
+
             User.updateWorkerData(user_id, role_id, userData, (err, results) => {
                 if (err) {
                     if (err.code === 'ER_DUP_ENTRY') {
@@ -407,11 +430,13 @@ const updateRiderProfile = async (req, res) => {
                     }
                     return res.status(500).json({ success: false, message: 'Database query failed', error: err });
                 }
+
                 res.status(200).json({ success: true, message: 'User updated successfully' });
             });
         });
     });
 };
+
 
 const riderProfile = (req, res) => {
     req.body.role_id = 4;
