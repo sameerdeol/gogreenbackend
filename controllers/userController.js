@@ -134,9 +134,11 @@ const loginadmin = async (req, res) => {
 };
 
 const updateUser = async (req, res) => {
-    const userData = req.body;
-    const { role_id } = req.user;
-    const user_id=28;
+    const { dob, email, firstname, gender, lastname, phonenumber, role_id, user_id } = req.body;
+
+    // Build userData object from request body
+    const userData = { dob, email, firstname, gender, lastname, phonenumber };
+
     // Fetch user profile to get old image
     User.userProfile(user_id, role_id, async (err, user) => {
         if (err) {
@@ -145,26 +147,35 @@ const updateUser = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
         // If new profile_pic is uploaded, delete old one from S3 and upload new one
-        let profile_pic = null;
         if (req.files && req.files['profile_pic'] && req.files['profile_pic'].length > 0) {
-            const file = req.files['profile_pic'][0];
-            profile_pic = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
-            if (user.profile_pic) {
-                await deleteS3Image(user.profile_pic);
+            try {
+                const file = req.files['profile_pic'][0];
+
+                // Upload new image to S3
+                const profile_pic = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+                userData.profile_pic = profile_pic;
+
+                // Delete old image from S3 if it exists
+                if (user.profile_pic) {
+                    await deleteS3Image(user.profile_pic);
+                }
+            } catch (uploadError) {
+                return res.status(500).json({ error: 'Profile picture upload failed' });
             }
         }
-        if (profile_pic) userData.profile_pic = profile_pic;
-        User.updateUser(user_id,role_id,userData, (err, results) => {
+
+        // Update user in DB
+        User.updateWorkerData(user_id, role_id, userData, (err, results) => {
             if (err) {
-                return res.status(500).json({ error: 'Database query failed' });
+                return res.status(500).json({ error: 'Database update failed' });
             }
-            else{
-                res.status(200).json({ message: 'User updated successfully' });
-            }
+            res.status(200).json({ message: 'User updated successfully' });
         });
     });
 };
+
 const getUnverifiedUsers = (req, res) => {
     User.getUnverifiedUsers((err, result) => {
         if (err) {
