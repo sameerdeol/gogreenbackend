@@ -290,6 +290,72 @@ const riderVerification = async (req, res) => {
     }
 };
 
+const riderPersonalDetails = async (req, res) => {
+    try {
+        const role_id = 4; // Delivery Partner
+
+        const {
+            user_id,
+            address,
+            dob,
+            other_phone_number
+        } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({ success: false, message: 'User ID is required' });
+        }
+
+        const fileUpload = async (fieldName) => {
+            if (req.files && req.files[fieldName]) {
+                const file = req.files[fieldName][0];
+                return await uploadToS3(file.buffer, file.originalname, fieldName, file.mimetype);
+            }
+            return undefined;
+        };
+
+        const userStatus = await new Promise((resolve, reject) => {
+            User.checkVerificationStatus(user_id, (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        });
+
+        if (!userStatus) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        if (userStatus.verification_applied) {
+            return res.status(400).json({ success: false, message: 'Verification already submitted.' });
+        }
+        if (userStatus.is_verified) {
+            return res.status(400).json({ success: false, message: 'You are already verified.' });
+        }
+
+        const userData = {
+            user_id,
+            address,
+            dob,
+            other_phone_number,
+            profile_pic: await fileUpload('profile_pic'),
+            identity_proof: await fileUpload('identity_proof'),
+        };
+
+        await new Promise((resolve, reject) => {
+            User.updateRiderPersonalDetails(role_id, userData, (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        });
+
+        return res.status(201).json({ success: true, message: 'Verification details stored successfully' });
+
+    } catch (error) {
+        console.error("Error in riderPersonalDetails:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Server Error' });
+        }
+    }
+};
+
 
 const updateRiderProfile = async (req, res) => {
     req.body.role_id = 4;
@@ -477,5 +543,6 @@ module.exports = {
     riderStatus,
     updateRiderLocation,
     allRidersforAdmin,
-    allRidersforAdminbyRiderID
+    allRidersforAdminbyRiderID,
+    riderPersonalDetails
 }; 

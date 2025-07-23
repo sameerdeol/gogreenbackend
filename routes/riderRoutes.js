@@ -5,6 +5,7 @@ const { verifyToken } = require('../middleware/authroization');
 const router = express.Router();
 
 router.post('/rider-verification', uploadFields, riderController.riderVerification);
+router.post('/rider-personaldetails', uploadFields, riderController.riderPersonalDetails);
 router.post('/update-riderPassword', verifyToken, riderController.updateRiderProfile);
 router.put('/update-riderProfile', verifyToken, uploadFields, riderController.updateRiderProfile);
 router.post('/rider-login', riderController.riderLogin);

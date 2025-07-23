@@ -458,6 +458,38 @@ const User = {
             });
         });
     },
+    
+    updateRiderPersonalDetails: (role_id, data, callback) => {
+        const updateQuery = `
+            UPDATE delivery_partners 
+            SET 
+                address = ?, 
+                dob = ?, 
+                other_phone_number = ?, 
+                profile_pic = ?, 
+                identity_proof = ?
+            WHERE user_id = ? AND role_id = ?
+        `;
+
+        const values = [
+            data.address,
+            data.dob,
+            data.other_phone_number,
+            data.profile_pic,
+            data.identity_proof,
+            data.user_id,
+            role_id // ✅ added this
+        ];
+
+        db.query(updateQuery, values, (err, result) => {
+            if (err) {
+                return callback(err, null);
+            }
+            callback(null, result);
+        });
+    },
+
+
 
     // fetch user profile
     userProfile: (userId, roleId, callback) => {
