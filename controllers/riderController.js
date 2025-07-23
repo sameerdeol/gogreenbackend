@@ -468,23 +468,28 @@ const vehicleDetails = (req, res) => {
         return res.status(403).json({ success: false, message: 'Not valid role id' });
     }
 
-    User.vehicleDetails(user_id, role_id, (err, vehicle) => {
+    User.vehicleDetails(user_id, (err, vehicle) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
 
-        if (!vehicle || vehicle.length === 0) {
-            return res.status(404).json({ success: false, message: 'vehicle not found' });
+        console.log("Returned vehicle:", vehicle);
+
+        // ✅ Check for both null and empty array
+        if (!vehicle || (Array.isArray(vehicle) && vehicle.length === 0)) {
+            return res.status(404).json({ success: false, message: 'Vehicle not found' });
         }
 
         return res.status(200).json({
             success: true,
-            message: "vehicle details retrieved successfully",
+            message: "Vehicle details retrieved successfully",
             data: vehicle
         });
     });
 };
+
+
 
 
 const riderStatus = (req, res) => {

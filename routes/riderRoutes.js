@@ -10,8 +10,8 @@ router.post('/update-riderPassword', verifyToken, riderController.updateRiderPro
 router.put('/update-riderProfile', verifyToken, uploadFields, riderController.updateRiderProfile);
 router.post('/rider-login', riderController.riderLogin);
 router.post('/rider-signup', riderController.riderSignup);
-router.post('/rider-profile', verifyToken, riderController.riderProfile);
-router.post('/rider-vehicledetails', verifyToken, riderController.vehicleDetails);
+router.post('/rider-profile', riderController.riderProfile);
+router.post('/rider-vehicledetails', riderController.vehicleDetails);
 router.post('/rider-status', verifyToken, riderController.riderStatus);
 router.post('/send-riderOtp', (req, res) => {}); // If needed, implement in riderController
 router.post('/reset-riderPwd', (req, res) => {}); // If needed, implement in riderController

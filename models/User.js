@@ -503,7 +503,7 @@ const User = {
             query = `
                 SELECT 
                     u.firstname, u.lastname, u.email, u.phonenumber, u.prefix, u.status,u.custom_id, 
-                    dp.id AS delivery_partners_id, dp.sin_code, dp.license_number, dp.profile_pic, dp.license_number, other_phone_number, dob, address,  
+                    dp.id AS delivery_partners_id, dp.sin_code, dp.license_number, dp.profile_pic, dp.license_number, other_phone_number, dob, address  
                 FROM users u 
                 LEFT JOIN delivery_partners dp ON dp.user_id = u.id 
                 WHERE u.id = ? AND u.role_id = ?;
@@ -582,7 +582,7 @@ const User = {
                 vd.vehicle_owner_name,
                 vd.vehicle_registration_number,
                 vd.vehicle_type,
-                vd.registraion_expiry_date,
+                vd.registraion_expiry_date,  -- match typo exactly
                 vd.registration_doc 
             FROM delivery_partners vd 
             WHERE vd.user_id = ?
@@ -593,7 +593,7 @@ const User = {
                 console.error("Database error:", err);
                 return callback(err, null);
             }
-            return callback(null, results);
+            return callback(null, results[0]);
         });
     },
 
