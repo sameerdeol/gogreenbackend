@@ -461,8 +461,11 @@ const riderProfile = (req, res) => {
 };
 
 const vehicleDetails = (req, res) => {
-    req.body.role_id = 4;
     const { role_id, user_id } = req.body;
+
+    if (!user_id) {
+        return res.status(400).json({ success: false, message: 'Missing user_id' });
+    }
 
     if (parseInt(role_id) !== 4) {
         return res.status(403).json({ success: false, message: 'Not valid role id' });
@@ -474,9 +477,6 @@ const vehicleDetails = (req, res) => {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
 
-        console.log("Returned vehicle:", vehicle);
-
-        // ✅ Check for both null and empty array
         if (!vehicle || (Array.isArray(vehicle) && vehicle.length === 0)) {
             return res.status(404).json({ success: false, message: 'Vehicle not found' });
         }
@@ -488,6 +488,7 @@ const vehicleDetails = (req, res) => {
         });
     });
 };
+
 
 
 
