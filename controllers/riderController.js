@@ -323,12 +323,6 @@ const riderPersonalDetails = async (req, res) => {
         if (!userStatus) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
-        if (userStatus.verification_applied) {
-            return res.status(400).json({ success: false, message: 'Verification already submitted.' });
-        }
-        if (userStatus.is_verified) {
-            return res.status(400).json({ success: false, message: 'You are already verified.' });
-        }
 
         const userData = {
             user_id,

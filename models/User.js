@@ -468,7 +468,7 @@ const User = {
                 other_phone_number = ?, 
                 profile_pic = ?, 
                 identity_proof = ?
-            WHERE user_id = ? AND role_id = ?
+            WHERE user_id = ?
         `;
 
         const values = [
@@ -477,8 +477,7 @@ const User = {
             data.other_phone_number,
             data.profile_pic,
             data.identity_proof,
-            data.user_id,
-            role_id // ✅ added this
+            data.user_id
         ];
 
         db.query(updateQuery, values, (err, result) => {
