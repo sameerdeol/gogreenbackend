@@ -576,6 +576,27 @@ const User = {
         });
     },
 
+    vehicleDetails: (user_id, callback) => {
+        const sql = `
+            SELECT 
+                vd.vehicle_owner_name,
+                vd.vehicle_registration_number,
+                vd.vehicle_type,
+                vd.registraion_expiry_date,
+                vd.registration_doc 
+            FROM delivery_partners vd 
+            WHERE vd.user_id = ?
+        `;
+
+        db.query(sql, [user_id], (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return callback(err, null);
+            }
+            return callback(null, results);
+        });
+    },
+
     allVendors: (user_id, callback) => {
         const sql = `
             SELECT 

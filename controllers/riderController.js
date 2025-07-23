@@ -435,6 +435,33 @@ const riderProfile = (req, res) => {
     });
 };
 
+const vehicleDetails = (req, res) => {
+    req.body.role_id = 4;
+    const { role_id, user_id } = req.body;
+
+    if (parseInt(role_id) !== 4) {
+        return res.status(403).json({ success: false, message: 'Not valid role id' });
+    }
+
+    User.vehicleDetails(user_id, role_id, (err, vehicle) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+
+        if (!vehicle || vehicle.length === 0) {
+            return res.status(404).json({ success: false, message: 'vehicle not found' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "vehicle details retrieved successfully",
+            data: vehicle
+        });
+    });
+};
+
+
 const riderStatus = (req, res) => {
     req.body.role_id = 4;
     const { user_id, status, role_id } = req.body;
@@ -538,5 +565,6 @@ module.exports = {
     updateRiderLocation,
     allRidersforAdmin,
     allRidersforAdminbyRiderID,
-    riderPersonalDetails
+    riderPersonalDetails,
+    vehicleDetails
 }; 
