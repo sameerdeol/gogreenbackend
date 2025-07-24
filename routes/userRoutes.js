@@ -46,7 +46,7 @@ router.post('/createadmins', authenticateToken, (req, res) => {
     createSuperadminManagers(req, res);
 });
 
-router.post('/adminlogin', authenticateToken, loginadmin);
+router.post('/adminlogin', loginadmin);
 router.post('/addbankdetails', verifyToken, uploadFields, userBankDetails);
 router.post('/vendor-statusbyadmin', authenticateToken, vendorController.vendorStatus);
 
