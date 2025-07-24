@@ -26,10 +26,10 @@ router.post('/appsignup', (req, res) => {
 /**
  * User Management Routes (Protected)
  */
-router.put('/update-user', updateUser);
+router.put('/update-user', verifyToken, updateUser);
 router.get('/unverifiedUsers', authenticateToken, getUnverifiedUsers);
-router.put('/verify-user', verifyUser);
-router.post(['/vendor-profile', '/rider-profile', '/customer-profile'], verifyToken,workersProfile);
+router.put('/verify-user',authenticateToken, verifyUser);
+router.post(['/vendor-profile', '/rider-profile', '/customer-profile'], verifyToken, verifyToken,workersProfile);
 
 
 /**
@@ -46,8 +46,8 @@ router.post('/createadmins', authenticateToken, (req, res) => {
     createSuperadminManagers(req, res);
 });
 
-router.post('/adminlogin',loginadmin);
-router.post('/addbankdetails', uploadFields, userBankDetails);
-router.post('/vendor-statusbyadmin', vendorController.vendorStatus);
+router.post('/adminlogin', authenticateToken, loginadmin);
+router.post('/addbankdetails', verifyToken, uploadFields, userBankDetails);
+router.post('/vendor-statusbyadmin', authenticateToken, vendorController.vendorStatus);
 
 module.exports = router;
