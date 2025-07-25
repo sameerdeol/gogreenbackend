@@ -7,7 +7,7 @@ const ProductVariant = {
         db.query(sql, [values], callback);
     },
     deleteByProductId: (productId, callback) => {
-        const sql = 'DELETE FROM variants WHERE product_id = ?';
+        const sql = 'DELETE FROM product_variants WHERE product_id = ?';
         db.query(sql, [productId], callback);
     },
     

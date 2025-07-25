@@ -7,7 +7,7 @@ const ProductAddon = {
         db.query(sql, [values], callback);
     },
     deleteByProductId: (productId, callback) => {
-        const sql = 'DELETE FROM addons WHERE product_id = ?';
+        const sql = 'DELETE FROM product_addons WHERE product_id = ?';
         db.query(sql, [productId], callback);
     }
 };
