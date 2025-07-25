@@ -45,68 +45,82 @@ const Product = {
             db.query(query, [values], callback);
         },
 
-        findById: (id, userID, callback) => {
-            // Base query
-            const query = `
-                SELECT 
-                    p.*, 
-                    c.name AS category_name, 
-                    s.name AS sub_category_name, 
-                    b.name AS brand_name, 
-                    b.categoryid AS brand_categoryid, 
-                    b.brand_logo AS brandlogo, 
-                    b.description AS brand_description,
-                    IFNULL(d.discount_percent, 0) AS discount_percent,
-                    ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
-                    CASE 
-                        WHEN f.product_id IS NOT NULL THEN TRUE 
-                        ELSE FALSE 
-                    END AS is_favourite
-                FROM products p 
-                LEFT JOIN product_categories c ON p.category_id = c.id 
-                LEFT JOIN product_subcategories s ON p.sub_category = s.id 
-                LEFT JOIN product_brands b ON p.brand_id = b.id 
-                LEFT JOIN product_discounts d ON p.id = d.product_id 
-                LEFT JOIN favourite_products f 
-                    ON p.id = f.product_id 
-                    AND (f.user_id = ? OR ? IS NULL)
-                WHERE p.id = ?;
-            `;
-        
-            // Always include userID in values, allowing NULL handling
-            const values = [userID, userID, id];
-        
-            db.query(query, values, (err, productResult) => {
-                if (err || !productResult.length) {
-                    return callback(err || "Product not found", null);
-                }
-        
-                const product = productResult[0];
-        
-                // Fetch gallery images & attributes
-                const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
-                const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
-        
-                Promise.all([
-                    new Promise((resolve, reject) => {
-                        db.query(galleryQuery, [id], (imgErr, images) => {
-                            if (imgErr) return reject(imgErr);
-                            product.gallery_images = images.length ? images : []; // ✅ Ensures empty array instead of undefined
-                            resolve();
-                        });
-                    }),
-                    new Promise((resolve, reject) => {
-                        db.query(attributesQuery, [id], (attrErr, attributes) => {
-                            if (attrErr) return reject(attrErr);
-                            product.attributes = attributes.length ? attributes : []; // ✅ Ensures empty array instead of undefined
-                            resolve();
-                        });
-                    }),
-                ])
-                    .then(() => callback(null, product))
-                    .catch((error) => callback(error, null)); // ✅ Ensures error is returned in callback
-            });
-        },
+    findById: (id, userID, callback) => {
+        const query = `
+            SELECT 
+                p.*, 
+                c.name AS category_name, 
+                s.name AS sub_category_name, 
+                b.name AS brand_name, 
+                b.categoryid AS brand_categoryid, 
+                b.brand_logo AS brandlogo, 
+                b.description AS brand_description,
+                IFNULL(d.discount_percent, 0) AS discount_percent,
+                ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
+                CASE 
+                    WHEN f.product_id IS NOT NULL THEN TRUE 
+                    ELSE FALSE 
+                END AS is_favourite
+            FROM products p 
+            LEFT JOIN product_categories c ON p.category_id = c.id 
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id 
+            LEFT JOIN product_brands b ON p.brand_id = b.id 
+            LEFT JOIN product_discounts d ON p.id = d.product_id 
+            LEFT JOIN favourite_products f 
+                ON p.id = f.product_id 
+                AND (f.user_id = ? OR ? IS NULL)
+            WHERE p.id = ?;
+        `;
+
+        const values = [userID, userID, id];
+
+        db.query(query, values, (err, productResult) => {
+            if (err || !productResult.length) {
+                return callback(err || "Product not found", null);
+            }
+
+            const product = productResult[0];
+
+            const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
+            const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
+            const variantsQuery = "SELECT type, value, price FROM product_variants WHERE product_id = ?";
+            const addonsQuery = "SELECT name, price FROM product_addons WHERE product_id = ?";
+
+            Promise.all([
+                new Promise((resolve, reject) => {
+                    db.query(galleryQuery, [id], (imgErr, images) => {
+                        if (imgErr) return reject(imgErr);
+                        product.gallery_images = images.length ? images : [];
+                        resolve();
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    db.query(attributesQuery, [id], (attrErr, attributes) => {
+                        if (attrErr) return reject(attrErr);
+                        product.attributes = attributes.length ? attributes : [];
+                        resolve();
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    db.query(variantsQuery, [id], (variantErr, variants) => {
+                        if (variantErr) return reject(variantErr);
+                        product.variants = variants.length ? variants : [];
+                        resolve();
+                    });
+                }),
+                new Promise((resolve, reject) => {
+                    db.query(addonsQuery, [id], (addonErr, addons) => {
+                        if (addonErr) return reject(addonErr);
+                        product.addons = addons.length ? addons : [];
+                        resolve();
+                    });
+                })
+            ])
+            .then(() => callback(null, product))
+            .catch((error) => callback(error, null));
+        });
+    },
+
          
     
 
@@ -135,31 +149,47 @@ const Product = {
             LEFT JOIN favourite_products f 
                 ON p.id = f.product_id
                 AND f.user_id = ?;
-        `;   
-    
-        db.query(query, [userID], (err, results) => { // ✅ Fixed extra `userID`
+        `;
+
+        db.query(query, [userID], (err, results) => {
             if (err) {
                 return callback(err, null);
             }
-    
+
             const productPromises = results.map((product) => {
                 return new Promise((resolve, reject) => {
                     const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
                     const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
-    
+                    const variantsQuery = "SELECT type, value, price FROM product_variants WHERE product_id = ?";
+                    const addonsQuery = "SELECT name, price FROM product_addons WHERE product_id = ?";
+
                     Promise.all([
-                        new Promise((resolveGallery, rejectGallery) => {
-                            db.query(galleryQuery, [product.id], (imgErr, images) => {
-                                if (imgErr) rejectGallery(imgErr);
-                                product.gallery_images = images.length ? images : []; // ✅ Ensure empty array
-                                resolveGallery();
+                        new Promise((res, rej) => {
+                            db.query(galleryQuery, [product.id], (err, data) => {
+                                if (err) rej(err);
+                                product.gallery_images = data || [];
+                                res();
                             });
                         }),
-                        new Promise((resolveAttributes, rejectAttributes) => {
-                            db.query(attributesQuery, [product.id], (attrErr, attributes) => {
-                                if (attrErr) rejectAttributes(attrErr);
-                                product.attributes = attributes.length ? attributes : []; // ✅ Ensure empty array
-                                resolveAttributes();
+                        new Promise((res, rej) => {
+                            db.query(attributesQuery, [product.id], (err, data) => {
+                                if (err) rej(err);
+                                product.attributes = data || [];
+                                res();
+                            });
+                        }),
+                        new Promise((res, rej) => {
+                            db.query(variantsQuery, [product.id], (err, data) => {
+                                if (err) rej(err);
+                                product.variants = data || [];
+                                res();
+                            });
+                        }),
+                        new Promise((res, rej) => {
+                            db.query(addonsQuery, [product.id], (err, data) => {
+                                if (err) rej(err);
+                                product.addons = data || [];
+                                res();
                             });
                         }),
                     ])
@@ -167,12 +197,13 @@ const Product = {
                         .catch((error) => reject(error));
                 });
             });
-    
+
             Promise.all(productPromises)
-                .then((productsWithImages) => callback(null, productsWithImages))
+                .then((productsWithDetails) => callback(null, productsWithDetails))
                 .catch((error) => callback(error, null));
         });
     },
+
     
     
     // Update a product by ID (Includes sub_category)
@@ -363,8 +394,7 @@ const Product = {
     },
 
 
-    findallByVendorId: (vendorID,searchTerm, callback) => {
-        // Base query
+    findallByVendorId: (vendorID, searchTerm, callback) => {
         const query = `
             SELECT 
                 p.*, 
@@ -389,54 +419,67 @@ const Product = {
             WHERE p.vendor_id = ?
             ORDER BY match_priority DESC, p.id DESC;
         `;
-    
-    
-        // Corrected `vendorID` usage
+
         db.query(query, [searchTerm, searchTerm, vendorID], (err, results) => {
-            if (err) {
-                return callback(err, null);
-            }
-    
-            if (!results.length) {
-                return callback(null, []); // Return empty array if no products found
-            }
-    
+            if (err) return callback(err, null);
+            if (!results.length) return callback(null, []);
+
             const productPromises = results.map((product) => {
                 return new Promise((resolve, reject) => {
                     const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
                     const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
-    
+                    const variantsQuery = "SELECT type, value, price FROM product_variants WHERE product_id = ?";
+                    const addonsQuery = "SELECT name, price FROM product_addons WHERE product_id = ?";
+
                     Promise.all([
-                        new Promise((resolveGallery, rejectGallery) => {
-                            db.query(galleryQuery, [product.id], (imgErr, images) => {
-                                if (imgErr) return rejectGallery(imgErr);
-                                product.gallery_images = images || []; // ✅ Ensures empty array
-                                resolveGallery();
+                        // Gallery
+                        new Promise((res, rej) => {
+                            db.query(galleryQuery, [product.id], (e, r) => {
+                                if (e) return rej(e);
+                                product.gallery_images = r || [];
+                                res();
                             });
                         }),
-                        new Promise((resolveAttributes, rejectAttributes) => {
-                            db.query(attributesQuery, [product.id], (attrErr, attributes) => {
-                                if (attrErr) return rejectAttributes(attrErr);
-                                product.attributes = attributes || []; // ✅ Ensures empty array
-                                resolveAttributes();
+                        // Attributes
+                        new Promise((res, rej) => {
+                            db.query(attributesQuery, [product.id], (e, r) => {
+                                if (e) return rej(e);
+                                product.attributes = r || [];
+                                res();
                             });
                         }),
+                        // Variants
+                        new Promise((res, rej) => {
+                            db.query(variantsQuery, [product.id], (e, r) => {
+                                if (e) return rej(e);
+                                product.variants = r || [];
+                                res();
+                            });
+                        }),
+                        // Addons
+                        new Promise((res, rej) => {
+                            db.query(addonsQuery, [product.id], (e, r) => {
+                                if (e) return rej(e);
+                                product.addons = r || [];
+                                res();
+                            });
+                        })
                     ])
                         .then(() => resolve(product))
                         .catch((error) => reject(error));
                 });
             });
-    
+
             Promise.all(productPromises)
-                .then((productsWithImages) => callback(null, productsWithImages))
+                .then((productsWithAllDetails) => callback(null, productsWithAllDetails))
                 .catch((error) => callback(error, null));
         });
-    },    
+    },
+  
 
 
 //find single produc with vendor id
     findSingleByVendorId: (id, vendorID, callback) => {
-        // Base query
         const query = `
             SELECT 
                 p.*, 
@@ -456,44 +499,63 @@ const Product = {
             LEFT JOIN product_discounts d ON p.id = d.product_id
             WHERE p.id = ? AND p.vendor_id = ?;
         `;
-    
-    
+
         const values = [id, vendorID];
-    
+
         db.query(query, values, (err, productResult) => {
             if (err || !productResult.length) {
                 return callback(err || "Product not found", null);
             }
-    
+
             const product = productResult[0];
-    
-            // Fetch gallery images & attributes
+
+            // Additional queries
             const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
             const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
-    
+            const addonsQuery = "SELECT name, price FROM product_addons WHERE product_id = ?";
+            const variantsQuery = "SELECT type, value, price FROM product_variants WHERE product_id = ?";
+
             Promise.all([
+                // Gallery images
                 new Promise((resolve, reject) => {
                     db.query(galleryQuery, [id], (imgErr, images) => {
                         if (imgErr) return reject(imgErr);
-                        product.gallery_images = images || []; // ✅ Ensures empty array
+                        product.gallery_images = images || [];
                         resolve();
                     });
                 }),
+
+                // Attributes
                 new Promise((resolve, reject) => {
                     db.query(attributesQuery, [id], (attrErr, attributes) => {
                         if (attrErr) return reject(attrErr);
-                        product.attributes = attributes || []; // ✅ Ensures empty array
+                        product.attributes = attributes || [];
+                        resolve();
+                    });
+                }),
+
+                // Addons
+                new Promise((resolve, reject) => {
+                    db.query(addonsQuery, [id], (addonErr, addons) => {
+                        if (addonErr) return reject(addonErr);
+                        product.addons = addons || [];
+                        resolve();
+                    });
+                }),
+
+                // Variants
+                new Promise((resolve, reject) => {
+                    db.query(variantsQuery, [id], (variantErr, variants) => {
+                        if (variantErr) return reject(variantErr);
+                        product.variants = variants || [];
                         resolve();
                     });
                 }),
             ])
                 .then(() => callback(null, product))
-                .catch((error) => callback(error, null)); // ✅ Ensures error is returned in callback
+                .catch((error) => callback(error, null));
         });
     },
-
-
-
 
     findByIdAsync : (id) => {
         return new Promise((resolve, reject) => {
