@@ -410,14 +410,23 @@ const vendorStatus = (req, res) => {
 
 
 const allVendors = (req, res) => {
-    const { user_id, vendor_type_id } = req.body; // filter from body
-    
+    const { user_id, vendor_type_id } = req.body;
+
     let filterIds = [];
-    if (vendor_type_id) {
+
+    // Handle if vendor_type_id is a string: "4,5,6"
+    if (typeof vendor_type_id === 'string') {
         filterIds = vendor_type_id
             .split(',')
             .map(id => parseInt(id.trim()))
-            .filter(id => !isNaN(id)); // Supports multiple IDs
+            .filter(id => !isNaN(id));
+    }
+
+    // Handle if vendor_type_id is already an array: [4,5,6]
+    else if (Array.isArray(vendor_type_id)) {
+        filterIds = vendor_type_id
+            .map(id => parseInt(id))
+            .filter(id => !isNaN(id));
     }
 
     User.allVendors(user_id, filterIds, (err, users) => {
