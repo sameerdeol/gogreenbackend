@@ -410,8 +410,8 @@ const vendorStatus = (req, res) => {
 
 
 const allVendors = (req, res) => {
-    const {user_id} = req.body;
-    User.allVendors(user_id,(err, users) => {
+    const { user_id } = req.body;
+    User.allVendors(user_id, (err, users) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({
@@ -420,19 +420,30 @@ const allVendors = (req, res) => {
                 error: err
             });
         }
+
         if (!users || users.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'No vendors found'
             });
         }
+
+        // Convert featured_images string to array
+        const vendors = users.map(user => ({
+            ...user,
+            featured_images: user.featured_images 
+                ? user.featured_images.split(',') 
+                : []
+        }));
+
         return res.status(200).json({
             success: true,
             message: 'Vendors retrieved successfully',
-            data: users
+            data: vendors
         });
     });
 };
+
 
 const allVendorsforAdmin = (req, res) => {
     const filter = req.query.filter; // 'active' or undefined
