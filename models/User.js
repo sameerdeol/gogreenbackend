@@ -610,19 +610,26 @@ const User = {
                 v.sin_code, 
                 v.store_name, 
                 v.profile_pic, 
-                v.user_id as vendor_id,
+                v.user_id AS vendor_id,
                 v.store_image,
                 v.vendor_thumb,
                 v.vendor_start_time,
                 v.vendor_close_time,
-                IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite
+                IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
+                (
+                    SELECT GROUP_CONCAT(DISTINCT p.featured_image)
+                    FROM products p
+                    WHERE p.vendor_id = v.user_id
+                ) AS featured_images
             FROM users u
             JOIN vendors v ON v.user_id = u.id
             LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
-            WHERE u.is_verified = 1 and u.status = 1
+            WHERE u.is_verified = 1 AND u.status = 1
             AND EXISTS (
-                SELECT 1 FROM products p WHERE p.vendor_id = v.user_id
-            );
+                SELECT 1 FROM products p2 WHERE p2.vendor_id = v.user_id
+            )
+            LIMIT 0, 1000;
+
         `;
 
         db.query(sql, [user_id], (err, results) => {
