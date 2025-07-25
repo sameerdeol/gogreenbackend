@@ -410,14 +410,14 @@ const vendorStatus = (req, res) => {
 
 
 const allVendors = (req, res) => {
-    const { user_id, filter } = req.body; // filter from body
+    const { user_id, vendor_type_id } = req.body; // filter from body
 
     let filterIds = [];
-    if (filter) {
-        filterIds = filter
+    if (vendor_type_id) {
+        filterIds = vendor_type_id
             .split(',')
             .map(id => parseInt(id.trim()))
-            .filter(id => !isNaN(id));
+            .filter(id => !isNaN(id)); // <- FIXED HERE
     }
 
     User.allVendors(user_id, filterIds, (err, users) => {
@@ -451,8 +451,6 @@ const allVendors = (req, res) => {
         });
     });
 };
-
-
 
 
 const allVendorsforAdmin = (req, res) => {
