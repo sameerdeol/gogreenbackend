@@ -83,8 +83,8 @@ const Product = {
 
             const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
             const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
-            const variantsQuery = "SELECT type, value, price FROM product_variants WHERE product_id = ?";
-            const addonsQuery = "SELECT name, price FROM product_addons WHERE product_id = ?";
+            const variantsQuery = "SELECT id, type, value, price FROM product_variants WHERE product_id = ?";
+            const addonsQuery = "SELECT id, name, price FROM product_addons WHERE product_id = ?";
 
             Promise.all([
                 new Promise((resolve, reject) => {
@@ -160,8 +160,8 @@ const Product = {
                 return new Promise((resolve, reject) => {
                     const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
                     const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
-                    const variantsQuery = "SELECT type, value, price FROM product_variants WHERE product_id = ?";
-                    const addonsQuery = "SELECT name, price FROM product_addons WHERE product_id = ?";
+                    const variantsQuery = "SELECT id, type, value, price FROM product_variants WHERE product_id = ?";
+                    const addonsQuery = "SELECT id, name, price FROM product_addons WHERE product_id = ?";
 
                     Promise.all([
                         new Promise((res, rej) => {
@@ -428,8 +428,8 @@ const Product = {
                 return new Promise((resolve, reject) => {
                     const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
                     const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
-                    const variantsQuery = "SELECT type, value, price FROM product_variants WHERE product_id = ?";
-                    const addonsQuery = "SELECT name, price FROM product_addons WHERE product_id = ?";
+                    const variantsQuery = "SELECT id, type, value, price FROM product_variants WHERE product_id = ?";
+                    const addonsQuery = "SELECT id, name, price FROM product_addons WHERE product_id = ?";
 
                     Promise.all([
                         // Gallery
@@ -512,8 +512,8 @@ const Product = {
             // Additional queries
             const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
             const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
-            const addonsQuery = "SELECT name, price FROM product_addons WHERE product_id = ?";
-            const variantsQuery = "SELECT type, value, price FROM product_variants WHERE product_id = ?";
+            const addonsQuery = "SELECT id, name, price FROM product_addons WHERE product_id = ?";
+            const variantsQuery = "SELECT id, type, value, price FROM product_variants WHERE product_id = ?";
 
             Promise.all([
                 // Gallery images
