@@ -414,18 +414,14 @@ const allVendors = (req, res) => {
 
     let filterIds = [];
 
-    // Handle if vendor_type_id is a string: "4,5,6"
-    if (typeof vendor_type_id === 'string') {
+    if (Array.isArray(vendor_type_id)) {
+        // Already an array (correct format)
+        filterIds = vendor_type_id.map(id => parseInt(id)).filter(id => !isNaN(id));
+    } else if (typeof vendor_type_id === 'string') {
+        // Comma-separated string
         filterIds = vendor_type_id
             .split(',')
             .map(id => parseInt(id.trim()))
-            .filter(id => !isNaN(id));
-    }
-
-    // Handle if vendor_type_id is already an array: [4,5,6]
-    else if (Array.isArray(vendor_type_id)) {
-        filterIds = vendor_type_id
-            .map(id => parseInt(id))
             .filter(id => !isNaN(id));
     }
 
