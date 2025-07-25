@@ -21,7 +21,7 @@ router.get('/categories/:id', verifyToken,getCategoryById);
 router.post('/fetch-categories', verifyToken,getAllCategories);
 
 // Route to update a category - only managers can update categories
-router.put('/categories', checkManagerRole,uploadFields, updateCategoryById);
+router.put('/categories', verifyToken,uploadFields, updateCategoryById);
 
 // Route to delete a category - only managers can delete categories
 router.delete('/categories', checkManagerRole, deleteCategoryById);
