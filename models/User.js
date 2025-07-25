@@ -633,8 +633,8 @@ const User = {
         const params = [user_id];
 
         if (vendor_type_ids.length > 0) {
-            const placeholders = vendor_type_ids.map(() => '?').join(',');
-            sql += ` AND v.vendor_type_id IN (${placeholders})`;
+            const findSetConditions = vendor_type_ids.map(() => `FIND_IN_SET(?, v.vendor_type_id)`).join(' OR ');
+            sql += ` AND (${findSetConditions})`;
             params.push(...vendor_type_ids);
         }
 
@@ -642,6 +642,7 @@ const User = {
 
         db.query(sql, params, callback);
     },
+
 
     
     updateRiderLocation: (userId, rider_lat, rider_lng, callback) => {
