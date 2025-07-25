@@ -410,12 +410,11 @@ const vendorStatus = (req, res) => {
 
 
 const allVendors = (req, res) => {
-    const { user_id } = req.body;
-    const filterParam = req.query.filter; // e.g., "4,6,7,9"
+    const { user_id, filter } = req.body; // filter from body
 
     let filterIds = [];
-    if (filterParam) {
-        filterIds = filterParam
+    if (filter) {
+        filterIds = filter
             .split(',')
             .map(id => parseInt(id.trim()))
             .filter(id => !isNaN(id));
@@ -452,6 +451,7 @@ const allVendors = (req, res) => {
         });
     });
 };
+
 
 
 
