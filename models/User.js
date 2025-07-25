@@ -642,6 +642,7 @@ const User = {
 
         db.query(sql, params, callback);
     },
+
     
     updateRiderLocation: (userId, rider_lat, rider_lng, callback) => {
         const sql = `

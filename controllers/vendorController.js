@@ -411,13 +411,13 @@ const vendorStatus = (req, res) => {
 
 const allVendors = (req, res) => {
     const { user_id, vendor_type_id } = req.body; // filter from body
-
+    
     let filterIds = [];
     if (vendor_type_id) {
         filterIds = vendor_type_id
             .split(',')
             .map(id => parseInt(id.trim()))
-            .filter(id => !isNaN(id)); // <- FIXED HERE
+            .filter(id => !isNaN(id)); // Supports multiple IDs
     }
 
     User.allVendors(user_id, filterIds, (err, users) => {
