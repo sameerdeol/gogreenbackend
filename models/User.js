@@ -597,8 +597,8 @@ const User = {
         });
     },
 
-    allVendors: (user_id, callback) => {
-        const sql = `
+    allVendors: (user_id, vendor_type_ids = [], callback) => {
+        let sql = `
             SELECT 
                 u.firstname, 
                 u.lastname, 
@@ -628,17 +628,19 @@ const User = {
             AND EXISTS (
                 SELECT 1 FROM products p2 WHERE p2.vendor_id = v.user_id
             )
-            LIMIT 0, 1000;
-
         `;
 
-        db.query(sql, [user_id], (err, results) => {
-            if (err) {
-                console.error("Database error:", err);
-                return callback(err, null);
-            }
-            return callback(null, results);
-        });
+        const params = [user_id];
+
+        if (vendor_type_ids.length > 0) {
+            const placeholders = vendor_type_ids.map(() => '?').join(',');
+            sql += ` AND v.vendor_type_id IN (${placeholders})`;
+            params.push(...vendor_type_ids);
+        }
+
+        sql += ` LIMIT 0, 1000`;
+
+        db.query(sql, params, callback);
     },
     
     updateRiderLocation: (userId, rider_lat, rider_lng, callback) => {

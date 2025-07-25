@@ -411,7 +411,17 @@ const vendorStatus = (req, res) => {
 
 const allVendors = (req, res) => {
     const { user_id } = req.body;
-    User.allVendors(user_id, (err, users) => {
+    const filterParam = req.query.filter; // e.g., "4,6,7,9"
+
+    let filterIds = [];
+    if (filterParam) {
+        filterIds = filterParam
+            .split(',')
+            .map(id => parseInt(id.trim()))
+            .filter(id => !isNaN(id));
+    }
+
+    User.allVendors(user_id, filterIds, (err, users) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({
@@ -428,11 +438,10 @@ const allVendors = (req, res) => {
             });
         }
 
-        // Convert featured_images string to array
         const vendors = users.map(user => ({
             ...user,
-            featured_images: user.featured_images 
-                ? user.featured_images.split(',') 
+            featured_images: user.featured_images
+                ? user.featured_images.split(',')
                 : []
         }));
 
@@ -443,6 +452,7 @@ const allVendors = (req, res) => {
         });
     });
 };
+
 
 
 const allVendorsforAdmin = (req, res) => {
