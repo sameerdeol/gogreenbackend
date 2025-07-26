@@ -7,8 +7,7 @@ const uploadToS3 = require('../utils/s3Upload');
 const createCategory = async (req, res) => {
     const { name, description } = req.body;
     const role_id = req.user?.role_id || req.body.role_id || 0;
-    const user_id = req.user?.user_id || req.body.user_id || null;
-    console.log(req.user)
+    const user_id = req.user?.user_id || req.user?.id || null;
 
     let categoryLogo = null;
     if (req.files && req.files['category_logo']) {
@@ -43,8 +42,8 @@ const createCategory = async (req, res) => {
 // Get all categories
 const getAllCategories = (req, res) => {
     const { is_web} = req.body;
-    const user_id = req.user?.user_id || req.body.user_id;
-    const role_id = req.user?.role_id || req.body.user_id;
+    const user_id = req.user?.user_id || req.user?.id;
+    const role_id = req.user?.role_id || req.body.role_id;
     if (!role_id) {
         return res.status(400).json({ success: false, message: 'role_id is required' });
     }
