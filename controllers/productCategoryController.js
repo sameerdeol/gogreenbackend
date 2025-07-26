@@ -44,7 +44,6 @@ const getAllCategories = (req, res) => {
     const { is_web} = req.body;
     const user_id = req.user?.id || req.body.user_id;
     const role_id = req.user?.role_id || req.body.user_id;
-
     if (!role_id) {
         return res.status(400).json({ success: false, message: 'role_id is required' });
     }

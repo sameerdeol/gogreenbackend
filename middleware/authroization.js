@@ -8,10 +8,13 @@ const verifyToken = (req, res, next) => {
     }
 
     try {
-        // Verify the token
-        jwt.verify(token, process.env.JWT_SECRET); // Replace with your JWT secret key
+        // ✅ Decode and verify the token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // If token is valid, proceed to the next middleware/route handler
+        // ✅ Attach the decoded payload to req.user
+        req.user = decoded;
+
+        // Proceed to the next middleware/route handler
         next();
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
