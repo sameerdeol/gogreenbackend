@@ -532,7 +532,7 @@ const User = {
                     v.vendor_lng,
                     v.store_image,
                     v.profile_pic,
-                    v.gst_number
+                    v.gst_number,
 
                     CAST(IFNULL(od.total_orders, 0) AS SIGNED) AS total_orders,
                     CAST(IFNULL(od.completed_orders, 0) AS SIGNED) AS completed_orders,
