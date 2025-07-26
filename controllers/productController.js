@@ -314,7 +314,7 @@ const updateProductById = async (req, res) => {
                 if (variants && Array.isArray(variants)) {
                     db.query(`DELETE FROM product_variants WHERE product_id = ?`, [id], (deleteErr) => {
                         if (deleteErr) return cb(deleteErr);
-                        Variant.create(id, variants, cb);
+                        ProductVariant.create(id, variants, cb);
                     });
                 } else cb(null);
             };
@@ -323,7 +323,7 @@ const updateProductById = async (req, res) => {
                 if (addons && Array.isArray(addons)) {
                     db.query(`DELETE FROM product_addons WHERE product_id = ?`, [id], (deleteErr) => {
                         if (deleteErr) return cb(deleteErr);
-                        Addon.create(id, addons, cb);
+                        ProductAddon.create(id, addons, cb);
                     });
                 } else cb(null);
             };
