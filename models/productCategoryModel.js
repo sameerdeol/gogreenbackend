@@ -1,18 +1,33 @@
 const db = require('../config/db');
 
 const ProductCategory = {
-    findAll: (callback) => {
-        const query = 'SELECT * FROM product_categories';
+    findAll: (role_id, user_id, callback) => {
+        let query = 'SELECT * FROM product_categories';
+
+        if (role_id == 3) {
+            query += ` WHERE admin_approval = 1 OR listed_by = 'vendor_${user_id}'`;
+        }
+
         db.query(query, callback);
     },
-    findAllCatWithProducts: (callback) => {
-        const query = `
+    findAllCatWithProducts: (role_id, user_id, callback) => {
+        let query = `
             SELECT pc.*
             FROM product_categories pc
             JOIN products p ON pc.id = p.category_id
+        `;
+
+        if (role_id == 3) {
+            query += `
+                WHERE pc.admin_approval = 1 OR pc.listed_by = 'vendor_${user_id}'
+            `;
+        }
+
+        query += `
             GROUP BY pc.id
             HAVING COUNT(p.id) > 0
         `;
+
         db.query(query, callback);
     },
 
@@ -30,9 +45,12 @@ const ProductCategory = {
     },
     
 
-    create: (name, description, categoryLogo, callback) => {
-        const query = 'INSERT INTO product_categories (name, description, category_logo) VALUES (?, ?, ?)';
-        db.query(query, [name, description, categoryLogo], callback);
+    create: (name, description, categoryLogo, adminApproval, listedBy, callback) => {
+        const sql = `
+            INSERT INTO product_categories (name, description, category_logo, admin_approval, listed_by)
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        db.query(sql, [name, description, categoryLogo, adminApproval, listedBy], callback);
     },
 
     update: (id, updateFields, callback) => {

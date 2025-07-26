@@ -5,8 +5,10 @@ const uploadToS3 = require('../utils/s3Upload');
 
 // Create a new category
 const createCategory = async (req, res) => {
-
     const { name, description } = req.body;
+    const role_id = req.user?.role_id || req.body.role_id || 0;
+    const user_id = req.user?.id || req.body.user_id || null;
+
     let categoryLogo = null;
     if (req.files && req.files['category_logo']) {
         const file = req.files['category_logo'][0];
@@ -17,35 +19,49 @@ const createCategory = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Category name is required.' });
     }
 
-    ProductCategory.create(name, description, categoryLogo, (err, result) => {
+    const adminApproval = (role_id === 1 || role_id === 2) ? 1 : 0;
+    const listedBy = (role_id === 1 || role_id === 2) ? 'admin' : `vendor_${user_id}`;
+
+    ProductCategory.create(name, description, categoryLogo, adminApproval, listedBy, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error creating category', error: err });
         }
-        res.status(201).json({ success: true, message: 'Category created successfully', id: result.insertId });
+        res.status(201).json({
+            success: true,
+            message: 'Category created successfully',
+            id: result.insertId,
+            admin_approval: adminApproval,
+            listed_by: listedBy
+        });
     });
 };
 
 
+
+
 // Get all categories
 const getAllCategories = (req, res) => {
-    const { is_web } = req.body;
+    const { is_web, role_id } = req.body;
+    const user_id = req.user?.id || req.body.user_id;
+
+    if (!role_id) {
+        return res.status(400).json({ success: false, message: 'role_id is required' });
+    }
 
     if (is_web) {
-        // Web-specific logic (if needed)
-        ProductCategory.findAll((err, results) => {
+        ProductCategory.findAll(role_id, user_id, (err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error fetching categories', error: err });
             }
 
             if (!results.length) {
-                return res.status(200).json({ success: true, message: 'No categories with products found' });
+                return res.status(200).json({ success: true, message: 'No categories found' });
             }
 
             res.status(200).json({ success: true, categories: results });
         });
     } else {
-        // App-specific logic (if needed)
-        ProductCategory.findAllCatWithProducts((err, results) => {
+        ProductCategory.findAllCatWithProducts(role_id, user_id, (err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error fetching categories', error: err });
             }
@@ -58,6 +74,7 @@ const getAllCategories = (req, res) => {
         });
     }
 };
+
 
 
 
