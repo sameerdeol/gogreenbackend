@@ -14,7 +14,7 @@ const {
 } = require('../controllers/productSubcategoryController');
 
 // Route to create a new subcategory - only managers can create subcategories
-router.post('/subcategories', checkManagerRole,uploadFields, createSubcategory);
+router.post('/subcategories', verifyToken,uploadFields, createSubcategory);
 
 // Route to get a subcategory by ID
 router.get('/subcategories/:id', verifyToken,getSubcategoryById);
