@@ -373,7 +373,7 @@ const vendorProfile = (req, res) => {
 };
 
 const vendorStatus = (req, res) => {
-    const { user_id, status, role_id } = req.body;
+    const { user_id, status, role_id, vendor_start_time, vendor_close_time } = req.body;
 
     if (!user_id || typeof status === 'undefined' || !role_id) {
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
@@ -381,7 +381,6 @@ const vendorStatus = (req, res) => {
 
     let deactivated_by = null;
 
-    // Only when deactivating (status = 0)
     if (parseInt(status) === 0) {
         if ([1, 2].includes(parseInt(role_id))) {
             deactivated_by = 'admin';
@@ -392,7 +391,16 @@ const vendorStatus = (req, res) => {
         }
     }
 
-    User.userStatus(user_id, status, deactivated_by, (err, user) => {
+    const updateFields = {
+        user_id,
+        status,
+        deactivated_by
+    };
+
+    if (vendor_start_time) updateFields.vendor_start_time = vendor_start_time;
+    if (vendor_close_time) updateFields.vendor_close_time = vendor_close_time;
+
+    User.userStatus(updateFields, (err, user) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ success: false, message: 'Database error', error: err });
@@ -406,6 +414,8 @@ const vendorStatus = (req, res) => {
         });
     });
 };
+
+
 
 
 

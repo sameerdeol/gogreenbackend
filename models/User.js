@@ -568,14 +568,23 @@ const User = {
         });
     },     
 
-    userStatus: (user_id, status, deactivated_by, callback) => {
-        let sql = `UPDATE users SET status = ?, deactivated_by = ? WHERE id = ?`;
-        db.query(sql, [status, deactivated_by, user_id], (err, result) => {
+    userStatus: (data, callback) => {
+        const { user_id, ...fieldsToUpdate } = data;
+
+        const keys = Object.keys(fieldsToUpdate);
+        const values = Object.values(fieldsToUpdate);
+
+        // Construct dynamic SQL query
+        const setClause = keys.map(key => `${key} = ?`).join(', ');
+        const sql = `UPDATE users SET ${setClause} WHERE id = ?`;
+
+        db.query(sql, [...values, user_id], (err, result) => {
             if (err) return callback(err);
             if (result.affectedRows === 0) return callback(null, null);
             callback(null, true);
         });
     },
+
 
     vehicleDetails: (user_id, callback) => {
         const sql = `
