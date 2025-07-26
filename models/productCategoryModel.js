@@ -5,11 +5,19 @@ const ProductCategory = {
         let query = 'SELECT * FROM product_categories';
 
         if (role_id == 3) {
-            query += ` WHERE admin_approval = 1 OR listed_by = 'vendor_${user_id}'`;
+            query += `
+                WHERE admin_approval = 1
+                AND (
+                    listed_by = 'admin'
+                    OR listed_by = 'vendor_${user_id}'
+                )
+            `;
         }
 
         db.query(query, callback);
     },
+
+
     findAllCatWithProducts: (role_id, user_id, callback) => {
         let query = `
             SELECT pc.*
@@ -19,7 +27,11 @@ const ProductCategory = {
 
         if (role_id == 3) {
             query += `
-                WHERE pc.admin_approval = 1 OR pc.listed_by = 'vendor_${user_id}'
+                WHERE pc.admin_approval = 1
+                AND (
+                    pc.listed_by = 'admin'
+                    OR pc.listed_by = 'vendor_${user_id}'
+                )
             `;
         }
 
