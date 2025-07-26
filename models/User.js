@@ -526,6 +526,13 @@ const User = {
                     v.profile_pic, 
                     v.vendor_thumb,
                     v.business_reg_number,
+                    v.vendor_start_time,
+                    v.vendor_close_time,
+                    v.vendor_lat,
+                    v.vendor_lng,
+                    v.store_image,
+                    v.profile_pic,
+                    v.gst_number
 
                     CAST(IFNULL(od.total_orders, 0) AS SIGNED) AS total_orders,
                     CAST(IFNULL(od.completed_orders, 0) AS SIGNED) AS completed_orders,
