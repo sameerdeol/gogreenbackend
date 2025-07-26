@@ -7,7 +7,8 @@ const uploadToS3 = require('../utils/s3Upload');
 const createCategory = async (req, res) => {
     const { name, description } = req.body;
     const role_id = req.user?.role_id || req.body.role_id || 0;
-    const user_id = req.user?.id || req.body.user_id || null;
+    const user_id = req.user?.user_id || req.body.user_id || null;
+    console.log(req.user)
 
     let categoryLogo = null;
     if (req.files && req.files['category_logo']) {
@@ -21,7 +22,7 @@ const createCategory = async (req, res) => {
 
     const adminApproval = (role_id === 1 || role_id === 2) ? 1 : 0;
     const listedBy = (role_id === 1 || role_id === 2) ? 'admin' : `vendor_${user_id}`;
-
+    console.log(listedBy)
     ProductCategory.create(name, description, categoryLogo, adminApproval, listedBy, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: 'Error creating category', error: err });
@@ -42,7 +43,7 @@ const createCategory = async (req, res) => {
 // Get all categories
 const getAllCategories = (req, res) => {
     const { is_web} = req.body;
-    const user_id = req.user?.id || req.body.user_id;
+    const user_id = req.user?.user_id || req.body.user_id;
     const role_id = req.user?.role_id || req.body.user_id;
     if (!role_id) {
         return res.status(400).json({ success: false, message: 'role_id is required' });

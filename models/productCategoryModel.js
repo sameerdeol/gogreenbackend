@@ -46,6 +46,7 @@ const ProductCategory = {
     
 
     create: (name, description, categoryLogo, adminApproval, listedBy, callback) => {
+        console.log(name, description, categoryLogo, adminApproval, listedBy, callback)
         const sql = `
             INSERT INTO product_categories (name, description, category_logo, admin_approval, listed_by)
             VALUES (?, ?, ?, ?, ?)
