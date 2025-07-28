@@ -999,170 +999,124 @@ const User = {
             return callback(null, results[0]);
         });
     },
+    getVendorAnalytics : (vendorId, callback) => {
+        const analytics = {};
 
-    getVendorAnalytics : async (req, res) => {
-        const vendorId = req.user.id; // from verifyToken middleware
+        // 1. Completion Rate
+        const completionRateQuery = `
+            SELECT 
+                (SUM(CASE WHEN order_status = 4 THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS completion_rate 
+            FROM order_details 
+            WHERE vendor_id = ?
+        `;
+        db.query(completionRateQuery, [vendorId], (err, result1) => {
+            if (err) return callback(err);
+            analytics.completionRate = result1[0].completion_rate || 0;
 
-        try {
-            // 1. Completion rate
-            const [completedOrders] = await db.promise().query(
-                `SELECT COUNT(*) as count FROM order_details WHERE vendor_id = ? AND status = 'completed'`,
-                [vendorId]
-            );
-            const [totalOrders] = await db.promise().query(
-                `SELECT COUNT(*) as count FROM order_details WHERE vendor_id = ?`,
-                [vendorId]
-            );
-            const completionRate = totalOrders[0].count > 0
-                ? (completedOrders[0].count / totalOrders[0].count) * 100
-                : 0;
-
-            // 2. Orders by hour
-            const [ordersByHour] = await db.promise().query(
-                `SELECT HOUR(created_at) AS hour, COUNT(*) AS orders 
+            // 2. Orders by Hour
+            const ordersByHourQuery = `
+                SELECT HOUR(created_at) AS order_hour, COUNT(*) AS order_count 
                 FROM order_details 
                 WHERE vendor_id = ? 
-                GROUP BY HOUR(created_at) 
-                ORDER BY hour`,
-                [vendorId]
-            );
-
-            // 3. Today’s earnings
-            const [todayEarningsRow] = await db.promise().query(
-                `SELECT SUM(total_amount) AS total 
-                FROM order_details 
-                WHERE vendor_id = ? AND DATE(created_at) = CURDATE()`,
-                [vendorId]
-            );
-            const todayEarnings = todayEarningsRow[0].total || 0;
-
-            // 4. Weekly earnings (last 7 days)
-            const [weeklyEarnings] = await db.promise().query(
-                `SELECT DATE(created_at) AS date, SUM(total_amount) AS total 
-                FROM order_details 
-                WHERE vendor_id = ? AND created_at >= CURDATE() - INTERVAL 6 DAY 
-                GROUP BY DATE(created_at) 
-                ORDER BY DATE(created_at)`,
-                [vendorId]
-            );
-
-            // 5. Monthly earnings (last 30 days)
-            const [monthlyEarnings] = await db.promise().query(
-                `SELECT DATE(created_at) AS date, SUM(total_amount) AS total 
-                FROM order_details 
-                WHERE vendor_id = ? AND created_at >= CURDATE() - INTERVAL 29 DAY 
-                GROUP BY DATE(created_at) 
-                ORDER BY DATE(created_at)`,
-                [vendorId]
-            );
-
-            // 6. Top performing time of day
-            const [topTime] = await db.promise().query(
-                `SELECT HOUR(created_at) AS hour, COUNT(*) AS orders
-                FROM order_details 
-                WHERE vendor_id = ?
                 GROUP BY HOUR(created_at)
-                ORDER BY orders DESC
-                LIMIT 1`,
-                [vendorId]
-            );
+            `;
+            db.query(ordersByHourQuery, [vendorId], (err, result2) => {
+                if (err) return callback(err);
+                analytics.ordersByHour = result2;
 
-            // 7. Top performing day of week
-            const [topDay] = await db.promise().query(
-                `SELECT DAYNAME(created_at) AS day, COUNT(*) AS orders
-                FROM order_details 
-                WHERE vendor_id = ?
-                GROUP BY DAYNAME(created_at)
-                ORDER BY orders DESC
-                LIMIT 1`,
-                [vendorId]
-            );
+                // 🔥 Top Performing Time of Day
+                analytics.topHour = result2.reduce((top, curr) =>
+                    curr.order_count > (top?.order_count || 0) ? curr : top, null
+                );
 
-            // 8. Top performing week of month
-            const [topWeek] = await db.promise().query(
-                `SELECT WEEK(created_at, 1) AS week_num, COUNT(*) AS orders
-                FROM order_details 
-                WHERE vendor_id = ? AND MONTH(created_at) = MONTH(CURDATE())
-                GROUP BY WEEK(created_at, 1)
-                ORDER BY orders DESC
-                LIMIT 1`,
-                [vendorId]
-            );
-
-            // 9. Total orders today
-            const [todayOrders] = await db.promise().query(
-                `SELECT COUNT(*) AS count 
-                FROM order_details 
-                WHERE vendor_id = ? AND DATE(created_at) = CURDATE()`,
-                [vendorId]
-            );
-
-            // 10. Total orders this week
-            const [weekOrders] = await db.promise().query(
-                `SELECT COUNT(*) AS count 
-                FROM order_details 
-                WHERE vendor_id = ? 
-                AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)`,
-                [vendorId]
-            );
-
-            // 11. Total orders this month
-            const [monthOrders] = await db.promise().query(
-                `SELECT COUNT(*) AS count 
-                FROM order_details 
-                WHERE vendor_id = ? AND MONTH(created_at) = MONTH(CURDATE())`,
-                [vendorId]
-            );
-
-            // 12. Repeat customer percentage
-            const [repeatCustomers] = await db.promise().query(
-                `SELECT COUNT(*) AS count 
-                FROM (
-                    SELECT customer_id
+                // 3. Orders by Day of Week
+                const dayOfWeekQuery = `
+                    SELECT DAYNAME(created_at) AS day, COUNT(*) AS orders
                     FROM order_details
-                    WHERE vendor_id = ? AND customer_id IS NOT NULL
-                    GROUP BY customer_id
-                    HAVING COUNT(*) > 1
-                ) AS repeated`,
-                [vendorId]
-            );
+                    WHERE vendor_id = ?
+                    GROUP BY DAYOFWEEK(created_at)
+                `;
+                db.query(dayOfWeekQuery, [vendorId], (err, result3) => {
+                    if (err) return callback(err);
+                    analytics.dayOfWeekOrders = result3;
+                    analytics.topDay = result3.reduce((top, curr) =>
+                        curr.orders > (top?.orders || 0) ? curr : top, null
+                    );
 
-            const [totalCustomers] = await db.promise().query(
-                `SELECT COUNT(DISTINCT customer_id) AS count 
-                FROM order_details 
-                WHERE vendor_id = ? AND customer_id IS NOT NULL`,
-                [vendorId]
-            );
+                    // 4. Week of Month
+                    const weekOfMonthQuery = `
+                        SELECT WEEK(created_at) - WEEK(DATE_SUB(created_at, INTERVAL DAYOFMONTH(created_at)-1 DAY)) + 1 AS week_of_month,
+                        COUNT(*) AS order_count
+                        FROM order_details
+                        WHERE vendor_id = ?
+                        GROUP BY week_of_month
+                    `;
+                    db.query(weekOfMonthQuery, [vendorId], (err, result4) => {
+                        if (err) return callback(err);
+                        analytics.weekOfMonthOrders = result4;
+                        analytics.topWeek = result4.reduce((top, curr) =>
+                            curr.order_count > (top?.order_count || 0) ? curr : top, null
+                        );
 
-            const repeatCustomerPercentage = totalCustomers[0].count > 0
-                ? (repeatCustomers[0].count / totalCustomers[0].count) * 100
-                : 0;
+                        // 5. Total Orders Today
+                        const todayOrderQuery = `
+                            SELECT COUNT(*) AS total_today 
+                            FROM order_details 
+                            WHERE vendor_id = ? AND DATE(created_at) = CURDATE()
+                        `;
+                        db.query(todayOrderQuery, [vendorId], (err, result5) => {
+                            if (err) return callback(err);
+                            analytics.totalOrdersToday = result5[0].total_today;
 
-            // ✅ Final Response
-            res.json({
-                success: true,
-                data: {
-                    completionRate,
-                    ordersByHour,
-                    todayEarnings,
-                    weeklyEarnings,
-                    monthlyEarnings,
-                    topTimeOfDay: topTime[0]?.hour || null,
-                    topDayOfWeek: topDay[0]?.day || null,
-                    topWeekOfMonth: topWeek[0]?.week_num || null,
-                    totalOrders: {
-                        today: todayOrders[0].count,
-                        week: weekOrders[0].count,
-                        month: monthOrders[0].count
-                    },
-                    repeatCustomerPercentage
-                }
+                            // 6. Total Orders This Week
+                            const weekOrderQuery = `
+                                SELECT COUNT(*) AS total_week 
+                                FROM order_details 
+                                WHERE vendor_id = ? 
+                                AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)
+                            `;
+                            db.query(weekOrderQuery, [vendorId], (err, result6) => {
+                                if (err) return callback(err);
+                                analytics.totalOrdersWeek = result6[0].total_week;
+
+                                // 7. Total Orders This Month
+                                const monthOrderQuery = `
+                                    SELECT COUNT(*) AS total_month 
+                                    FROM order_details 
+                                    WHERE vendor_id = ? 
+                                    AND MONTH(created_at) = MONTH(CURDATE()) 
+                                    AND YEAR(created_at) = YEAR(CURDATE())
+                                `;
+                                db.query(monthOrderQuery, [vendorId], (err, result7) => {
+                                    if (err) return callback(err);
+                                    analytics.totalOrdersMonth = result7[0].total_month;
+
+                                    // 8. Repeat Customer Percentage
+                                    const repeatCustomerQuery = `
+                                        SELECT 
+                                            (COUNT(*) / (SELECT COUNT(*) FROM order_details WHERE vendor_id = ?)) * 100 AS repeat_percentage
+                                        FROM (
+                                            SELECT user_id 
+                                            FROM order_details 
+                                            WHERE vendor_id = ? 
+                                            GROUP BY user_id 
+                                            HAVING COUNT(*) > 1
+                                        ) AS repeat_customers
+                                    `;
+                                    db.query(repeatCustomerQuery, [vendorId, vendorId], (err, result8) => {
+                                        if (err) return callback(err);
+                                        analytics.repeatCustomerPercentage = result8[0]?.repeat_percentage || 0;
+
+                                        // Done — return all data
+                                        return callback(null, analytics);
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
             });
-
-        } catch (err) {
-            console.error("Analytics Error:", err);
-            res.status(500).json({ success: false, message: "Internal Server Error" });
-        }
+        });
     }
 
 };
