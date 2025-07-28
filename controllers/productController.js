@@ -302,28 +302,40 @@ const updateProductById = async (req, res) => {
             }
 
             const handleAttributes = (cb) => {
-                if (attributes && Array.isArray(attributes)) {
+                if (Array.isArray(attributes)) {
                     db.query(`DELETE FROM product_attributes WHERE product_id = ?`, [id], (deleteErr) => {
                         if (deleteErr) return cb(deleteErr);
-                        Product.addAttributes(id, attributes, cb);
+                        if (attributes.length > 0) {
+                            Product.addAttributes(id, attributes, cb);
+                        } else {
+                            cb(null); // no need to insert
+                        }
                     });
                 } else cb(null);
             };
 
             const handleVariants = (cb) => {
-                if (variants && Array.isArray(variants)) {
+                if (Array.isArray(variants)) {
                     db.query(`DELETE FROM product_variants WHERE product_id = ?`, [id], (deleteErr) => {
                         if (deleteErr) return cb(deleteErr);
-                        ProductVariant.create(id, variants, cb);
+                        if (variants.length > 0) {
+                            ProductVariant.create(id, variants, cb);
+                        } else {
+                            cb(null); // no new variants to insert
+                        }
                     });
                 } else cb(null);
             };
 
             const handleAddons = (cb) => {
-                if (addons && Array.isArray(addons)) {
+                if (Array.isArray(addons)) {
                     db.query(`DELETE FROM product_addons WHERE product_id = ?`, [id], (deleteErr) => {
                         if (deleteErr) return cb(deleteErr);
-                        ProductAddon.create(id, addons, cb);
+                        if (addons.length > 0) {
+                            ProductAddon.create(id, addons, cb);
+                        } else {
+                            cb(null); // no new addons to insert
+                        }
                     });
                 } else cb(null);
             };
