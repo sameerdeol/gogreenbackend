@@ -392,64 +392,82 @@ const updateProductById = async (req, res) => {
 
 // Delete product by ID
 const deleteProductById = async (req, res) => {
-    const { id, user_id } = req.body;
+    const { product_ids, user_id } = req.body;
 
-    if (!id) {
-        return res.status(400).json({ success: false, message: 'Product ID is required.' });
+    if (!Array.isArray(product_ids) || product_ids.length === 0) {
+        return res.status(400).json({ success: false, message: 'Array of product IDs is required.' });
     }
 
-    // Fetch product details before deletion
-    Product.findById(id, user_id, async (findErr, product) => {
-        if (findErr || !product) {
-            return res.status(404).json({ success: false, message: 'Product not found.' });
-        }
+    let errors = [];
+    let deletedCount = 0;
 
-        // Delete the featured image
-        if (product.featured_image) {
-            await deleteS3Image(product.featured_image);
-        }
-
-        // Delete associated gallery images
-        GalleryImage.findByProductId(id, async (galleryErr, galleryImages) => {
-            if (!galleryErr && galleryImages.length > 0) {
-                for (const img of galleryImages) {
-                    await deleteS3Image(img.image_path);
-                }
-                // Delete gallery images from database
-                GalleryImage.deleteByProductId(id, (deleteErr) => {
-                    if (deleteErr) {
-                        return res.status(500).json({ success: false, message: 'Error deleting gallery images', error: deleteErr });
-                    }
-                });
-            }
-
-            // Delete associated variants
-            ProductVariant.deleteByProductId(id, (variantErr) => {
-                if (variantErr) {
-                    return res.status(500).json({ success: false, message: 'Error deleting product variants', error: variantErr });
-                }
-
-                // Delete associated addons
-                ProductAddon.deleteByProductId(id, (addonErr) => {
-                    if (addonErr) {
-                        return res.status(500).json({ success: false, message: 'Error deleting product addons', error: addonErr });
-                    }
-
-                    // Now delete the product
-                    Product.deleteById(id, (err, result) => {
-                        if (err) {
-                            return res.status(500).json({ success: false, message: 'Error deleting product', error: err });
-                        }
-                        if (result.affectedRows === 0) {
-                            return res.status(404).json({ success: false, message: 'Product not found.' });
-                        }
-                        res.status(200).json({ success: true, message: 'Product and associated data deleted successfully.' });
-                    });
+    for (const id of product_ids) {
+        try {
+            const product = await new Promise((resolve, reject) => {
+                Product.findById(id, user_id, (err, data) => {
+                    if (err || !data) return reject(`Product with ID ${id} not found`);
+                    resolve(data);
                 });
             });
-        });
+
+            // Delete featured image
+            if (product.featured_image) {
+                await deleteS3Image(product.featured_image);
+            }
+
+            // Delete gallery images
+            const galleryImages = await new Promise((resolve) => {
+                GalleryImage.findByProductId(id, (err, data) => resolve(data || []));
+            });
+
+            for (const img of galleryImages) {
+                await deleteS3Image(img.image_path);
+            }
+
+            await new Promise((resolve, reject) => {
+                GalleryImage.deleteByProductId(id, (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+
+            // Delete variants
+            await new Promise((resolve, reject) => {
+                ProductVariant.deleteByProductId(id, (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+
+            // Delete addons
+            await new Promise((resolve, reject) => {
+                ProductAddon.deleteByProductId(id, (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+
+            // Delete the product
+            await new Promise((resolve, reject) => {
+                Product.deleteById(id, (err, result) => {
+                    if (err || result.affectedRows === 0) reject(`Failed to delete product ID ${id}`);
+                    else resolve();
+                });
+            });
+
+            deletedCount++;
+        } catch (err) {
+            errors.push({ id, error: err.toString() });
+        }
+    }
+
+    res.status(200).json({
+        success: true,
+        message: `${deletedCount} product(s) deleted successfully.`,
+        errors: errors.length ? errors : undefined
     });
 };
+
 
 const setProductFeatured = (req, res) => {
     const { id, is_featured } = req.body;
