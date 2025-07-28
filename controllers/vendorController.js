@@ -834,7 +834,7 @@ const vendorBankDetails = (req, res) => {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
         if (!bankdetails) {
-            return res.status(404).json({ success: false, message: 'Bank Details found' });
+            return res.status(404).json({ success: false, message: 'Bank Details not found' });
         }
         return res.status(200).json({
             success: true,
