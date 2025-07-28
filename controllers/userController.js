@@ -503,7 +503,8 @@ const userBankDetails = async (req, res) => {
             account_holder_name,
             transit_number,
             institution_number,
-            account_number
+            account_number,
+            bank_name
         } = req.body;
 
         if (!user_id) {
@@ -524,6 +525,7 @@ const userBankDetails = async (req, res) => {
             transit_number,
             institution_number,
             account_number,
+            bank_name,
             void_cheque: await fileUpload('void_cheque')
         };
 

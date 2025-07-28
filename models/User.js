@@ -950,13 +950,14 @@ const User = {
             transit_number,
             institution_number,
             account_number,
+            bank_name,
             void_cheque
         } = data;
 
         const query = `
             INSERT INTO users_bank_details 
-            (user_id, role_id, account_holder_name, transit_number, institution_number, account_number, void_cheque)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (user_id, role_id, account_holder_name, transit_number, institution_number, account_number, void_cheque, bank_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
                 role_id = VALUES(role_id),
                 account_holder_name = VALUES(account_holder_name),
@@ -974,7 +975,8 @@ const User = {
             transit_number,
             institution_number,
             account_number,
-            void_cheque
+            void_cheque,
+            bank_name
         ];
 
         db.query(query, values, callback);
@@ -985,7 +987,8 @@ const User = {
             account_holder_name,
             account_number,
             institution_number,
-            transit_number
+            transit_number,
+            bank_name
         from users_bank_details where user_id = ? AND role_id = ?`;
 
         db.query(sql, [user_id, role_id], (err, results) => {
