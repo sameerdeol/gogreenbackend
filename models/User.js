@@ -999,42 +999,38 @@ const User = {
             return callback(null, results[0]);
         });
     },
-    getVendorAnalytics : (vendorId, callback) => {
+    getVendorAnalytics: (vendorId, callback) => {
         const analytics = {};
 
-        // 1. Completion Rate
         const completionRateQuery = `
             SELECT 
                 (SUM(CASE WHEN order_status = 4 THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS completion_rate 
             FROM order_details 
             WHERE vendor_id = ?
         `;
+
         db.query(completionRateQuery, [vendorId], (err, result1) => {
             if (err) return callback(err);
-            analytics.completionRate = result1[0].completion_rate || 0;
+            analytics.completionRate = parseFloat(result1[0]?.completion_rate || 0).toFixed(2);
 
-            // 2. Orders by Hour
             const ordersByHourQuery = `
                 SELECT HOUR(created_at) AS order_hour, COUNT(*) AS order_count 
                 FROM order_details 
                 WHERE vendor_id = ? 
-                GROUP BY HOUR(created_at)
+                GROUP BY order_hour
             `;
             db.query(ordersByHourQuery, [vendorId], (err, result2) => {
                 if (err) return callback(err);
                 analytics.ordersByHour = result2;
-
-                // 🔥 Top Performing Time of Day
                 analytics.topHour = result2.reduce((top, curr) =>
                     curr.order_count > (top?.order_count || 0) ? curr : top, null
                 );
 
-                // 3. Orders by Day of Week
                 const dayOfWeekQuery = `
                     SELECT DAYNAME(created_at) AS day, COUNT(*) AS orders
                     FROM order_details
                     WHERE vendor_id = ?
-                    GROUP BY DAYOFWEEK(created_at)
+                    GROUP BY day
                 `;
                 db.query(dayOfWeekQuery, [vendorId], (err, result3) => {
                     if (err) return callback(err);
@@ -1043,10 +1039,10 @@ const User = {
                         curr.orders > (top?.orders || 0) ? curr : top, null
                     );
 
-                    // 4. Week of Month
                     const weekOfMonthQuery = `
-                        SELECT WEEK(created_at) - WEEK(DATE_SUB(created_at, INTERVAL DAYOFMONTH(created_at)-1 DAY)) + 1 AS week_of_month,
-                        COUNT(*) AS order_count
+                        SELECT 
+                            WEEK(created_at) - WEEK(DATE_SUB(created_at, INTERVAL DAYOFMONTH(created_at)-1 DAY)) + 1 AS week_of_month,
+                            COUNT(*) AS order_count
                         FROM order_details
                         WHERE vendor_id = ?
                         GROUP BY week_of_month
@@ -1058,7 +1054,6 @@ const User = {
                             curr.order_count > (top?.order_count || 0) ? curr : top, null
                         );
 
-                        // 5. Total Orders Today
                         const todayOrderQuery = `
                             SELECT COUNT(*) AS total_today 
                             FROM order_details 
@@ -1066,9 +1061,8 @@ const User = {
                         `;
                         db.query(todayOrderQuery, [vendorId], (err, result5) => {
                             if (err) return callback(err);
-                            analytics.totalOrdersToday = result5[0].total_today;
+                            analytics.totalOrdersToday = result5[0]?.total_today || 0;
 
-                            // 6. Total Orders This Week
                             const weekOrderQuery = `
                                 SELECT COUNT(*) AS total_week 
                                 FROM order_details 
@@ -1077,9 +1071,8 @@ const User = {
                             `;
                             db.query(weekOrderQuery, [vendorId], (err, result6) => {
                                 if (err) return callback(err);
-                                analytics.totalOrdersWeek = result6[0].total_week;
+                                analytics.totalOrdersWeek = result6[0]?.total_week || 0;
 
-                                // 7. Total Orders This Month
                                 const monthOrderQuery = `
                                     SELECT COUNT(*) AS total_month 
                                     FROM order_details 
@@ -1089,25 +1082,28 @@ const User = {
                                 `;
                                 db.query(monthOrderQuery, [vendorId], (err, result7) => {
                                     if (err) return callback(err);
-                                    analytics.totalOrdersMonth = result7[0].total_month;
+                                    analytics.totalOrdersMonth = result7[0]?.total_month || 0;
 
-                                    // 8. Repeat Customer Percentage
                                     const repeatCustomerQuery = `
                                         SELECT 
-                                            (COUNT(*) / (SELECT COUNT(*) FROM order_details WHERE vendor_id = ?)) * 100 AS repeat_percentage
+                                            (COUNT(*) / total.total_users) * 100 AS repeat_percentage
                                         FROM (
                                             SELECT user_id 
                                             FROM order_details 
-                                            WHERE vendor_id = ? 
+                                            WHERE vendor_id = ? AND user_id IS NOT NULL
                                             GROUP BY user_id 
                                             HAVING COUNT(*) > 1
                                         ) AS repeat_customers
+                                        JOIN (
+                                            SELECT COUNT(DISTINCT user_id) AS total_users 
+                                            FROM order_details 
+                                            WHERE vendor_id = ? AND user_id IS NOT NULL
+                                        ) AS total
                                     `;
                                     db.query(repeatCustomerQuery, [vendorId, vendorId], (err, result8) => {
                                         if (err) return callback(err);
-                                        analytics.repeatCustomerPercentage = result8[0]?.repeat_percentage || 0;
+                                        analytics.repeatCustomerPercentage = parseFloat(result8[0]?.repeat_percentage || 0).toFixed(2);
 
-                                        // Done — return all data
                                         return callback(null, analytics);
                                     });
                                 });
@@ -1118,6 +1114,7 @@ const User = {
             });
         });
     }
+
 
 };
 

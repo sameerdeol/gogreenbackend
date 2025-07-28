@@ -845,18 +845,22 @@ const vendorBankDetails = (req, res) => {
 };
 
 
-    const vendorAnalytics = (req, res) => {
-        const {vendor_Id} = req.body; // assuming JWT middleware sets this
+const vendorAnalytics = (req, res) => {
+    const { vendor_Id } = req.body;
 
-        User.getVendorAnalytics(vendor_Id, (err, analytics) => {
-            if (err) {
-                console.error("Analytics Error:", err);
-                return res.status(500).json({ success: false, message: "Internal Server Error" });
-            }
+    if (!vendor_Id) {
+        return res.status(400).json({ success: false, message: "Vendor ID is required" });
+    }
 
-            return res.json({ success: true, data: analytics });
-        });
-    };
+    User.getVendorAnalytics(vendor_Id, (err, analytics) => {
+        if (err) {
+            console.error("Analytics Error:", err);
+            return res.status(500).json({ success: false, message: "Internal Server Error" });
+        }
+
+        return res.json({ success: true, data: analytics });
+    });
+}
 
 
 module.exports = {
