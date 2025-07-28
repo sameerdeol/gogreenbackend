@@ -593,29 +593,37 @@ const User = {
     },
 
     vendorStatus: (data, callback) => {
-        const { user_id, status, ...vendorFields } = data;
+        const { user_id, status, deactivated_by, vendor_start_time, vendor_close_time } = data;
 
-        const vendorKeys = Object.keys(vendorFields);
-        const vendorValues = Object.values(vendorFields);
+        // Update vendors table
+        const vendorSql = `
+            UPDATE vendors 
+            SET vendor_start_time = ?, vendor_close_time = ?
+            WHERE user_id = ?
+        `;
 
-        const setClause = vendorKeys.map(key => `${key} = ?`).join(', ');
-        const vendorSql = `UPDATE vendors SET ${setClause} WHERE user_id = ?`;
-        const userSql = `UPDATE users SET status = ? WHERE id = ?`;
+        // Update users table
+        const userSql = `
+            UPDATE users 
+            SET status = ?, deactivated_by = ?
+            WHERE id = ?
+        `;
 
         // First update vendors
-        db.query(vendorSql, [...vendorValues, user_id], (err, vendorResult) => {
+        db.query(vendorSql, [vendor_start_time, vendor_close_time, user_id], (err, vendorResult) => {
             if (err) return callback(err);
 
-            // Then update users status
-            db.query(userSql, [status, user_id], (err, userResult) => {
+            // Then update users
+            db.query(userSql, [status, deactivated_by, user_id], (err, userResult) => {
                 if (err) return callback(err);
                 if (vendorResult.affectedRows === 0 && userResult.affectedRows === 0) {
-                    return callback(null, null);
+                    return callback(null, null); // Nothing updated
                 }
                 callback(null, true);
             });
         });
     },
+
 
 
 
