@@ -845,21 +845,18 @@ const vendorBankDetails = (req, res) => {
 };
 
 
-const vendorAnalytics = async (req, res) => {
-    try {
-        const {vendor_Id} = req.body; // Assuming vendor ID is from token
+    const vendorAnalytics = (req, res) => {
+        const vendorId = req.user.id; // assuming JWT middleware sets this
 
-        const analytics = await User.getVendorAnalytics(vendor_Id);
+        vendorModel.getVendorAnalytics(vendorId, (err, analytics) => {
+            if (err) {
+                console.error("Analytics Error:", err);
+                return res.status(500).json({ success: false, message: "Internal Server Error" });
+            }
 
-        res.json({
-            success: true,
-            data: analytics
+            return res.json({ success: true, data: analytics });
         });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Server Error' });
-    }
-};
+    };
 
 
 module.exports = {

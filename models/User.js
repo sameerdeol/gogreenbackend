@@ -999,67 +999,78 @@ const User = {
             return callback(null, results[0]);
         });
     },
-    getVendorAnalytics : async (vendorId) => {
-        // Order Completion Rate
-        const [completionResult] = await db.query(`
+    getVendorAnalytics : (vendorId, callback) => {
+        const analytics = {};
+
+        const completionRateQuery = `
             SELECT 
                 (SUM(CASE WHEN order_status = 4 THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS completion_rate 
             FROM order_details 
             WHERE vendor_id = ?
-        `, [vendorId]);
+        `;
 
-        // Orders by Hour
-        const [ordersByHour] = await db.query(`
-            SELECT 
-                HOUR(created_at) AS order_hour, 
-                COUNT(*) AS order_count 
-            FROM order_details 
-            WHERE vendor_id = ? 
-            GROUP BY HOUR(created_at) 
-            ORDER BY order_hour
-        `, [vendorId]);
+        db.query(completionRateQuery, [vendorId], (err, result1) => {
+            if (err) return callback(err);
+            analytics.completionRate = result1[0].completion_rate || 0;
 
-        // Earnings Today
-        const [todayEarningsResult] = await db.query(`
-            SELECT 
-                SUM(total_price) AS today_earnings 
-            FROM order_details 
-            WHERE vendor_id = ? 
-            AND DATE(created_at) = CURDATE()
-        `, [vendorId]);
+            const ordersByHourQuery = `
+                SELECT 
+                    HOUR(created_at) AS order_hour, 
+                    COUNT(*) AS order_count 
+                FROM order_details 
+                WHERE vendor_id = ? 
+                GROUP BY HOUR(created_at) 
+                ORDER BY order_hour
+            `;
+            db.query(ordersByHourQuery, [vendorId], (err, result2) => {
+                if (err) return callback(err);
+                analytics.ordersByHour = result2;
 
-        // Weekly Earnings
-        const [weeklyEarnings] = await db.query(`
-            SELECT 
-                DATE(created_at) AS date, 
-                SUM(total_price) AS earnings 
-            FROM order_details 
-            WHERE vendor_id = ? 
-            AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)
-            GROUP BY DATE(created_at)
-            ORDER BY date ASC
-        `, [vendorId]);
+                const todayEarningsQuery = `
+                    SELECT 
+                        SUM(total_price) AS today_earnings 
+                    FROM order_details 
+                    WHERE vendor_id = ? AND DATE(created_at) = CURDATE()
+                `;
+                db.query(todayEarningsQuery, [vendorId], (err, result3) => {
+                    if (err) return callback(err);
+                    analytics.todayEarnings = result3[0].today_earnings || 0;
 
-        // Monthly Earnings
-        const [monthlyEarnings] = await db.query(`
-            SELECT 
-                DATE(created_at) AS date, 
-                SUM(total_price) AS earnings 
-            FROM order_details 
-            WHERE vendor_id = ? 
-            AND MONTH(created_at) = MONTH(CURDATE()) 
-            AND YEAR(created_at) = YEAR(CURDATE())
-            GROUP BY DATE(created_at)
-            ORDER BY date ASC
-        `, [vendorId]);
+                    const weeklyEarningsQuery = `
+                        SELECT 
+                            DATE(created_at) AS date, 
+                            SUM(total_price) AS earnings 
+                        FROM order_details 
+                        WHERE vendor_id = ? 
+                        AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)
+                        GROUP BY DATE(created_at)
+                        ORDER BY date ASC
+                    `;
+                    db.query(weeklyEarningsQuery, [vendorId], (err, result4) => {
+                        if (err) return callback(err);
+                        analytics.weeklyEarnings = result4;
 
-        return {
-            completionRate: completionResult.completion_rate || 0,
-            ordersByHour,
-            todayEarnings: todayEarningsResult.today_earnings || 0,
-            weeklyEarnings,
-            monthlyEarnings
-        };
+                        const monthlyEarningsQuery = `
+                            SELECT 
+                                DATE(created_at) AS date, 
+                                SUM(total_price) AS earnings 
+                            FROM order_details 
+                            WHERE vendor_id = ? 
+                            AND MONTH(created_at) = MONTH(CURDATE()) 
+                            AND YEAR(created_at) = YEAR(CURDATE())
+                            GROUP BY DATE(created_at)
+                            ORDER BY date ASC
+                        `;
+                        db.query(monthlyEarningsQuery, [vendorId], (err, result5) => {
+                            if (err) return callback(err);
+                            analytics.monthlyEarnings = result5;
+
+                            return callback(null, analytics);
+                        });
+                    });
+                });
+            });
+        });
     }
 
 };
