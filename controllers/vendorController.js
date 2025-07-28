@@ -845,6 +845,23 @@ const vendorBankDetails = (req, res) => {
 };
 
 
+const vendorAnalytics = async (req, res) => {
+    try {
+        const {vendor_Id} = req.body; // Assuming vendor ID is from token
+
+        const analytics = await User.getVendorAnalytics(vendor_Id);
+
+        res.json({
+            success: true,
+            data: analytics
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+
 module.exports = {
     vendorSignup,
     vendorLogin,
@@ -861,5 +878,6 @@ module.exports = {
     getAllVendorTypes,
     updateVendorType,
     deleteVendorType,
-    vendorBankDetails
+    vendorBankDetails,
+    vendorAnalytics
 }; 

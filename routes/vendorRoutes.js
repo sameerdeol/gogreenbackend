@@ -27,5 +27,7 @@ router.post('/store-additionaldetails', verifyToken, uploadFields, vendorControl
 router.get('/getallvendorsforadmin', verifyToken, vendorController.allVendorsforAdmin);
 router.get('/getallvendorsforadminbyID/:vendor_id', verifyToken, vendorController.allVendorsforAdminbyVendorID);
 router.post('/vendor-bankdetails', verifyToken, vendorController.vendorBankDetails);
+router.post('/vendor-analytics', verifyToken, vendorController.vendorAnalytics);
+
 
 module.exports = router;
