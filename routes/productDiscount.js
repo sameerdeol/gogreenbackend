@@ -10,9 +10,8 @@ const {
     getDiscounts
 } = require('../controllers/discountController');
 
-router.post('/add-discount', checkManagerRole, createDiscount);
+router.post('/add-update-discount', checkManagerRole, createDiscount);
 router.get('/get-discounts', checkManagerRole, getDiscounts);
-router.put('/update-discount', checkManagerRole, updateDiscount);
 router.delete('/delete-discount', checkManagerRole, deleteDiscount);
 
 module.exports = router;

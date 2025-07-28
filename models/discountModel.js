@@ -9,9 +9,12 @@ const DiscountModel = {
         db.query(sql, [product_id, discount_percent], callback);
     },
 
+    // Get all discounts with product details
     getDiscounts: (callback) => {
-        const sql = `SELECT pd.*,p.* FROM product_discounts pd
-                    JOIN products p where p.id = pd.product_id`;
+        const sql = `
+            SELECT pd.*, p.* 
+            FROM product_discounts pd
+            JOIN products p ON p.id = pd.product_id`;
         db.query(sql, [], callback);
     },
 
@@ -24,15 +27,15 @@ const DiscountModel = {
         db.query(sql, [discount_percent, product_id], callback);
     },
 
-    // Delete discount by product ID
+    // Delete discount by primary key (assumed to be `id`)
     deleteDiscountById: (discount_id, callback) => {
         const sql = `
             DELETE FROM product_discounts 
-            WHERE discount_id = ?`;
+            WHERE id = ?`;
         db.query(sql, [discount_id], callback);
     },
 
-    // Optional: Get discount for a product
+    // Get discount record by product ID
     getDiscountByProductId: (product_id, callback) => {
         const sql = `
             SELECT * FROM product_discounts 
