@@ -593,21 +593,30 @@ const User = {
     },
 
     vendorStatus: (data, callback) => {
-        const { user_id, ...fieldsToUpdate } = data;
+        const { user_id, status, ...vendorFields } = data;
 
-        const keys = Object.keys(fieldsToUpdate);
-        const values = Object.values(fieldsToUpdate);
+        const vendorKeys = Object.keys(vendorFields);
+        const vendorValues = Object.values(vendorFields);
 
-        // Construct dynamic SQL query
-        const setClause = keys.map(key => `${key} = ?`).join(', ');
-        const sql = `UPDATE vendors SET ${setClause} WHERE id = ?`;
+        const setClause = vendorKeys.map(key => `${key} = ?`).join(', ');
+        const vendorSql = `UPDATE vendors SET ${setClause} WHERE user_id = ?`;
+        const userSql = `UPDATE users SET status = ? WHERE id = ?`;
 
-        db.query(sql, [...values, user_id], (err, result) => {
+        // First update vendors
+        db.query(vendorSql, [...vendorValues, user_id], (err, vendorResult) => {
             if (err) return callback(err);
-            if (result.affectedRows === 0) return callback(null, null);
-            callback(null, true);
+
+            // Then update users status
+            db.query(userSql, [status, user_id], (err, userResult) => {
+                if (err) return callback(err);
+                if (vendorResult.affectedRows === 0 && userResult.affectedRows === 0) {
+                    return callback(null, null);
+                }
+                callback(null, true);
+            });
         });
     },
+
 
 
     vehicleDetails: (user_id, callback) => {
