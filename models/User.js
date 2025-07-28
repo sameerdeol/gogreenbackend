@@ -1086,19 +1086,22 @@ const User = {
 
                                     const repeatCustomerQuery = `
                                         SELECT 
-                                            (COUNT(*) / total.total_users) * 100 AS repeat_percentage
+                                            (rc.repeat_count / t.total_users) * 100 AS repeat_percentage
                                         FROM (
-                                            SELECT user_id 
-                                            FROM order_details 
-                                            WHERE vendor_id = ? AND user_id IS NOT NULL
-                                            GROUP BY user_id 
-                                            HAVING COUNT(*) > 1
-                                        ) AS repeat_customers
+                                            SELECT COUNT(*) AS repeat_count
+                                            FROM (
+                                                SELECT user_id 
+                                                FROM order_details 
+                                                WHERE vendor_id = ? AND user_id IS NOT NULL
+                                                GROUP BY user_id 
+                                                HAVING COUNT(*) > 1
+                                            ) AS repeat_customers
+                                        ) AS rc
                                         JOIN (
                                             SELECT COUNT(DISTINCT user_id) AS total_users 
                                             FROM order_details 
                                             WHERE vendor_id = ? AND user_id IS NOT NULL
-                                        ) AS total
+                                        ) AS t
                                     `;
                                     db.query(repeatCustomerQuery, [vendorId, vendorId], (err, result8) => {
                                         if (err) return callback(err);
