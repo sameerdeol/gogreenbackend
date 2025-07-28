@@ -848,7 +848,7 @@ const vendorBankDetails = (req, res) => {
     const vendorAnalytics = (req, res) => {
         const vendorId = req.user.id; // assuming JWT middleware sets this
 
-        vendorModel.getVendorAnalytics(vendorId, (err, analytics) => {
+        User.getVendorAnalytics(vendorId, (err, analytics) => {
             if (err) {
                 console.error("Analytics Error:", err);
                 return res.status(500).json({ success: false, message: "Internal Server Error" });
