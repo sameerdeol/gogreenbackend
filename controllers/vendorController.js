@@ -400,7 +400,7 @@ const vendorStatus = (req, res) => {
     if (vendor_start_time) updateFields.vendor_start_time = vendor_start_time;
     if (vendor_close_time) updateFields.vendor_close_time = vendor_close_time;
 
-    User.userStatus(updateFields, (err, user) => {
+    User.vendorStatus(updateFields, (err, user) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ success: false, message: 'Database error', error: err });
@@ -822,6 +822,27 @@ const deleteVendorType = async (req, res) => {
     });
 };
 
+const vendorBankDetails = (req, res) => {
+    req.body.role_id = 3;
+    const { role_id, user_id } = req.body;
+    if ([1, 2].includes(parseInt(role_id))) {
+        return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
+    }
+    User.userBankDetails(user_id, role_id, (err, bankdetails) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+        if (!bankdetails) {
+            return res.status(404).json({ success: false, message: 'Bank Details found' });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "User Bank Details retrieved successfully",
+            data: bankdetails
+        });
+    });
+};
 
 
 module.exports = {
@@ -839,5 +860,6 @@ module.exports = {
     createVendorType,
     getAllVendorTypes,
     updateVendorType,
-    deleteVendorType
+    deleteVendorType,
+    vendorBankDetails
 }; 

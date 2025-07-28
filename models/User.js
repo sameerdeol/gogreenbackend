@@ -592,6 +592,23 @@ const User = {
         });
     },
 
+    vendorStatus: (data, callback) => {
+        const { user_id, ...fieldsToUpdate } = data;
+
+        const keys = Object.keys(fieldsToUpdate);
+        const values = Object.values(fieldsToUpdate);
+
+        // Construct dynamic SQL query
+        const setClause = keys.map(key => `${key} = ?`).join(', ');
+        const sql = `UPDATE vendors SET ${setClause} WHERE id = ?`;
+
+        db.query(sql, [...values, user_id], (err, result) => {
+            if (err) return callback(err);
+            if (result.affectedRows === 0) return callback(null, null);
+            callback(null, true);
+        });
+    },
+
 
     vehicleDetails: (user_id, callback) => {
         const sql = `
@@ -944,7 +961,24 @@ const User = {
         ];
 
         db.query(query, values, callback);
-    }
+    },
+    userBankDetails: (user_id,role_id, callback) => {
+        const sql = `
+        select 
+            account_holder_name,
+            account_number,
+            institution_number,
+            transit_number
+        from users_bank_details where user_id = ? AND role_id = ?`;
+
+        db.query(sql, [user_id, role_id], (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return callback(err, null);
+            }
+            return callback(null, results[0]);
+        });
+    },
 
 };
 
