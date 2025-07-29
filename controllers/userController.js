@@ -11,6 +11,8 @@ const deleteS3Image = require('../utils/deleteS3Image');
 const uploadToS3 = require('../utils/s3Upload');
 const nodemailer = require('nodemailer');
 const generateCustomId = require('../utils/generateCustomId');
+const { generateOtp } = require('../utils/otpGenerator'); // adjust path if needed
+
 
 require('dotenv').config();
 
