@@ -1,5 +1,6 @@
 const express = require('express');
 const riderController = require('../controllers/riderController');
+const userController = require('../controllers/userController');
 const uploadFields = require('../middleware/multerConfig');
 const { verifyToken } = require('../middleware/authroization');
 const router = express.Router();
@@ -13,9 +14,10 @@ router.post('/rider-signup', riderController.riderSignup);
 router.post('/rider-profile', verifyToken, riderController.riderProfile);
 router.post('/rider-vehicledetails', verifyToken, riderController.vehicleDetails);
 router.post('/rider-status', verifyToken, riderController.riderStatus);
-router.post('/send-riderOtp', (req, res) => {}); // If needed, implement in riderController
-router.post('/reset-riderPwd', (req, res) => {}); // If needed, implement in riderController
-router.put('/chnage-riderPwd', (req, res) => {}); // If needed, implement in riderController
+router.post('/send-vendorOtp',  userController.sendOTP); // If needed, implement in vendorController
+router.post('/verifyotp',  userController.verifyOtp); // If needed, implement in vendorController
+router.post('/reset-vendorPwd',  userController.resetPassword); // If needed, implement in vendorController
+router.put('/chnage-riderPwd', userController.changePassword); // If needed, implement in riderController
 router.put('/updateRider-location', verifyToken, riderController.updateRiderLocation);
 router.get('/getallridersforadmin', verifyToken, riderController.allRidersforAdmin);
 router.get('/getallridersforadminbyID/:rider_id', verifyToken, riderController.allRidersforAdminbyRiderID);

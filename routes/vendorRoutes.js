@@ -1,5 +1,6 @@
 const express = require('express');
 const vendorController = require('../controllers/vendorController');
+const userController = require('../controllers/userController');
 const uploadFields = require('../middleware/multerConfig');
 const { verifyToken } = require('../middleware/authroization');
 const router = express.Router();
@@ -18,9 +19,10 @@ router.post('/vendor-login',  vendorController.vendorLogin); // Optional - remov
 router.post('/vendor-signup',  vendorController.vendorSignup); // Optional - remove verifyToken if signup is public
 router.post('/vendor-profile', verifyToken, vendorController.vendorProfile);
 router.post('/vendor-status', verifyToken, vendorController.vendorStatus);
-router.post('/send-vendorOtp',  (req, res) => {}); // If needed, implement in vendorController
-router.post('/reset-vendorPwd',  (req, res) => {}); // If needed, implement in vendorController
-router.put('/chnage-vendorPwd', verifyToken, (req, res) => {}); // If needed, implement in vendorController
+router.post('/send-vendorOtp',  userController.sendOTP); // If needed, implement in vendorController
+router.post('/reset-vendorPwd',  userController.resetPassword); // If needed, implement in vendorController
+router.post('/verifyotp',  userController.verifyOtp); // If needed, implement in vendorController
+router.put('/chnage-riderPwd', userController.changePassword); // If needed, implement in riderController
 router.post('/all-vendors', verifyToken, vendorController.allVendors);
 router.post('/store-bussinessdetails', verifyToken, uploadFields, vendorController.storeBusinessDetails);
 router.post('/store-additionaldetails', verifyToken, uploadFields, vendorController.storeAdditionalDetails);
