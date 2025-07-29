@@ -9,6 +9,7 @@ router.post('/rider-verification', verifyToken, uploadFields, riderController.ri
 router.post('/rider-personaldetails', verifyToken, uploadFields, riderController.riderPersonalDetails);
 router.post('/update-riderPassword', verifyToken, riderController.updateRiderProfile);
 router.put('/update-riderProfile', verifyToken, uploadFields, riderController.updateRiderProfile);
+router.put('/update-riderVehicledetails', verifyToken, uploadFields, riderController.updateVehicleDetails);
 router.post('/rider-login', riderController.riderLogin);
 router.post('/rider-signup', riderController.riderSignup);
 router.post('/rider-profile', verifyToken, riderController.riderProfile);

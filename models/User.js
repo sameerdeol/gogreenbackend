@@ -1116,6 +1116,22 @@ const User = {
                 });
             });
         });
+    },
+
+    updateVehicleDetails: (user_id, updateFields, callback) => {
+        if (Object.keys(updateFields).length === 0) {
+            return callback(new Error('No fields to update'), null);
+        }
+
+        const fields = Object.keys(updateFields).map(key => `${key} = ?`).join(', ');
+        const values = Object.values(updateFields);
+        values.push(user_id);
+
+        const query = `UPDATE delivery_partners SET ${fields} WHERE user_id = ?`;
+        db.query(query, values, (err, result) => {
+            if (err) return callback(err, null);
+            return callback(null, result);
+        });
     }
 
 

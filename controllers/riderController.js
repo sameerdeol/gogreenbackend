@@ -586,6 +586,60 @@ const allRidersforAdminbyRiderID = (req, res) => {
     });
 };
 
+const updateVehicleDetails = async (req, res) => {
+    const {
+        user_id,
+        vehicle_owner_name,
+        vehicle_registration_number,
+        vehicle_type,
+        registration_expiry_date
+    } = req.body;
+
+    if (!user_id) {
+        return res.status(400).json({ success: false, message: "User ID is required" });
+    }
+
+    let registration_doc = null;
+
+    // Handle registration_doc upload
+    if (req.files && req.files['registration_doc'] && req.files['registration_doc'].length > 0) {
+        const file = req.files['registration_doc'][0];
+        registration_doc = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+    }
+
+    // Optional: Delete old doc if new one is uploaded
+    User.vehicleDetails(user_id, async (err, existing) => {
+        if (err) return res.status(500).json({ success: false, message: 'DB error', error: err });
+        if (!existing) return res.status(404).json({ success: false, message: 'User vehicle details not found' });
+
+        if (registration_doc && existing.registration_doc) {
+            await deleteS3Image(existing.registration_doc);
+        }
+
+        const updateData = {
+            vehicle_owner_name,
+            vehicle_registration_number,
+            vehicle_type,
+            registration_expiry_date
+        };
+
+        if (registration_doc) {
+            updateData.registration_doc = registration_doc;
+        }
+
+        User.updateVehicleDetails(user_id, updateData, (err, result) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Failed to update vehicle details', error: err });
+            }
+
+            res.status(200).json({ success: true, message: "Vehicle details updated successfully" });
+        });
+    });
+};
+
+
+
+
 module.exports = {
     riderSignup,
     riderLogin,
@@ -597,5 +651,6 @@ module.exports = {
     allRidersforAdmin,
     allRidersforAdminbyRiderID,
     riderPersonalDetails,
-    vehicleDetails
+    vehicleDetails,
+    updateVehicleDetails
 }; 
