@@ -2,7 +2,13 @@ const db = require('../config/db');
 
 const UserFcmToken = {
     create: (user_id, fcmToken, callback) => {
-        const sql = `INSERT INTO users_fcm_token (user_id, fcm_token) VALUES (?, ?)`;;
+        const sql = `
+        INSERT INTO users_fcm_token (user_id, fcm_token, created_at)
+        VALUES (?, ?, NOW())
+        ON DUPLICATE KEY UPDATE 
+            fcm_token = VALUES(fcm_token),
+            created_at = NOW()
+        `;
         db.query(sql, [user_id, fcmToken], callback);
     },
     getTokenByUserId: (user_id, callback) => {
