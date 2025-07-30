@@ -40,7 +40,7 @@ const sendNotification = async (req, res) => {
 
 const removeFcmToken = (req, res) => {
     const { user_id, fcmToken } = req.body;
-
+    console.log(req.body)
     if (!user_id || !fcmToken) {
         return res.status(400).json({ success: false, message: 'All fields are required.' });
     }
