@@ -31,7 +31,7 @@ const DiscountModel = {
     deleteDiscountById: (discount_id, callback) => {
         const sql = `
             DELETE FROM product_discounts 
-            WHERE id = ?`;
+            WHERE discount_id = ?`;
         db.query(sql, [discount_id], callback);
     },
 
