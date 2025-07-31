@@ -592,7 +592,7 @@ const updateVehicleDetails = async (req, res) => {
         vehicle_owner_name,
         vehicle_registration_number,
         vehicle_type,
-        registration_expiry_date
+        registraion_expiry_date
     } = req.body;
 
     if (!user_id) {
@@ -620,7 +620,7 @@ const updateVehicleDetails = async (req, res) => {
             vehicle_owner_name,
             vehicle_registration_number,
             vehicle_type,
-            registration_expiry_date
+            registraion_expiry_date
         };
 
         if (registration_doc) {
