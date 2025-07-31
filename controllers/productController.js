@@ -13,7 +13,7 @@ const createProduct = async (req, res) => {
     try {
         let { vendor_id, name, description, price, category, sub_category,
             stock, manufacturer_details, title, subtitle, size, fast_delivery_available, 
-            feature_title, feature_description, product_brand, nutritional_facts , ingredients , miscellaneous 
+            feature_title, feature_description, product_brand, nutritional_facts , ingredients , miscellaneous, product_unit, product_quantity 
         } = req.body;
 
         // Parse variants
@@ -71,7 +71,7 @@ const createProduct = async (req, res) => {
         Product.create(
             vendor_id, name, description, price, category, sub_category, stock, featuredImage, manufacturer_details,
             title, subtitle, size, fast_delivery_available, feature_title, feature_description, product_brand,
-            nutritional_facts, miscellaneous, ingredients,
+            nutritional_facts, miscellaneous, ingredients, product_unit, product_quantity,
             (err, productResult) => {
                 if (err) {
                     console.error("Database Error:", err);

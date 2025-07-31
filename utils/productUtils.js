@@ -6,7 +6,7 @@ function extractUpdatedData(body) {
         'name', 'description', 'price', 'category_id', 'sub_category', 'stock', 
         'manufacturer_details', 'title', 'subtitle', 'size', 'fast_delivery_available', 
         'feature_title', 'feature_description', 'status', 'brand_id', 
-        'nutritional_facts', 'miscellaneous', 'ingredients'
+        'nutritional_facts', 'miscellaneous', 'ingredients', 'product_unit', 'product_quantity'
     ];
 
     const updatedData = {};
