@@ -56,20 +56,47 @@ const searchProduct = {
   
       UNION ALL
   
-      SELECT 'vendor_by_name' AS type, u.id, 
-            v.store_name COLLATE utf8mb4_general_ci AS name, 
-            v.store_address COLLATE utf8mb4_general_ci AS description, 
-            v.profile_pic COLLATE utf8mb4_general_ci AS image,
-            NULL AS extra, 
-            IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
-            CASE 
-                WHEN v.store_name LIKE ? THEN 3 
-                ELSE 1 
-            END AS relevance
+      SELECT 
+          'vendor_by_name' AS type,
+          u.id,
+          u.firstname, 
+          u.lastname, 
+          u.email, 
+          u.prefix, 
+          u.phonenumber,
+          u.status,
+          v.store_name COLLATE utf8mb4_general_ci AS name, 
+          v.store_address COLLATE utf8mb4_general_ci AS description, 
+          v.store_address, 
+          v.sin_code, 
+          v.profile_pic COLLATE utf8mb4_general_ci AS image, 
+          v.store_image,
+          v.vendor_thumb,
+          v.vendor_start_time,
+          v.vendor_close_time,
+          v.user_id AS vendor_id,
+          NULL AS extra, 
+          IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
+          (
+              SELECT GROUP_CONCAT(DISTINCT p.featured_image)
+              FROM products p
+              WHERE p.vendor_id = v.user_id
+          ) AS featured_images,
+          CASE 
+              WHEN v.store_name LIKE ? THEN 3 
+              ELSE 1 
+          END AS relevance
       FROM users u 
       JOIN vendors v ON v.user_id = u.id 
       LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
       WHERE v.store_name LIKE ? COLLATE utf8mb4_general_ci
+        AND u.is_verified = 1 
+        AND u.status = 1
+        AND EXISTS (
+            SELECT 1 FROM products p2 WHERE p2.vendor_id = v.user_id
+      )
+      LIMIT 0, 1000;
+
   
       UNION ALL
   
