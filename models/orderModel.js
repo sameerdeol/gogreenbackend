@@ -24,48 +24,79 @@ const Order = {
     getOrdersByUserId : (vendor_id, callback) => {
         const query = `
             SELECT 
-                OD.id AS order_id,
-                OD.order_uid,
-                OD.preparing_time,
-                OD.is_fast_delivery,
-                OD.user_id,
-                OD.total_quantity,
-                OD.total_price,
-                OD.payment_method,
-                OD.order_status,
-                OD.created_at AS order_created_at,
+            OD.id AS order_id,
+            OD.order_uid,
+            OD.preparing_time,
+            OD.is_fast_delivery,
+            OD.user_id,
+            OD.total_quantity,
+            OD.total_price,
+            OD.payment_method,
+            OD.order_status,
+            OD.created_at AS order_created_at,
 
-                OI.product_id,
-                OI.total_item_price,
+            OI.id AS order_item_id,
+            OI.product_id,
 
-                P.name AS product_name,
-                P.description AS product_description,
-                P.price AS product_price,
-                P.food_type,
+            -- Total price calculation including variant and addon prices
+            (P.price + IFNULL(PV.price, 0) + IFNULL(OIA.price, 0)) AS total_item_price,
 
-                UA.address,
-                UA.type,
-                UA.floor,
-                UA.landmark,
+            P.name AS product_name,
+            P.description AS product_description,
+            P.price AS product_price,
+            P.food_type,
 
-                u.firstname,
-                u.lastname,
-                u.phonenumber
+            UA.address,
+            UA.type,
+            UA.floor,
+            UA.landmark,
 
-            FROM order_details OD
+            u.firstname,
+            u.lastname,
+            u.phonenumber,
 
-            LEFT JOIN order_items OI ON OD.id = OI.order_id
-            LEFT JOIN products P ON OI.product_id = P.id
-            LEFT JOIN users u ON OD.user_id = u.id
-            LEFT JOIN user_addresses UA ON OD.user_address_id = UA.id
+            PV.id AS variant_id,
+            PV.type AS variant_type,
+            PV.value AS variant_value,
+            PV.price AS variant_price,
 
-            WHERE OD.vendor_id = ?
+            A.id AS addon_id,
+            A.name AS addon_name,
+            OIA.price AS addon_price
+
+            FROM 
+            order_details OD
+            LEFT JOIN 
+            order_items OI ON OD.id = OI.order_id
+            LEFT JOIN 
+            products P ON OI.product_id = P.id
+            LEFT JOIN 
+            users u ON OD.user_id = u.id
+            LEFT JOIN 
+            user_addresses UA ON OD.user_address_id = UA.id
+
+            -- Join variants
+            LEFT JOIN 
+            order_item_variants OIV ON OI.id = OIV.order_item_id
+            LEFT JOIN 
+            product_variants PV ON OIV.variant_id = PV.id
+
+            -- Join addons
+            LEFT JOIN 
+            order_item_addons OIA ON OI.id = OIA.order_item_id
+            LEFT JOIN 
+            addons A ON OIA.addon_id = A.id
+
+            WHERE 
+            OD.vendor_id = ?
+            ORDER BY 
+            OD.id DESC;
             ;
         `;
     
         db.query(query, [vendor_id], callback);
     },
-        getOrdersByOrderId : (order_id, callback) => {
+    getOrdersByOrderId : (order_id, callback) => {
         const query = `
             SELECT 
                 OD.id AS order_id,
@@ -123,7 +154,7 @@ const Order = {
             WHERE 
                 OD.id = ?;
         `;
-    
+
         db.query(query, [order_id], callback);
     },
     getAllOrders : (callback) => {

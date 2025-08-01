@@ -22,8 +22,12 @@ const createOrder = async (req, res) => {
         const order_uid = `ORD${Date.now()}`;
 
         cart.forEach((item) => {
+            const variant_price = item.variant_price || 0;
+            const addon_total = (item.addons || []).reduce((sum, a) => sum + a.price, 0);
+            const item_total_price = (item.price + variant_price + addon_total) * item.quantity;
+
             total_quantity += item.quantity;
-            total_price += item.quantity * item.price;
+            total_price += item_total_price;
         });
 
         OrderDetails.addOrder(
@@ -45,17 +49,62 @@ const createOrder = async (req, res) => {
 
                 try {
                     const itemPromises = cart.map((item, index) => {
-                        const { product_id, quantity, price } = item;
-                        const total_item_price = quantity * price;
+                        const {
+                            product_id,
+                            quantity,
+                            price,
+                            variant_id = null,
+                            variant_price = 0,
+                            addons = []
+                        } = item;
+
+                        const addon_total = addons.reduce((sum, a) => sum + a.price, 0);
+                        const total_item_price = (price + variant_price + addon_total) * quantity;
 
                         return new Promise((resolve, reject) => {
-                            OrderItem.addItem(order_id, user_id, product_id, quantity, price, total_item_price, (err, result) => {
-                                if (err) {
-                                    console.error(`Error adding item ${index + 1}:`, err);
-                                    return reject(err);
+                            OrderItem.addItem(
+                                order_id,
+                                user_id,
+                                product_id,
+                                quantity,
+                                price,
+                                total_item_price,
+                                variant_id,
+                                variant_price,
+                                async (err, result) => {
+                                    if (err) {
+                                        console.error(`Error adding item ${index + 1}:`, err);
+                                        return reject(err);
+                                    }
+
+                                    const order_item_id = result.insertId;
+
+                                    try {
+                                        const addonPromises = addons.map((addon) => {
+                                            return new Promise((resolveAddon, rejectAddon) => {
+                                                OrderItemAddon.addAddon(
+                                                    order_item_id,
+                                                    addon.addon_id,
+                                                    addon.price,
+                                                    (err) => {
+                                                        if (err) {
+                                                            console.error("Error adding addon:", err);
+                                                            return rejectAddon(err);
+                                                        }
+                                                        resolveAddon();
+                                                    }
+                                                );
+                                            });
+                                        });
+
+                                        await Promise.all(addonPromises);
+                                        resolve();
+                                    } catch (addonErr) {
+                                        console.error("Error adding addons:", addonErr);
+                                        reject(addonErr);
+                                    }
                                 }
-                                resolve(result);
-                            });
+                            );
                         });
                     });
 
@@ -64,56 +113,48 @@ const createOrder = async (req, res) => {
                     res.status(201).json({
                         message: "Order created successfully",
                         order_id,
-                        order_uid // return it to the frontend
+                        order_uid
                     });
 
-                    // Fetch user and address details
+                    // Optional: Notification logic (unchanged)
                     try {
                         const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
                         const username = userdata?.full_name || "User";
                         const addressText = userdata?.full_address || "No address found";
-
-                        // Extract product_ids and fetch their details
                         const productIds = cart.map(item => item.product_id);
-                        
-                        // Assuming you have a Product model method like this:
-                        // Product.getProductDetailsByIds(productIds, callback)
                         const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
 
-                        // Map product_id to detail for quick lookup
                         const productMap = {};
                         productDetails.forEach(prod => {
                             productMap[prod.id] = prod;
                         });
 
-                        // Enrich the cart
                         const enrichedCart = cart.map(item => ({
                             quantity: item.quantity,
                             price: item.price,
                             product_name: productMap[item.product_id]?.name || 'Unknown Product'
                         }));
-                        // Send notification with enriched cart
+
                         sendNotificationToUser({
                             userId: vendor_id,
                             title: "New Order Received",
                             body: `You have a new order #${order_id}`,
                             data: {
-                            order_id: order_id.toString(),
-                            order_uid: order_uid.toString(),
-                            type: "new_order",
-                            customer: username.toString(),
-                            customer_address: addressText.toString(),
-                            order_cart: JSON.stringify(enrichedCart), // Already a string
-                            is_fast_delivery: is_fast_delivery.toString()
+                                order_id: order_id.toString(),
+                                order_uid: order_uid.toString(),
+                                type: "new_order",
+                                customer: username.toString(),
+                                customer_address: addressText.toString(),
+                                order_cart: JSON.stringify(enrichedCart),
+                                is_fast_delivery: is_fast_delivery.toString()
                             }
                         });
-
                     } catch (fetchErr) {
                         console.warn("Order created, but failed to fetch user or product data:", fetchErr);
                     }
+
                 } catch (itemErr) {
-                    console.error("Error adding order items:", itemErr);
-                    // Don't send response here, it’s already sent above
+                    console.error("Error adding order items or addons:", itemErr);
                 }
             }
         );
@@ -124,6 +165,7 @@ const createOrder = async (req, res) => {
         }
     }
 };
+
 
 
 // accept order by vendor
@@ -609,11 +651,13 @@ const getOrdersByVendorId = (req, res) => {
         results.forEach(row => {
             const {
                 order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
-                payment_method, order_created_at,order_status,
+                payment_method, order_status, order_created_at, is_fast_delivery,
+                firstname, lastname, phonenumber,
+                address, type, floor, landmark,
                 product_id, product_name, product_description,
                 product_price, food_type, total_item_price,
-                address, type, floor, landmark,
-                firstname, lastname, phonenumber, is_fast_delivery
+                variant_id, variant_name, variant_price,
+                addon_id, addon_name, addon_price
             } = row;
 
             if (!ordersMap[order_id]) {
@@ -639,21 +683,48 @@ const getOrdersByVendorId = (req, res) => {
                 };
             }
 
-            ordersMap[order_id].items.push({
-                product_id,
-                product_name,
-                product_description,
-                product_price,
-                food_type,
-                total_item_price
-            });
+            const order = ordersMap[order_id];
+
+            // Find or add product
+            let product = order.items.find(item => item.product_id === product_id);
+            if (!product) {
+                product = {
+                    product_id,
+                    product_name,
+                    product_description,
+                    product_price,
+                    food_type,
+                    total_item_price,
+                    variants: [],
+                    addons: []
+                };
+                order.items.push(product);
+            }
+
+            // Add variant if exists and not already added
+            if (variant_id && !product.variants.find(v => v.variant_id === variant_id)) {
+                product.variants.push({
+                    variant_id,
+                    variant_name,
+                    variant_price
+                });
+            }
+
+            // Add addon if exists and not already added
+            if (addon_id && !product.addons.find(a => a.addon_id === addon_id)) {
+                product.addons.push({
+                    addon_id,
+                    addon_name,
+                    addon_price
+                });
+            }
         });
 
         const groupedOrders = Object.values(ordersMap);
         res.status(200).json(groupedOrders);
     });
-    
 };
+
 
 const orderHistory = async (req, res) => {
     const { user_id } = req.body;
