@@ -639,7 +639,7 @@ const verifyOtp = async (req, res) => {
 const getOrdersByVendorId = (req, res) => {
     const { vendor_id } = req.body;
 
-    OrderModel.getOrdersByVendorId(vendor_id, (err, results) => {
+    OrderModel.getOrdersByUserId(vendor_id, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
 
         if (!results || results.length === 0) {
