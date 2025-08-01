@@ -24,73 +24,69 @@ const Order = {
     getOrdersByUserId : (vendor_id, callback) => {
         const query = `
             SELECT 
-            OD.id AS order_id,
-            OD.order_uid,
-            OD.preparing_time,
-            OD.is_fast_delivery,
-            OD.user_id,
-            OD.total_quantity,
-            OD.total_price,
-            OD.payment_method,
-            OD.order_status,
-            OD.created_at AS order_created_at,
+                OD.id AS order_id,
+                OD.order_uid,
+                OD.preparing_time,
+                OD.is_fast_delivery,
+                OD.user_id,
+                OD.total_quantity,
+                OD.total_price,
+                OD.payment_method,
+                OD.order_status,
+                OD.created_at AS order_created_at,
 
-            OI.id AS order_item_id,
-            OI.product_id,
+                OI.id AS order_item_id,
+                OI.product_id,
 
-            -- Total price calculation including variant and addon prices
-            (P.price + IFNULL(PV.price, 0) + IFNULL(OIA.price, 0)) AS total_item_price,
+                -- Total item price = product + variant + addon
+                (P.price + IFNULL(PV.price, 0) + IFNULL(PA.price, 0)) AS total_item_price,
 
-            P.name AS product_name,
-            P.description AS product_description,
-            P.price AS product_price,
-            P.food_type,
+                P.name AS product_name,
+                P.description AS product_description,
+                P.price AS product_price,
+                P.food_type,
 
-            UA.address,
-            UA.type,
-            UA.floor,
-            UA.landmark,
+                UA.address,
+                UA.type,
+                UA.floor,
+                UA.landmark,
 
-            u.firstname,
-            u.lastname,
-            u.phonenumber,
+                U.firstname,
+                U.lastname,
+                U.phonenumber,
 
-            PV.id AS variant_id,
-            PV.type AS variant_type,
-            PV.value AS variant_value,
-            PV.price AS variant_price,
+                PV.id AS variant_id,
+                PV.type AS variant_type,
+                PV.value AS variant_value,
+                PV.price AS variant_price,
 
-            A.id AS addon_id,
-            A.name AS addon_name,
-            OIA.price AS addon_price
+                PA.id AS addon_id,
+                PA.name AS addon_name,
+                PA.price AS addon_price
 
             FROM 
-            order_details OD
+                order_details OD
             LEFT JOIN 
-            order_items OI ON OD.id = OI.order_id
+                order_items OI ON OD.id = OI.order_id
             LEFT JOIN 
-            products P ON OI.product_id = P.id
+                products P ON OI.product_id = P.id
             LEFT JOIN 
-            users u ON OD.user_id = u.id
+                users U ON OD.user_id = U.id
             LEFT JOIN 
-            user_addresses UA ON OD.user_address_id = UA.id
+                user_addresses UA ON OD.user_address_id = UA.id
 
-            -- Join variants
+            -- Join variant
             LEFT JOIN 
-            order_item_variants OIV ON OI.id = OIV.order_item_id
-            LEFT JOIN 
-            product_variants PV ON OIV.variant_id = PV.id
+                product_variants PV ON OI.variant_id = PV.id
 
-            -- Join addons
+            -- Join addon directly (no separate addons table)
             LEFT JOIN 
-            order_item_addons OIA ON OI.id = OIA.order_item_id
-            LEFT JOIN 
-            addons A ON OIA.addon_id = A.id
+                product_addons PA ON OI.product_id = PA.product_id
 
             WHERE 
-            OD.vendor_id = ?
+                OD.vendor_id = ?
             ORDER BY 
-            OD.id DESC;
+                OD.id DESC;
             ;
         `;
     

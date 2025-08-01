@@ -639,11 +639,11 @@ const verifyOtp = async (req, res) => {
 const getOrdersByVendorId = (req, res) => {
     const { vendor_id } = req.body;
 
-    OrderModel.getOrdersByUserId(vendor_id, (err, results) => {
+    OrderModel.getOrdersByVendorId(vendor_id, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
 
         if (!results || results.length === 0) {
-            return res.status(200).json({ message: "No order found for this user." });
+            return res.status(200).json({ message: "No order found for this vendor." });
         }
 
         const ordersMap = {};
@@ -651,13 +651,13 @@ const getOrdersByVendorId = (req, res) => {
         results.forEach(row => {
             const {
                 order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
-                payment_method, order_status, order_created_at, is_fast_delivery,
-                firstname, lastname, phonenumber,
-                address, type, floor, landmark,
+                payment_method, order_status, order_created_at,
                 product_id, product_name, product_description,
                 product_price, food_type, total_item_price,
-                variant_id, variant_name, variant_price,
-                addon_id, addon_name, addon_price
+                variant_id, variant_type, variant_value, variant_price,
+                addon_id, addon_name, addon_price,
+                address, type, floor, landmark,
+                firstname, lastname, phonenumber, is_fast_delivery
             } = row;
 
             if (!ordersMap[order_id]) {
@@ -665,8 +665,8 @@ const getOrdersByVendorId = (req, res) => {
                     order_id,
                     order_uid,
                     preparing_time,
-                    user_id,
                     is_fast_delivery,
+                    user_id,
                     total_quantity,
                     total_price,
                     payment_method,
@@ -683,40 +683,41 @@ const getOrdersByVendorId = (req, res) => {
                 };
             }
 
-            const order = ordersMap[order_id];
+            // Find if the item (product + variant) already exists
+            const existingItem = ordersMap[order_id].items.find(item =>
+                item.product_id === product_id &&
+                item.variant_id === variant_id
+            );
 
-            // Find or add product
-            let product = order.items.find(item => item.product_id === product_id);
-            if (!product) {
-                product = {
+            const addonObj = addon_id
+                ? {
+                    addon_id,
+                    addon_name,
+                    addon_price
+                }
+                : null;
+
+            if (existingItem) {
+                // Add addon to existing item
+                if (addonObj) {
+                    existingItem.addons.push(addonObj);
+                }
+            } else {
+                // Create new item with optional addon
+                const newItem = {
                     product_id,
                     product_name,
                     product_description,
                     product_price,
                     food_type,
                     total_item_price,
-                    variants: [],
-                    addons: []
-                };
-                order.items.push(product);
-            }
-
-            // Add variant if exists and not already added
-            if (variant_id && !product.variants.find(v => v.variant_id === variant_id)) {
-                product.variants.push({
                     variant_id,
-                    variant_name,
-                    variant_price
-                });
-            }
-
-            // Add addon if exists and not already added
-            if (addon_id && !product.addons.find(a => a.addon_id === addon_id)) {
-                product.addons.push({
-                    addon_id,
-                    addon_name,
-                    addon_price
-                });
+                    variant_type,
+                    variant_value,
+                    variant_price,
+                    addons: addonObj ? [addonObj] : []
+                };
+                ordersMap[order_id].items.push(newItem);
             }
         });
 
@@ -724,6 +725,7 @@ const getOrdersByVendorId = (req, res) => {
         res.status(200).json(groupedOrders);
     });
 };
+
 
 
 const orderHistory = async (req, res) => {
