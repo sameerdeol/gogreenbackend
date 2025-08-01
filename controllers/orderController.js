@@ -82,7 +82,7 @@ const createOrder = async (req, res) => {
                                     try {
                                         const addonPromises = addons.map((addon) => {
                                             return new Promise((resolveAddon, rejectAddon) => {
-                                                OrderItemAddon.addAddon(
+                                                OrderItem.addAddon(
                                                     order_item_id,
                                                     addon.addon_id,
                                                     addon.price,
