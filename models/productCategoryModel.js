@@ -87,7 +87,31 @@ const ProductCategory = {
     delete: (id, callback) => {
         const query = 'DELETE FROM product_categories WHERE id = ?';
         db.query(query, [id], callback);
+    },
+
+    getAllCategoriesWithSubcategories: (callback) => {
+        const query = `
+            SELECT 
+                c.id AS category_id,
+                c.name AS category_name,
+                s.id AS subcategory_id,
+                s.name AS subcategory_name,
+                s.*
+            FROM 
+                product_categories c
+            LEFT JOIN 
+                product_subcategories s ON c.id = s.category_id
+        `;
+        db.query(query, (err, results) => {
+            if (err) {
+                console.error("Error fetching categories with subcategories:", err);
+                return callback(err, null);
+            }
+            callback(null, results);
+        });
     }
+
+
 };
 
 module.exports = ProductCategory;

@@ -178,6 +178,39 @@ const deleteCategoryById = async (req, res) => {
     });
 };
 
+const getAllCatAndSubcat = (req, res) => {
+    ProductCategory.getAllCategoriesWithSubcategories((err, results) => {
+        if (err) return res.status(500).json({ success: false, message: 'Error fetching data', error: err });
+
+        const categoriesMap = {};
+
+        results.forEach(row => {
+            if (!categoriesMap[row.category_id]) {
+                categoriesMap[row.category_id] = {
+                    id: row.category_id,
+                    name: row.category_name,
+                    subcategories: []
+                };
+            }
+
+            if (row.subcategory_id) {
+                categoriesMap[row.category_id].subcategories.push({
+                    id: row.subcategory_id,
+                    name: row.subcategory_name,
+                    // Add other fields from s.* if needed
+                });
+            }
+        });
+
+        const categories = Object.values(categoriesMap);
+
+        res.status(200).json({
+            success: true,
+            categories
+        });
+    });
+};
+
 
 
 module.exports = {
@@ -186,5 +219,6 @@ module.exports = {
     getAllCategories,
     getCategoryById,
     updateCategoryById,
-    deleteCategoryById
+    deleteCategoryById,
+    getAllCatAndSubcat
 };
