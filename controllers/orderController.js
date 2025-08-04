@@ -22,12 +22,13 @@ const createOrder = async (req, res) => {
         const order_uid = `ORD${Date.now()}`;
 
         cart.forEach((item) => {
-            const variant_price = item.variant_price || 0;
-            const addon_total = (item.addons || []).reduce((sum, a) => sum + a.price, 0);
-            const item_total_price = (item.price + variant_price + addon_total) * item.quantity;
+            const variant_price = Number(item.variant_price || 0);
+            const addon_total = (item.addons || []).reduce((sum, a) => sum + Number(a.price || 0), 0);
+            const item_unit_price = Number(item.price || 0) + variant_price + addon_total;
+            const item_total_price = parseFloat((item_unit_price * item.quantity).toFixed(2));
 
             total_quantity += item.quantity;
-            total_price += item_total_price;
+            total_price = parseFloat((total_price + item_total_price).toFixed(2));
         });
 
         OrderDetails.addOrder(
@@ -58,8 +59,9 @@ const createOrder = async (req, res) => {
                             addons = []
                         } = item;
 
-                        const addon_total = addons.reduce((sum, a) => sum + a.price, 0);
-                        const total_item_price = (price + variant_price + addon_total) * quantity;
+                        const addon_total = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
+                        const item_unit_price = Number(price || 0) + Number(variant_price || 0) + addon_total;
+                        const total_item_price = parseFloat((item_unit_price * quantity).toFixed(2));
 
                         return new Promise((resolve, reject) => {
                             OrderItem.addItem(
@@ -67,10 +69,10 @@ const createOrder = async (req, res) => {
                                 user_id,
                                 product_id,
                                 quantity,
-                                price,
+                                Number(price),
                                 total_item_price,
                                 variant_id,
-                                variant_price,
+                                Number(variant_price),
                                 async (err, result) => {
                                     if (err) {
                                         console.error(`Error adding item ${index + 1}:`, err);
@@ -85,7 +87,7 @@ const createOrder = async (req, res) => {
                                                 OrderItem.addAddon(
                                                     order_item_id,
                                                     addon.addon_id,
-                                                    addon.price,
+                                                    Number(addon.price),
                                                     (err) => {
                                                         if (err) {
                                                             console.error("Error adding addon:", err);
@@ -165,6 +167,7 @@ const createOrder = async (req, res) => {
         }
     }
 };
+
 
 
 
