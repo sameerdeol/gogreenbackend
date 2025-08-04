@@ -27,6 +27,6 @@ router.put('/categories', verifyToken,uploadFields, updateCategoryById);
 // Route to delete a category - only managers can delete categories
 router.delete('/categories', checkManagerRole, deleteCategoryById);
 
-router.delete('/get-cateandsubcat', verifyToken, getAllCatAndSubcat);
+router.get('/get-cateandsubcat', verifyToken, getAllCatAndSubcat);
 
 module.exports = router;
