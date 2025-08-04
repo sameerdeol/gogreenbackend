@@ -15,7 +15,7 @@ const OrderItem = {
 
     // ✅ NEW METHOD: Add add-on to an order item
     addAddon: (order_item_id, addon_id, price, callback) => {
-        const sql = `INSERT INTO order_item_addons (order_item_id, addon_id, price) VALUES (?, ?, ?)`;
+        const sql = `INSERT INTO order_item_addons (order_item_id, addon_id, addon_price) VALUES (?, ?, ?)`;
         db.query(sql, [order_item_id, addon_id, price], callback);
     }
 };
