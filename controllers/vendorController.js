@@ -862,6 +862,27 @@ const vendorAnalytics = (req, res) => {
     });
 }
 
+const allVendorsforAdminbySubcatID = (req, res) => {
+    const { subcat_id } = req.params;
+    const user_id = req.user?.id;
+
+    if (!subcat_id) {
+        return res.status(400).json({ success: false, message: "Subcategory ID is required" });
+    }
+
+    Vendor.getVendorsBySubcat(user_id, subcat_id, (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ success: false, message: "Database error", error: err });
+        }
+
+        return res.status(200).json({
+            success: true,
+            vendors: results
+        });
+    });
+};
+
 
 module.exports = {
     vendorSignup,
@@ -880,5 +901,6 @@ module.exports = {
     updateVendorType,
     deleteVendorType,
     vendorBankDetails,
-    vendorAnalytics
+    vendorAnalytics,
+    allVendorsforAdminbySubcatID
 }; 
