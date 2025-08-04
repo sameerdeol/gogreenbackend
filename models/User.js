@@ -1168,7 +1168,7 @@ const User = {
                 SELECT 1 
                 FROM products p2 
                 WHERE p2.vendor_id = v.user_id 
-                    AND p2.subcat_id = ?
+                    AND p2.sub_category = ?
             )
         `;
         db.query(sql, [user_id, subcat_id], callback);
