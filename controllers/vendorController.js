@@ -870,7 +870,7 @@ const allVendorsforAdminbySubcatID = (req, res) => {
         return res.status(400).json({ success: false, message: "Subcategory ID is required" });
     }
 
-    Vendor.getVendorsBySubcat(user_id, subcat_id, (err, results) => {
+    User.getVendorsBySubcat(user_id, subcat_id, (err, results) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ success: false, message: "Database error", error: err });
