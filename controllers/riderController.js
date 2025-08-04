@@ -496,7 +496,7 @@ const vehicleDetails = (req, res) => {
 const riderStatus = (req, res) => {
     req.body.role_id = 4; // Force rider role_id
     const { user_id, status, role_id, rider_start_time, rider_close_time } = req.body;
-
+    console.log(role_id)
     if (!user_id || typeof status === 'undefined' || !role_id) {
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
