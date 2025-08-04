@@ -903,7 +903,7 @@ const User = {
                 r.vehicle_registration_number
             FROM users u
             JOIN delivery_partners r ON r.user_id = u.id
-            WHERE u.role_id = 4 and u.is_verified = 1;
+            WHERE u.role_id = 4 and u.is_verified = 1
         `;
 
         // Add conditionally WHERE clause if vendor_id is provided
