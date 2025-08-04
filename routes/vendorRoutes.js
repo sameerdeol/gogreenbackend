@@ -13,7 +13,7 @@ router.delete('/type/:id', verifyToken, vendorController.deleteVendorType);
 
 // Vendor Operations
 router.post('/vendor-verification', verifyToken, uploadFields, vendorController.vendorVerification);
-router.post('/update-vendorPassword', verifyToken, vendorController.updateVendorProfile);
+router.post('/update-vendorProfile', verifyToken, vendorController.updateVendorProfile);
 router.put('/update-vendorProfile', verifyToken, uploadFields, vendorController.updateVendorProfile);
 router.post('/vendor-login',  vendorController.vendorLogin); // Optional - remove verifyToken if login is public
 router.post('/vendor-signup',  vendorController.vendorSignup); // Optional - remove verifyToken if signup is public
@@ -22,7 +22,7 @@ router.post('/vendor-status', verifyToken, vendorController.vendorStatus);
 router.post('/send-vendorOtp',  userController.sendOTP); // If needed, implement in vendorController
 router.post('/reset-vendorPwd',  userController.resetPassword); // If needed, implement in vendorController
 router.post('/verifyotp',  userController.verifyOtp); // If needed, implement in vendorController
-router.put('/chnage-riderPwd', userController.changePassword); // If needed, implement in riderController
+router.put('/chnage-vendorPwd', userController.changePassword); // If needed, implement in riderController
 router.post('/all-vendors', verifyToken, vendorController.allVendors);
 router.post('/store-bussinessdetails', verifyToken, uploadFields, vendorController.storeBusinessDetails);
 router.post('/store-additionaldetails', verifyToken, uploadFields, vendorController.storeAdditionalDetails);
