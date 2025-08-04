@@ -494,32 +494,44 @@ const vehicleDetails = (req, res) => {
 
 
 const riderStatus = (req, res) => {
-    req.body.role_id = 4; // force role_id for rider
+    req.body.role_id = 4; // Force rider role_id
     const { user_id, status, role_id, rider_start_time, rider_close_time } = req.body;
 
     if (!user_id || typeof status === 'undefined' || !role_id) {
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
 
-    if ([1, 2].includes(parseInt(role_id))) {
-        return res.status(403).json({ success: false, message: 'You are not allowed to update the status.' });
+    let deactivated_by = null;
+
+    if (parseInt(status) === 0) {
+        if ([1, 2].includes(parseInt(role_id))) {
+            deactivated_by = 'admin';
+        } else if (parseInt(role_id) === 4) {
+            deactivated_by = 'self';
+        } else {
+            return res.status(403).json({ success: false, message: 'Invalid role for status update.' });
+        }
     }
 
-    const updateData = {
+    const updateFields = {
         user_id,
         status,
-        ...(rider_start_time && { rider_start_time }),
-        ...(rider_close_time && { rider_close_time })
+        deactivated_by
     };
 
-    User.userStatus(updateData, (err, success) => {
+    if (rider_start_time) updateFields.rider_start_time = rider_start_time;
+    if (rider_close_time) updateFields.rider_close_time = rider_close_time;
+
+    User.riderStatus(updateFields, (err, user) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
-        if (!success) {
-            return res.status(404).json({ success: false, message: 'User not found or no update performed.' });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
+
         return res.status(200).json({
             success: true,
             message: "Rider status updated successfully",
