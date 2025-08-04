@@ -736,7 +736,7 @@ const User = {
     getTravelDistance: async (vendorLat, vendorLng, user_id, user_address_id) => {
         return new Promise((resolve, reject) => {
             const sql = `
-                SELECT customer_lat, customer_lng
+                SELECT customer_lat, customer_lat
                 FROM user_addresses
                 WHERE user_id = ? AND id = ?
             `;
