@@ -197,6 +197,7 @@ const getAllCatAndSubcat = (req, res) => {
                 categoriesMap[row.category_id].subcategories.push({
                     id: row.subcategory_id,
                     name: row.subcategory_name,
+                    image: row.subcategory_logo
                     // Add other fields from s.* if needed
                 });
             }
