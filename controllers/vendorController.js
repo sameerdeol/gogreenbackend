@@ -400,7 +400,7 @@ const vendorStatus = (req, res) => {
     if (vendor_start_time) updateFields.vendor_start_time = vendor_start_time;
     if (vendor_close_time) updateFields.vendor_close_time = vendor_close_time;
 
-    User.vendorStatus(updateFields, (err, user) => {
+    User.Status(updateFields, (err, user) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ success: false, message: 'Database error', error: err });

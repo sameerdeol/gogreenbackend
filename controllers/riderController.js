@@ -522,7 +522,7 @@ const riderStatus = (req, res) => {
     if (rider_start_time) updateFields.rider_start_time = rider_start_time;
     if (rider_close_time) updateFields.rider_close_time = rider_close_time;
 
-    User.riderStatus(updateFields, (err, user) => {
+    User.Status(updateFields, (err, user) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ success: false, message: 'Database error', error: err });

@@ -592,7 +592,7 @@ const User = {
         });
     },
 
-    vendorStatus: (data, callback) => {
+    Status: (data, callback) => {
         const { user_id, status, deactivated_by, vendor_start_time, vendor_close_time } = data;
 
         // Update vendors table
