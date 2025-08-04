@@ -2,11 +2,11 @@ const db = require('../config/db'); // Import your database connection
 
 const UserAddress = {
     // Create a new address
-    create: (user_id, address,floor, landmark, type, callback) => {
+    create: (user_id, address,floor, landmark, type, customer_lat, customer_lng, callback) => {
         const sql = `
-            INSERT INTO user_addresses (user_id, address, floor, landmark, type)
-            VALUES (?, ?, ?, ?, ?)`;
-        db.query(sql, [user_id, address,floor, landmark, type], callback);
+            INSERT INTO user_addresses (user_id, address, floor, landmark, type, customer_lat, customer_lng)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        db.query(sql, [user_id, address,floor, landmark, type, customer_lat, customer_lng], callback);
     },
 
     // Get all addresses of a specific user
