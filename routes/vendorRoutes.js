@@ -22,7 +22,7 @@ router.post('/vendor-status', verifyToken, vendorController.vendorStatus);
 router.post('/send-vendorOtp',  userController.sendOTP); // If needed, implement in vendorController
 router.post('/reset-vendorPwd',  userController.resetPassword); // If needed, implement in vendorController
 router.post('/verifyotp',  userController.verifyOtp); // If needed, implement in vendorController
-router.put('/chnage-vendorPwd', userController.changePassword); // If needed, implement in riderController
+router.put('/change-vendorPwd', userController.changePassword); // If needed, implement in riderController
 router.post('/all-vendors', verifyToken, vendorController.allVendors);
 router.post('/store-bussinessdetails', verifyToken, uploadFields, vendorController.storeBusinessDetails);
 router.post('/store-additionaldetails', verifyToken, uploadFields, vendorController.storeAdditionalDetails);
