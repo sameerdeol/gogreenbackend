@@ -899,10 +899,11 @@ const User = {
                 r.profile_pic,
                 r.rider_lat,
                 r.rider_lng,
-                r.user_id AS rider_id
+                r.user_id AS rider_id,
+                r.vehicle_registration_number
             FROM users u
             JOIN delivery_partners r ON r.user_id = u.id
-            WHERE u.role_id = 4
+            WHERE u.role_id = 4 and u.is_verified = 1;
         `;
 
         // Add conditionally WHERE clause if vendor_id is provided
