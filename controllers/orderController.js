@@ -229,9 +229,9 @@ const updateOrderStatus = async (req, res) => {
 
                 // Notify nearby riders
                 const nearbyRiders = await User.getNearbyRiders(vendor_lat, vendor_lng, 3);
-                // const customerVendorDistance = await User.getTravelDistance(vendor_lat, vendor_lng,user_id,user_address_id);
+                const customerVendorDistance = await User.getTravelDistance(vendor_lat, vendor_lng,user_id,user_address_id);
                 console.log("riders are",nearbyRiders)
-                // console.log("vendor and customer distance",customerVendorDistance)
+                console.log("vendor and customer distance",customerVendorDistance)
                 for (const rider of nearbyRiders) {
                     notifications.push(sendNotificationToUser({
                         userId: rider.user_id,
@@ -242,7 +242,7 @@ const updateOrderStatus = async (req, res) => {
                             type: "new_order",
                             vendor_id: vendor_id.toString(),
                             distance_from_vendor: rider.distance_km.toString(),
-                            // distance_from_vendor_to_customer: customerVendorDistance.distance_km.toString(),
+                            distance_from_vendor_to_customer: customerVendorDistance.distance_km.toString(),
                         }
                     }));
                 }
