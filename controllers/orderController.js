@@ -31,6 +31,11 @@ const createOrder = async (req, res) => {
             total_price = parseFloat((total_price + item_total_price).toFixed(2));
         });
 
+        // ✅ Add $3 if fast delivery is selected
+        if (is_fast_delivery) {
+            total_price = parseFloat((total_price + 3).toFixed(2));
+        }
+
         OrderDetails.addOrder(
             user_id,
             total_quantity,
@@ -822,5 +827,27 @@ const orderHistory = async (req, res) => {
     });
 };
 
+const acceptOrderbyRider = async (req, res, io) => {
+  const { orderId, riderId } = req.body;
 
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory};
+  try {
+    const isAccepted = await OrderModel.acceptOrder(orderId, riderId);
+
+    if (!isAccepted) {
+    return res.status(400).json({ success: false, message: 'Order already accepted' });
+    }
+
+
+    // Emit event to all riders to stop buzzer
+    io.emit(`stop-buzzer-${orderId}`, { orderId });
+
+    return res.status(200).json({ success: true, message: 'Order accepted by rider' });
+  } catch (error) {
+    console.error("Error in acceptOrderbyRider:", error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+
+
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, acceptOrderbyRider};
