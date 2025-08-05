@@ -31,7 +31,7 @@ app.options('*', cors());
 
 // ✅ Socket.IO setup
 require('./sockets/orderSocket')(io);
-
+require('./sockets/vendorSocket')(io);
 // Import Routes
 const userRoutes = require('./routes/userRoutes');
 const vendorRoutes = require('./routes/vendorRoutes');

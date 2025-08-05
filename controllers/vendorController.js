@@ -607,7 +607,7 @@ const storeBusinessDetails = async (req, res) => {
     }
 };
 
-const storeAdditionalDetails = async (req, res) => {
+const storeAdditionalDetails = async (req, res) => {    
     try {
         const { user_id } = req.body;
 
@@ -650,6 +650,13 @@ const storeAdditionalDetails = async (req, res) => {
                 });
             }
 
+            // ✅ Emit socket event to 'admins' room
+            const io = req.app.get('io');
+            io.to('admins').emit('vendor_verification_pending', {
+                user_id,
+                message: `Vendor ID ${user_id} submitted all required documents and is awaiting verification.`
+            });
+
             return res.status(200).json({
                 success: true,
                 message: 'Store details stored successfully'
@@ -667,6 +674,7 @@ const storeAdditionalDetails = async (req, res) => {
         }
     }
 };
+
 
 
 
