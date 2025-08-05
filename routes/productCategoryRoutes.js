@@ -9,7 +9,7 @@ const {
     updateCategoryById,
     deleteCategoryById,
     getAllCategories,
-    getAllCatAndSubcat
+    getAllCatAndVendor
 } = require('../controllers/productCategoryController');
 
 // Route to create a new category - only managers can create categories
@@ -27,6 +27,6 @@ router.put('/categories', verifyToken,uploadFields, updateCategoryById);
 // Route to delete a category - only managers can delete categories
 router.delete('/categories', checkManagerRole, deleteCategoryById);
 
-router.get('/get-cateandsubcat', verifyToken, getAllCatAndSubcat);
+router.get('/get-cateandrelatedvendor', verifyToken, getAllCatAndVendor );
 
 module.exports = router;

@@ -178,34 +178,52 @@ const deleteCategoryById = async (req, res) => {
     });
 };
 
-const getAllCatAndSubcat = (req, res) => {
-    ProductCategory.getAllCategoriesWithSubcategories((err, results) => {
-        if (err) return res.status(500).json({ success: false, message: 'Error fetching data', error: err });
+const getAllCatAndVendor = (req, res) => {
+    const user_id = req.query.user_id || 0; // pass user_id from query
 
-        const categoriesMap = {};
+    ProductCategory.getAllCategoriesWithVendors(user_id, (err, results) => {
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error fetching categories with vendors',
+                error: err
+            });
+        }
+
+        const categoryMap = {};
 
         results.forEach(row => {
-            if (!categoriesMap[row.category_id]) {
-                categoriesMap[row.category_id] = {
+            if (!categoryMap[row.category_id]) {
+                categoryMap[row.category_id] = {
                     id: row.category_id,
                     name: row.category_name,
-                    subcategories: []
+                    vendors: []
                 };
             }
 
-            if (row.subcategory_id) {
-                categoriesMap[row.category_id].subcategories.push({
-                    id: row.subcategory_id,
-                    name: row.subcategory_name,
-                    image: row.subcategory_logo
-                    // Add other fields from s.* if needed
-                });
-            }
+            categoryMap[row.category_id].vendors.push({
+                vendor_id: row.vendor_id,
+                firstname: row.firstname,
+                lastname: row.lastname,
+                email: row.email,
+                prefix: row.prefix,
+                phonenumber: row.phonenumber,
+                status: row.status,
+
+                store_address: row.store_address,
+                sin_code: row.sin_code,
+                store_name: row.store_name,
+                profile_pic: row.profile_pic,
+                store_image: row.store_image,
+                vendor_thumb: row.vendor_thumb,
+                vendor_start_time: row.vendor_start_time,
+                vendor_close_time: row.vendor_close_time
+            });
         });
 
-        const categories = Object.values(categoriesMap);
+        const categories = Object.values(categoryMap);
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             categories
         });
@@ -221,5 +239,5 @@ module.exports = {
     getCategoryById,
     updateCategoryById,
     deleteCategoryById,
-    getAllCatAndSubcat
+    getAllCatAndVendor
 };
