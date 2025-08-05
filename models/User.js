@@ -1173,50 +1173,43 @@ const User = {
         });
     },
 
-    getAllCategoriesWithVendors: (user_id, callback) => {
-        const query = `
+    getVendorsBySubcat : (user_id, subcat_id, callback) => {
+        const sql = `
             SELECT 
-                c.id AS category_id,
-                c.name AS category_name,
-
-                MAX(u.firstname) AS firstname, 
-                MAX(u.lastname) AS lastname, 
-                MAX(u.email) AS email, 
-                MAX(u.prefix) AS prefix, 
-                MAX(u.phonenumber) AS phonenumber,
-                MAX(u.status) AS status,
-
-                MAX(v.store_address) AS store_address, 
-                MAX(v.sin_code) AS sin_code, 
-                MAX(v.store_name) AS store_name, 
-                MAX(v.profile_pic) AS profile_pic, 
+                u.firstname, 
+                u.lastname, 
+                u.email, 
+                u.prefix, 
+                u.phonenumber,
+                u.status,
+                v.store_address, 
+                v.sin_code, 
+                v.store_name, 
+                v.profile_pic, 
                 v.user_id AS vendor_id,
-                MAX(v.store_image) AS store_image,
-                MAX(v.vendor_thumb) AS vendor_thumb,
-                MAX(v.vendor_start_time) AS vendor_start_time,
-                MAX(v.vendor_close_time) AS vendor_close_time
-
-            FROM product_categories c
-
-            INNER JOIN products p ON p.category_id = c.id
-            INNER JOIN vendors v ON v.user_id = p.vendor_id
-            INNER JOIN users u ON u.id = v.user_id
-
+                v.store_image,
+                v.vendor_thumb,
+                v.vendor_start_time,
+                v.vendor_close_time,
+                IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
+                (
+                    SELECT GROUP_CONCAT(DISTINCT p.featured_image)
+                    FROM products p
+                    WHERE p.vendor_id = v.user_id
+                ) AS featured_images
+            FROM users u
+            JOIN vendors v ON v.user_id = u.id
             LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
-
-            WHERE u.is_verified = 1 AND u.status = 1
-
-            GROUP BY c.id, v.user_id
-            ORDER BY c.name ASC;
+            WHERE u.is_verified = 1 
+            AND u.status = 1
+            AND EXISTS (
+                SELECT 1 
+                FROM products p2 
+                WHERE p2.vendor_id = v.user_id 
+                    AND p2.sub_category = ?
+            )
         `;
-
-        db.query(query, [user_id], (err, results) => {
-            if (err) {
-                console.error("Error in getAllCategoriesWithVendors:", err);
-                return callback(err, null);
-            }
-            callback(null, results);
-        });
+        db.query(sql, [user_id, subcat_id], callback);
     }
 
 

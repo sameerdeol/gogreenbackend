@@ -179,9 +179,7 @@ const deleteCategoryById = async (req, res) => {
 };
 
 const getAllCatAndVendor = (req, res) => {
-    const user_id = req.query.user_id || 0; // pass user_id from query
-
-    ProductCategory.getAllCategoriesWithSubcategories(user_id, (err, results) => {
+    ProductCategory.getAllCategoriesWithVendors((err, results) => {
         if (err) {
             return res.status(500).json({
                 success: false,
@@ -209,7 +207,6 @@ const getAllCatAndVendor = (req, res) => {
                 prefix: row.prefix,
                 phonenumber: row.phonenumber,
                 status: row.status,
-
                 store_address: row.store_address,
                 sin_code: row.sin_code,
                 store_name: row.store_name,
@@ -229,6 +226,7 @@ const getAllCatAndVendor = (req, res) => {
         });
     });
 };
+
 
 
 
