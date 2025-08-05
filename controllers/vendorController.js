@@ -654,6 +654,7 @@ const storeAdditionalDetails = async (req, res) => {
             const io = req.app.get('io');
             io.to('admins').emit('vendor_verification_pending', {
                 user_id,
+                type:'verification_request',
                 message: `Vendor ID ${user_id} submitted all required documents and is awaiting verification.`
             });
 
