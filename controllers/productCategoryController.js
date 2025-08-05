@@ -181,7 +181,7 @@ const deleteCategoryById = async (req, res) => {
 const getAllCatAndVendor = (req, res) => {
     const user_id = req.query.user_id || 0; // pass user_id from query
 
-    ProductCategory.getAllCategoriesWithVendors(user_id, (err, results) => {
+    ProductCategory.getAllCategoriesWithSubcategories(user_id, (err, results) => {
         if (err) {
             return res.status(500).json({
                 success: false,
