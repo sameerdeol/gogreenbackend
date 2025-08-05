@@ -209,22 +209,22 @@ const Order = {
             order_details OD
 
         -- Customer
-        JOIN users U ON U.id = OD.user_id
+        LEFT JOIN users U ON U.id = OD.user_id
 
         -- Vendor
-        JOIN users VU ON VU.id = OD.vendor_id
-        JOIN vendors V ON V.user_id = OD.vendor_id
+        LEFT JOIN users VU ON VU.id = OD.vendor_id
+        LEFT JOIN vendors V ON V.user_id = OD.vendor_id
 
         -- Rider (optional)
         LEFT JOIN users R ON R.id = OD.rider_id
         LEFT JOIN delivery_partners DP ON DP.user_id = OD.rider_id
 
         -- Address
-        JOIN user_addresses UA ON UA.id = OD.user_address_id
+        LEFT JOIN user_addresses UA ON UA.id = OD.user_address_id
 
         -- Order items and products
-        JOIN order_items OI ON OI.order_id = OD.id
-        JOIN products P ON P.id = OI.product_id
+        LEFT JOIN order_items OI ON OI.order_id = OD.id
+        LEFT JOIN products P ON P.id = OI.product_id
 
         -- Subquery to get one gallery image per product
         LEFT JOIN (
@@ -388,7 +388,23 @@ const Order = {
         `;
 
         db.query(query, [user_id], callback);
+    },
+    acceptOrder: (orderId, riderId) => {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                UPDATE order_details 
+                SET rider_status = ?, rider_id = ? 
+                WHERE id = ? AND rider_status = 0
+            `;
+            const values = [2, riderId, orderId]; // 2 = Accepted
+
+            db.query(sql, values, (err, result) => {
+                if (err) return reject(err);
+                resolve(result.affectedRows > 0); // true if the row was updated
+            });
+        });
     }
+
 
 
 };
