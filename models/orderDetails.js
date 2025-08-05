@@ -22,9 +22,17 @@ const OrderDetails = {
     
     getUserIdByOrderId: (order_id, callback) => {
         const sql = `
-            SELECT o.user_id,v.store_name,v.vendor_lat,v.vendor_lng,o.user_address_id
+            SELECT 
+            o.user_id,
+            v.store_name,
+            v.vendor_lat,
+            v.vendor_lng,
+            o.user_address_id,
+            v.store_address,
+            ua.address
             FROM order_details o
-            JOIN vendors v on v.user_id=o.vendor_id 
+            JOIN vendors v on v.user_id=o.vendor_id
+            JOIN user_addresses ua on ua.user_id=o.user_id 
             WHERE o.id = ?
         `;
         db.query(sql, [order_id], callback);

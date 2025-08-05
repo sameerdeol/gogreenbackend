@@ -217,7 +217,7 @@ const updateOrderStatus = async (req, res) => {
             console.warn("User not found for notification");
             return res.status(200).json({ message: "Order updated, but user notification skipped" });
         }
-        const { user_id, store_name, vendor_lat, vendor_lng, user_address_id } = userResult[0];
+        const { user_id, store_name, vendor_lat, vendor_lng, user_address_id, store_address, address } = userResult[0];
 
         // Step 4: Handle notification logic
         const orderIdStr = order_id.toString();
@@ -248,7 +248,10 @@ const updateOrderStatus = async (req, res) => {
                             vendor_id: vendor_id.toString(),
                             distance_from_vendor: rider.distance_km.toString(),
                             distance_from_vendor_to_customer: customerVendorDistance.distance_km.toString(),
-                        }
+                            vendor_address: store_address,
+                            user_address: address,
+                            vendor_name: store_name
+                        }  
                     }));
                 }
                 break;
