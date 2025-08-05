@@ -2,37 +2,41 @@ const { acceptOrder } = require('../controllers/orderController'); // Adjust pat
 
 module.exports = (io) => {
   io.on('connection', (socket) => {
-    console.log('A user connected');
+    console.log(`[Socket Connected] ID: ${socket.id}`);
 
     // Rider joins the order room
     socket.on('joinOrderRoom', (orderId) => {
       socket.join(`order_${orderId}`);
-      console.log(`Rider joined room: order_${orderId}`);
+      console.log(`[Join Room] Rider ${socket.id} joined room: order_${orderId}`);
     });
 
     // Rider accepts the order
     socket.on('acceptOrder', ({ orderId, riderId }) => {
+      console.log(`[Accept Order Attempt] Rider: ${riderId}, Order: ${orderId}`);
+
       acceptOrder(orderId, riderId)
         .then((success) => {
           if (success) {
-            // Notify other riders to stop their buzzers
+            console.log(`[Order Accepted] Order ${orderId} accepted by Rider ${riderId}`);
+
+            // Notify other riders in room
             socket.to(`order_${orderId}`).emit('stopBuzzer', { orderId });
 
             // Notify the rider who accepted
             socket.emit('orderAccepted', { success: true });
           } else {
-            // Notify the rider that acceptance failed (already taken)
+            console.warn(`[Order Already Accepted] Rider: ${riderId}, Order: ${orderId}`);
             socket.emit('orderAccepted', { success: false });
           }
         })
         .catch((err) => {
-          console.error(err);
+          console.error(`[Error] acceptOrder failed for Rider: ${riderId}, Order: ${orderId}`, err);
           socket.emit('orderAccepted', { success: false, error: 'Server error' });
         });
     });
 
     socket.on('disconnect', () => {
-      console.log('User disconnected');
+      console.log(`[Socket Disconnected] ID: ${socket.id}`);
     });
   });
 };

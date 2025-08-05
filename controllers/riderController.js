@@ -18,6 +18,9 @@ const riderSignup = async (req, res) => {
             password,
             role_id,
             phonenumber,
+            other_phone_number,
+            dob,
+            address,
             prefix,
             googleauthToken,
         } = req.body;
@@ -119,6 +122,9 @@ const riderSignup = async (req, res) => {
                     role_id: 4,
                     custom_id,
                     is_verified: 0,
+                    other_phone_number, // ✅ NEW
+                    dob,                // ✅ NEW
+                    address             // ✅ NEW
                 };
                 User.insertUser(userData, (err, userResult) => {
                     if (err) {

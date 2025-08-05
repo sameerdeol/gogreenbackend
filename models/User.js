@@ -47,21 +47,59 @@ const User = {
     },
 
     insertUser: (userData, callback) => {
-        const allowedFields = ["username", "firstname", "lastname", "password", "prefix", "phonenumber", "email", "role_id", "is_verified", "custom_id"];
-        
-        // Filter only available fields
-        const fields = Object.keys(userData).filter(key => allowedFields.includes(key) && userData[key] !== undefined);
-        
+        const allowedFields = [
+            "username", "firstname", "lastname", "password", "prefix",
+            "phonenumber", "email", "role_id", "is_verified", "custom_id",
+            "other_phone_number", "dob", "address"
+        ];
+
+        // Prepare user insert
+        const fields = Object.keys(userData).filter(
+            key => allowedFields.includes(key) && userData[key] !== undefined
+        );
+
         if (fields.length === 0) {
             return callback(new Error("No valid fields provided"), null);
         }
-    
+
         const placeholders = fields.map(() => "?").join(", ");
         const query = `INSERT INTO users (${fields.join(", ")}) VALUES (${placeholders})`;
         const values = fields.map(field => userData[field]);
-    
-        db.query(query, values, callback);
+
+        db.query(query, values, (err, result) => {
+            if (err) return callback(err, null);
+
+            const user_id = result.insertId;
+
+            // Extract delivery partner fields safely
+            const other_phone_number = userData.other_phone_number;
+            const dob = userData.dob;
+            const address = userData.address;
+
+            // Only insert into delivery_partners if any of these are provided
+            if (other_phone_number || dob || address) {
+                const deliveryPartnerData = { user_id };
+
+                if (other_phone_number) deliveryPartnerData.other_phone_number = other_phone_number;
+                if (dob) deliveryPartnerData.dob = dob;
+                if (address) deliveryPartnerData.address = address;
+
+                const dpFields = Object.keys(deliveryPartnerData);
+                const dpPlaceholders = dpFields.map(() => "?").join(", ");
+                const dpQuery = `INSERT INTO delivery_partners (${dpFields.join(", ")}) VALUES (${dpPlaceholders})`;
+                const dpValues = dpFields.map(field => deliveryPartnerData[field]);
+
+                db.query(dpQuery, dpValues, (dpErr) => {
+                    if (dpErr) return callback(dpErr, null);
+                    return callback(null, result); // ✅ Both inserted successfully
+                });
+            } else {
+                // Skip delivery_partners insert
+                return callback(null, result);
+            }
+        });
     },
+
     findByEmailForVendorRider: (email,role_id, callback) => {
         if (!email || typeof email !== 'string' || !email.match(/\S+@\S+\.\S+/)) {
             return callback(null, { success: false, message: "Invalid email format" });

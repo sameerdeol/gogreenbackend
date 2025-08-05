@@ -99,8 +99,12 @@ const ProductCategory = {
                 s.*
             FROM 
                 product_categories c
-            LEFT JOIN 
+            INNER JOIN 
                 product_subcategories s ON c.id = s.category_id
+            INNER JOIN 
+                products p ON p.sub_category = s.id
+            GROUP BY 
+                s.id
         `;
         db.query(query, (err, results) => {
             if (err) {
@@ -110,7 +114,6 @@ const ProductCategory = {
             callback(null, results);
         });
     }
-
 
 };
 
