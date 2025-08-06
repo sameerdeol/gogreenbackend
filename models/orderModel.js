@@ -81,7 +81,10 @@ const Order = {
 
             -- Join addon directly (no separate addons table)
             LEFT JOIN 
-                product_addons PA ON OI.product_id = PA.product_id
+                order_item_addons OIA ON OIA.order_item_id = OI.id
+            LEFT JOIN 
+                product_addons PA ON OIA.addon_id = PA.id
+
 
             WHERE 
                 OD.vendor_id = ?
