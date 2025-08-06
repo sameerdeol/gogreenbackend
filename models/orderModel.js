@@ -86,7 +86,7 @@ const Order = {
             WHERE 
                 OD.vendor_id = ?
             ORDER BY 
-                OD.id DESC;
+                OD.created_at DESC;
             ;
         `;
     
