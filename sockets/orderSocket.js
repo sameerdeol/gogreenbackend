@@ -10,19 +10,20 @@ module.exports = (io) => {
       console.log(`[Join Room] Rider ${socket.id} joined room: order_${orderId}`);
     });
 
-    // Rider accepts the order
+    // Rider accepts the order (use common method)
     socket.on('acceptOrder', ({ orderId, riderId }) => {
       console.log(`[Accept Order Attempt] Rider: ${riderId}, Order: ${orderId}`);
 
-      OrderModel.acceptOrder(orderId, riderId)
+      // 2 = accepted status
+      OrderModel.handleOrder(orderId, riderId, 2)
         .then((success) => {
           if (success) {
             console.log(`[Order Accepted] Order ${orderId} accepted by Rider ${riderId}`);
 
-            // Notify other riders in room
+            // Notify other riders to stop buzzer
             socket.to(`order_${orderId}`).emit('stopBuzzer', { orderId });
 
-            // Notify the rider who accepted
+            // Notify current rider
             socket.emit('orderAccepted', { success: true });
           } else {
             console.warn(`[Order Already Accepted] Rider: ${riderId}, Order: ${orderId}`);

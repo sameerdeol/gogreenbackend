@@ -392,21 +392,22 @@ const Order = {
 
         db.query(query, [user_id], callback);
     },
-    acceptOrder: (orderId, riderId) => {
-        return new Promise((resolve, reject) => {
-            const sql = `
-                UPDATE order_details 
-                SET rider_status = ?, rider_id = ? 
-                WHERE id = ? AND rider_status = 0
-            `;
-            const values = [2, riderId, orderId]; // 2 = Accepted
+    handleOrder: (orderId, riderId, riderStatus) => {
+    return new Promise((resolve, reject) => {
+        const sql = `
+        UPDATE order_details 
+        SET rider_status = ?, rider_id = ? 
+        WHERE id = ? AND rider_status = 0
+        `;
+        const values = [riderStatus, riderId, orderId];
 
-            db.query(sql, values, (err, result) => {
-                if (err) return reject(err);
-                resolve(result.affectedRows > 0); // true if the row was updated
-            });
+        db.query(sql, values, (err, result) => {
+        if (err) return reject(err);
+        resolve(result.affectedRows > 0);
         });
+    });
     },
+
     getOrderandRiderDetails: (order_id, callback) => {
         const sql = `SELECT 
                         OD.user_id as customer_id,
