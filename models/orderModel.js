@@ -403,7 +403,18 @@ const Order = {
                 resolve(result.affectedRows > 0); // true if the row was updated
             });
         });
-    }
+    },
+    getOrderandRiderDetails: (order_id, callback) => {
+        const sql = `SELECT 
+                        OD.user_id as customer_id,
+                        U.firstname as rider_firstname,
+                        U.lastname as rider_last_name,
+                        U.phonenumber as rider_number
+                    FROM order_details OD
+                    join users U on U.id = OD.rider_id
+                    WHERE OD.id = ?`;
+        db.query(sql, [order_id], callback);
+    },
 
 
 
