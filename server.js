@@ -13,10 +13,11 @@ const server = http.createServer(app);
 
 // Initialize Socket.IO
 const io = new Server(server, {
+  path: '/delievery-api/socket.io',
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  },
+    origin: '*', // adjust if needed
+    methods: ['GET', 'POST']
+  }
 });
 app.set('io', io);
 
