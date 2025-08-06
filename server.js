@@ -15,10 +15,11 @@ const server = http.createServer(app);
 const io = new Server(server, {
   path: '/delievery-api/socket.io',
   cors: {
-    origin: '*', // adjust if needed
+    origin: '*',
     methods: ['GET', 'POST']
   }
 });
+
 app.set('io', io);
 
 // Middleware

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Socket.IO Public URL Test</title>
+</head>
+<body>
+  <h1>Socket.IO Role Test on Production</h1>
+  <button onclick="joinAsAdmin()">Join as Admin</button>
+  <button onclick="joinAsVendor()">Join as Vendor</button>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    // ✅ Connect to your public Socket.IO server via Apache reverse proxy
+    const socket = io('https://cx.ekarigar.com', {
+      path: '/delievery-api/socket.io',
+      transports: ['websocket'], // Optional: forces WebSocket (avoid polling issues)
+      secure: true
+    });
+
+    socket.on('connect', () => {
+      console.log(`✅ Connected to server with ID: ${socket.id}`);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('❌ Disconnected from server');
+    });
+
+    function joinAsAdmin() {
+      socket.emit('join', { role: 'admin' });
+      console.log('🔔 Sent join as admin');
+    }
+
+    function joinAsVendor() {
+      socket.emit('join', { role: 'vendor' });
+      console.log('🔔 Sent join as vendor');
+    }
+  </script>
+</body>
+</html>
