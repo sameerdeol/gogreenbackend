@@ -1,4 +1,4 @@
-const OrderModel = require('../models/OrderModel'); // ✅ Adjust path if needed
+const { acceptOrder } = require('../controllers/orderController'); // Adjust path if needed
 
 module.exports = (io) => {
   io.on('connection', (socket) => {
@@ -14,7 +14,7 @@ module.exports = (io) => {
     socket.on('acceptOrder', ({ orderId, riderId }) => {
       console.log(`[Accept Order Attempt] Rider: ${riderId}, Order: ${orderId}`);
 
-      OrderModel.acceptOrder(orderId, riderId)
+      acceptOrder(orderId, riderId)
         .then((success) => {
           if (success) {
             console.log(`[Order Accepted] Order ${orderId} accepted by Rider ${riderId}`);
