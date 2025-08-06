@@ -13,7 +13,7 @@ const {
   verifyOtp,
   getAllOrders,
   orderHistory,
-  acceptOrderbyRider
+  // acceptOrderbyRider
 } = require("../controllers/orderController");
 
 // Accept `io` when initializing routes
@@ -29,9 +29,9 @@ module.exports = (io) => {
   router.post('/orderhistorybyuserid', verifyToken, orderHistory);
 
   // 🛠️ Pass `io` to the controller function
-  router.post('/accept-orderbyrider', verifyToken, (req, res) =>
-    acceptOrderbyRider(req, res, io)
-  );
+  // router.post('/accept-orderbyrider', verifyToken, (req, res) =>
+  //   acceptOrderbyRider(req, res, io)
+  // );
 
   return router;
 };
