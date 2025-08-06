@@ -1,6 +1,6 @@
 const OrderDetails = require("../models/orderDetails");
 const OrderItem = require("../models/orderItem");
-const OrderModel = require("../models/orderModel");
+const OrderModel = require('../models/OrderModel'); // ✅ Adjust path if needed
 const sendNotificationToUser = require("../utils/sendNotificationToUser");
 const {User} = require('../models/User');
 const Product = require('../models/productModel');
