@@ -862,7 +862,7 @@ const acceptOrderbyRider = async (req, res, io) => {
           data: {
             order_id: orderId.toString(),
             rider_name: orderDetails.rider_firstname,
-            rider_phone: orderDetails.rider_number,
+            rider_phone: orderDetails.rider_number.toString(),
             type: "order_update"
           }
         });
