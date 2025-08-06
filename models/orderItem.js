@@ -1,7 +1,7 @@
 const db = require("../config/db");
 
 const OrderItem = {
-    addItem: ({ order_id, user_id, product_id, product_quantity, single_item_price, item_price, variant_price, variant_id }, callback) => {
+    addItem: (order_id, user_id, product_id, product_quantity, single_item_price, item_price, variant_price, variant_id, callback) => {
         const sql = `INSERT INTO order_items 
             (user_id, order_id, product_id, product_quantity, single_item_price, total_item_price, variant_price, variant_id) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
