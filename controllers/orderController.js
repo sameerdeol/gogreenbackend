@@ -830,59 +830,59 @@ const orderHistory = async (req, res) => {
     });
 };
 
-// const acceptOrderbyRider = async (req, res, io) => {
-//   const { orderId, riderId } = req.body;
+const acceptOrderbyRider = async (req, res, io) => {
+  const { orderId, riderId } = req.body;
 
-//   try {
-//     const isAccepted = await OrderModel.acceptOrder(orderId, riderId);
+  try {
+    const isAccepted = await OrderModel.acceptOrder(orderId, riderId);
 
-//     if (!isAccepted) {
-//       return res.status(400).json({ success: false, message: 'Order already accepted' });
-//     }
+    if (!isAccepted) {
+      return res.status(400).json({ success: false, message: 'Order already accepted' });
+    }
 
-//     // Use callback-style function to get order + rider details
-//     OrderModel.getOrderandRiderDetails(orderId, async (err, results) => {
-//       if (err) {
-//         console.error("Database error:", err);
-//         return res.status(500).json({ success: false, message: 'Database error' });
-//       }
+    // Use callback-style function to get order + rider details
+    OrderModel.getOrderandRiderDetails(orderId, async (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ success: false, message: 'Database error' });
+      }
 
-//       if (!results || results.length === 0) {
-//         return res.status(404).json({ success: false, message: 'Order not found' });
-//       }
+      if (!results || results.length === 0) {
+        return res.status(404).json({ success: false, message: 'Order not found' });
+      }
 
-//       const orderDetails = results[0];
+      const orderDetails = results[0];
 
-//       // Send notification to user
-//       try {
-//         await sendNotificationToUser({
-//           userId: orderDetails.customer_id,
-//           title: "Meet Your Delivery Partner",
-//           body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
-//           data: {
-//             order_id: orderId.toString(),
-//             rider_name: orderDetails.rider_firstname,
-//             rider_phone: orderDetails.rider_number.toString(),
-//             type: "order_update"
-//           }
-//         });
+      // Send notification to user
+      try {
+        await sendNotificationToUser({
+          userId: orderDetails.customer_id,
+          title: "Meet Your Delivery Partner",
+          body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
+          data: {
+            order_id: orderId.toString(),
+            rider_name: orderDetails.rider_firstname,
+            rider_phone: orderDetails.rider_number.toString(),
+            type: "order_update"
+          }
+        });
 
-//         // Emit to stop buzzer
-//         io.emit(`stop-buzzer-${orderId}`, { orderId });
+        // Emit to stop buzzer
+        io.emit(`stop-buzzer-${orderId}`, { orderId });
 
-//         return res.status(200).json({ success: true, message: 'Order accepted by rider' });
-//       } catch (notificationError) {
-//         console.error("Notification error:", notificationError);
-//         return res.status(500).json({ success: false, message: 'Failed to send notification' });
-//       }
-//     });
-//   } catch (error) {
-//     console.error("Error in acceptOrderbyRider:", error);
-//     return res.status(500).json({ success: false, message: 'Internal server error' });
-//   }
-// };
-
-
+        return res.status(200).json({ success: true, message: 'Order accepted by rider' });
+      } catch (notificationError) {
+        console.error("Notification error:", notificationError);
+        return res.status(500).json({ success: false, message: 'Failed to send notification' });
+      }
+    });
+  } catch (error) {
+    console.error("Error in acceptOrderbyRider:", error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
 
 
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory};
+
+
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, acceptOrderbyRider};
