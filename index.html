@@ -13,10 +13,11 @@
   <script>
     // ✅ Connect to your public Socket.IO server via Apache reverse proxy
     const socket = io('https://cx.ekarigar.com', {
-      path: '/delievery-api/socket.io',
-      transports: ['websocket'], // Optional: forces WebSocket (avoid polling issues)
-      secure: true
+    path: '/delievery-api/socket.io',
+    transports: ['websocket'],
+    secure: true
     });
+
 
     socket.on('connect', () => {
       console.log(`✅ Connected to server with ID: ${socket.id}`);
