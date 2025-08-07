@@ -355,7 +355,7 @@ const searchProduct = {
 },
 
 
-searchVendorsByProductName: (productName, userId, callback) => {
+searchVendorbyProduct: (productName, userId, callback) => {
   if (!userId || !productName) {
     return callback(new Error("userId and productName are required"), null);
   }
