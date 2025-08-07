@@ -110,7 +110,9 @@ const ProductCategory = {
                 MAX(v.store_image) AS store_image,
                 MAX(v.vendor_thumb) AS vendor_thumb,
                 MAX(v.vendor_start_time) AS vendor_start_time,
-                MAX(v.vendor_close_time) AS vendor_close_time
+                MAX(v.vendor_close_time) AS vendor_close_time,
+
+                GROUP_CONCAT(DISTINCT p.featured_image) AS featured_images
 
             FROM product_categories c
 
