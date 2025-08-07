@@ -214,7 +214,10 @@ const getAllCatAndVendor = (req, res) => {
                 store_image: row.store_image,
                 vendor_thumb: row.vendor_thumb,
                 vendor_start_time: row.vendor_start_time,
-                vendor_close_time: row.vendor_close_time
+                vendor_close_time: row.vendor_close_time,
+                featured_images: row.featured_images 
+                    ? row.featured_images.split(',') 
+                    : []  // Safely parse to array
             });
         });
 
@@ -226,6 +229,7 @@ const getAllCatAndVendor = (req, res) => {
         });
     });
 };
+
 
 
 
