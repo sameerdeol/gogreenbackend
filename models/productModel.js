@@ -30,7 +30,7 @@ const Product = {
                     sub_category ? parseInt(sub_category, 10) : null,
                     parseInt(stock, 10) || 0,
                     featured_image,
-                    manufacturer_details || null,
+                    manufacturer_details || '',
                     title || null,
                     subtitle || null,
                     parseFloat(size) || 0,
