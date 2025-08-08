@@ -2,37 +2,50 @@ const db = require('../config/db');
 const sqlString = require('sqlstring');
 
 const Product = {
-    create: (vendor_id, name, description, price, category, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description,product_brand,nutritional_facts, miscellaneous,ingredients, product_unit, product_quantity, callback) => {
-            featured_image = featured_image && typeof featured_image === 'string' ? featured_image : null;
-    
+    create: (
+            vendor_id, name, description, price, category, sub_category, stock, featured_image,
+            manufacturer_details, title, subtitle, size, fast_delivery_available,
+            feature_title, feature_description, product_brand,
+            nutritional_facts, miscellaneous, ingredients,
+            product_unit, product_quantity, callback
+        ) => {
+            featured_image = typeof featured_image === 'string' ? featured_image : null;
+
             const query = sqlString.format(
                 `INSERT INTO products 
-                (vendor_id, name, description, price, category_id, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description, brand_id, nutritional_facts, miscellaneous, ingredients, product_unit, product_quantity) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, // <--- 22 placeholders
+                (
+                    vendor_id, name, description, price, category_id, sub_category, stock, featured_image,
+                    manufacturer_details, title, subtitle, size, fast_delivery_available,
+                    feature_title, feature_description, brand_id,
+                    nutritional_facts, miscellaneous, ingredients,
+                    product_unit, product_quantity
+                ) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
-                    vendor_id,
-                    String(name),
-                    String(description),
+                    vendor_id || null,
+                    name || null,
+                    description || null,
                     parseFloat(price) || 0,
                     parseInt(category, 10) || null,
                     sub_category ? parseInt(sub_category, 10) : null,
                     parseInt(stock, 10) || 0,
                     featured_image,
-                    String(manufacturer_details),
-                    String(title),
-                    String(subtitle),
-                    size,
-                    fast_delivery_available,
-                    feature_title,
-                    feature_description,
-                    product_brand,
-                    nutritional_facts,
-                    miscellaneous,
-                    ingredients,
-                    product_unit,
-                    product_quantity
+                    manufacturer_details || null,
+                    title || null,
+                    subtitle || null,
+                    parseFloat(size) || 0,
+                    fast_delivery_available ? 1 : 0,
+                    feature_title || null,
+                    feature_description || null,
+                    product_brand || null,
+                    nutritional_facts || null,
+                    miscellaneous || null,
+                    ingredients || null,
+                    product_unit || null,
+                    product_quantity || null
                 ]
             );
+
             db.query(query, callback);
         },
     
