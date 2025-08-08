@@ -7,9 +7,10 @@ const Product = {
     
             const query = sqlString.format(
                 `INSERT INTO products 
-                (vendor_id, name, description, price, category_id, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available,feature_title, feature_description, brand_id, nutritional_facts, miscellaneous, ingredients, product_unit, product_quantity) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [   vendor_id,
+                (vendor_id, name, description, price, category_id, sub_category, stock, featured_image, manufacturer_details, title, subtitle, size, fast_delivery_available, feature_title, feature_description, brand_id, nutritional_facts, miscellaneous, ingredients, product_unit, product_quantity) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, // <--- 22 placeholders
+                [
+                    vendor_id,
                     String(name),
                     String(description),
                     parseFloat(price) || 0,
@@ -32,7 +33,6 @@ const Product = {
                     product_quantity
                 ]
             );
-    
             db.query(query, callback);
         },
     
