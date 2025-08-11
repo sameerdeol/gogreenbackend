@@ -856,18 +856,15 @@ const User = {
         }
 
         // 1️⃣ Get customer coordinates
-        const { customer_lat, customer_lng } = await new Promise((resolve, reject) => {
-            const sql = `
-                SELECT customer_lat, customer_lng
-                FROM user_addresses
-                WHERE user_id = ? AND id = ?
-            `;
-            db.query(sql, [customerId, user_address_id], (err, results) => {
-                if (err) return reject(err);
-                if (!results.length) return reject(new Error("Address not found"));
-                resolve(results[0]);
-            });
-        });
+        const [rows] = await db.query(`
+            SELECT customer_lat, customer_lng
+            FROM user_addresses
+            WHERE user_id = ? AND id = ?
+        `, [customerId, user_address_id]);
+
+        if (!rows.length) throw new Error("Address not found");
+
+        const { customer_lat, customer_lng } = rows[0];
 
         // 2️⃣ Calculate bounding box for rider search
         const latDelta = radiusInKm / 111;
@@ -877,26 +874,20 @@ const User = {
         const minLng = Number((vendorLng - lngDelta).toFixed(6));
         const maxLng = Number((vendorLng + lngDelta).toFixed(6));
 
-        const sql = `
+        // 3️⃣ Query riders
+        const [riders] = await db.query(`
             SELECT user_id AS riderId, rider_lat, rider_lng
             FROM delivery_partners
             WHERE rider_lat BETWEEN ? AND ?
             AND rider_lng BETWEEN ? AND ?
-        `;
-
-        const riders = await new Promise((resolve, reject) => {
-            db.query(sql, [minLat, maxLat, minLng, maxLng], (err, results) => {
-                if (err) return reject(err);
-                resolve(results);
-            });
-        });
+        `, [minLat, maxLat, minLng, maxLng]);
 
         if (!riders.length) return [];
 
-        // 3️⃣ Vendor → Customer route
+        // 4️⃣ Vendor → Customer route
         const vendorCustomerRoute = await distanceCustomerVendor(vendorLat, vendorLng, customer_lat, customer_lng);
 
-        // 4️⃣ Process riders and build riderPolylines array
+        // 5️⃣ Process riders and build riderPolylines array
         const riderPolylines = await Promise.all(
             riders.map(async (rider) => {
                 const riderVendorRoute = await distanceCustomerVendor(rider.rider_lat, rider.rider_lng, vendorLat, vendorLng);
@@ -909,7 +900,7 @@ const User = {
             })
         );
 
-        // 5️⃣ Save all polylines in DB at once
+        // 6️⃣ Save all polylines in DB at once
         await savePolylines(
             vendorId,
             customerId,
@@ -917,13 +908,14 @@ const User = {
             riderPolylines
         );
 
-        // 6️⃣ Return only lightweight data for notifications
+        // 7️⃣ Return lightweight data for notifications
         return riderPolylines.map(rp => ({
             user_id: rp.riderId,
             distance_km: rp.distance_km,
             vendor_to_customer_distance_km: vendorCustomerRoute.distance_km
         }));
     },
+
 
 
 
