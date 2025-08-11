@@ -1,3 +1,5 @@
+const db = require("../config/db"); // adjust path if needed
+
 function savePolylines(vendorId, customerId, vendorToCustomerPolyline, riderPolylines, callback) {
   // Step 1: Check if vendor → customer polyline exists
   const sqlVendorCustomerCheck = `
