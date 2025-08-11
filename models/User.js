@@ -865,7 +865,8 @@ const User = {
         if (!rows.length) throw new Error("Address not found");
 
         const { customer_lat, customer_lng } = rows[0];
-
+        console.log("customer_lat",customer_lat)
+        console.log("customer_lng",customer_lng)
         // 2️⃣ Calculate bounding box for rider search
         const latDelta = radiusInKm / 111;
         const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
@@ -881,7 +882,7 @@ const User = {
             WHERE rider_lat BETWEEN ? AND ?
             AND rider_lng BETWEEN ? AND ?
         `, [minLat, maxLat, minLng, maxLng]);
-
+            console.log("riders",riders)
         if (!riders.length) return [];
 
         // 4️⃣ Vendor → Customer route
