@@ -31,6 +31,7 @@ router.get('/getallvendorsforadminbyID/:vendor_id', verifyToken, vendorControlle
 router.post('/vendor-bankdetails', verifyToken, vendorController.vendorBankDetails);
 router.post('/vendor-analytics', verifyToken, vendorController.vendorAnalytics);
 router.get('/getallvendorsbySubcat/:subcat_id', verifyToken, vendorController.allVendorsforAdminbySubcatID);
+router.post('/vendorbyid', verifyToken, vendorController.VendorbyID);
 
 
 module.exports = router;

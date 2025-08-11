@@ -892,6 +892,41 @@ const allVendorsforAdminbySubcatID = (req, res) => {
     });
 };
 
+const VendorbyID = (req, res) => {
+    const { user_id, vendor_id } = req.body;
+
+    User.VendorbyID(user_id, vendor_id, (err, users) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+                success: false,
+                message: 'Database error',
+                error: err
+            });
+        }
+
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No vendors found'
+            });
+        }
+
+        const vendors = users.map(user => ({
+            ...user,
+            featured_images: user.featured_images
+                ? user.featured_images.split(',')
+                : []
+        }));
+
+        return res.status(200).json({
+            success: true,
+            message: 'Vendor retrieved successfully',
+            data: vendors
+        });
+    });
+};
+
 
 module.exports = {
     vendorSignup,
@@ -911,5 +946,6 @@ module.exports = {
     deleteVendorType,
     vendorBankDetails,
     vendorAnalytics,
-    allVendorsforAdminbySubcatID
+    allVendorsforAdminbySubcatID,
+    VendorbyID
 }; 
