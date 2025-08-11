@@ -909,59 +909,50 @@ const User = {
             console.log("Riders found:", riders);
 
             // Step 4: Get vendor → customer route
-            distanceCustomerVendor(vendorLat, vendorLng, customer_lat, customer_lng, (err, vendorCustomerRoute) => {
-                if (err) {
-                console.error("Error getting vendor to customer route:", err);
-                return callback(err);
-                }
+                console.log("Calling distanceCustomerVendor for vendor->customer route");
+                distanceCustomerVendor(vendorLat, vendorLng, customer_lat, customer_lng)
+                .then(vendorCustomerRoute => {
+                    console.log("Got vendorCustomerRoute:", vendorCustomerRoute);
 
-                console.log("Vendor to customer route:", vendorCustomerRoute);
+                    // Then for each rider:
+                    let riderPolylines = [];
+                    let processedCount = 0;
 
-                // Step 5: For each rider get rider → vendor route
-                let riderPolylines = [];
-                let processedCount = 0;
+                    riders.forEach((rider, i) => {
+                    distanceCustomerVendor(rider.rider_lat, rider.rider_lng, vendorLat, vendorLng)
+                        .then(riderVendorRoute => {
+                        riderPolylines[i] = {
+                            riderId: rider.riderId,
+                            polyline: riderVendorRoute.polyline,  // your original code had polyline; your current function does NOT return polyline, so adjust accordingly
+                            distance_km: riderVendorRoute.distance_km,
+                        };
 
-                riders.forEach((rider, i) => {
-                distanceCustomerVendor(rider.rider_lat, rider.rider_lng, vendorLat, vendorLng, (err, riderVendorRoute) => {
-                    if (err) {
-                    console.error(`Error getting route for riderId ${rider.riderId}:`, err);
-                    return callback(err);
-                    }
+                        processedCount++;
+                        console.log(`Processed ${processedCount} of ${riders.length} riders`);
 
-                    riderPolylines[i] = {
-                    riderId: rider.riderId,
-                    polyline: riderVendorRoute.polyline,
-                    distance_km: riderVendorRoute.distance_km,
-                    };
+                        if (processedCount === riders.length) {
+                            savePolylines(vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines, (err) => {
+                            if (err) return callback(err);
 
-                    processedCount++;
-                    console.log(`Processed ${processedCount} of ${riders.length} riders`);
+                            const result = riderPolylines.map(rp => ({
+                                user_id: rp.riderId,
+                                distance_km: rp.distance_km,
+                                vendor_to_customer_distance_km: vendorCustomerRoute.distance_km,
+                            }));
 
-                    if (processedCount === riders.length) {
-                    // Step 6: Save all polylines in DB at once
-                    savePolylines(vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines, (err) => {
-                        if (err) {
-                        console.error("Error saving polylines:", err);
-                        return callback(err);
+                            callback(null, result);
+                            });
                         }
-
-                        console.log("Successfully saved polylines");
-
-                        // Step 7: Return lightweight data for notifications
-                        const result = riderPolylines.map(rp => ({
-                        user_id: rp.riderId,
-                        distance_km: rp.distance_km,
-                        vendor_to_customer_distance_km: vendorCustomerRoute.distance_km,
-                        }));
-
-                        console.log("Final result to callback:", result);
-
-                        callback(null, result);
+                        })
+                        .catch(err => {
+                        callback(err);
+                        });
                     });
-                    }
+
+                })
+                .catch(err => {
+                    callback(err);
                 });
-                });
-            });
             });
         });
     },
