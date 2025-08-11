@@ -19,7 +19,8 @@ const {
     getproductbycatgeoryID,
     getproductbycatvenID,
     getproductbybrandID,
-    bestSellProducts
+    bestSellProducts,
+    getFilteredProducts
 } = require('../controllers/productController');
 
 // Route to create a new product - only managers can create products
@@ -64,5 +65,7 @@ router.post('/productbycat-vendorId', verifyToken, getproductbycatvenID);
 router.post('/productbybrandID', verifyToken, getproductbybrandID);
 
 router.post('/bestsellerproducts', verifyToken, bestSellProducts);
+
+router.post("/filter", productController.getFilteredProducts);
 
 module.exports = router;

@@ -583,6 +583,21 @@ const bestSellProducts = (req, res) => {
     });
 };
 
+getFilteredProducts = (req, res) => {
+  const filters = {
+    priceSort: req.body.priceSort,
+    deliveryType: req.body.deliveryType
+  };
+
+  Product.filterProducts(filters, (err, results) => {
+    if (err) {
+      console.error("Error fetching filtered products:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+    res.json(results);
+  });
+};
+
 
 // Export multer upload as a middleware and role check as well
 module.exports = {
@@ -600,5 +615,6 @@ module.exports = {
     getsingleproductsbyvendorID,
     getproductbycatvenID,
     getproductbybrandID,
-    bestSellProducts
+    bestSellProducts,
+    getFilteredProducts
 };

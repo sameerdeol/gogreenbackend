@@ -654,9 +654,36 @@ const Product = {
                 resolve(results);
             });
         });
+    },
+
+      filterProducts: (filters, callback) => {
+        let { priceSort, deliveryType } = filters;
+
+        let sql = "SELECT * FROM products WHERE 1=1";
+        let params = [];
+
+        // Delivery filter
+        if (deliveryType) {
+        if (deliveryType === "Fast Delivery") {
+            sql += " AND fast_delivery_available = ?";
+            params.push(1);
+        } else if (deliveryType === "Normal Delivery") {
+            sql += " AND fast_delivery_available = ?";
+            params.push(0);
+        }
+        }
+
+        // Price sorting
+        if (priceSort) {
+        if (priceSort === "High to Low") {
+            sql += " ORDER BY price DESC";
+        } else if (priceSort === "Low to High") {
+            sql += " ORDER BY price ASC";
+        }
+        }
+
+        db.query(sql, params, callback);
     }
-
-
     
 };
 
