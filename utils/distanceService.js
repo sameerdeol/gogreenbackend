@@ -30,6 +30,7 @@ function distanceCustomerVendor(vendorLat, vendorLng, userLat, userLng, callback
       const result = {
         distance_km: (distanceInMeters / 1000).toFixed(2),
         duration_minutes: (durationInSeconds / 60).toFixed(1),
+        polyline: route.overview_polyline?.points || null // <-- Add polyline here if you want it
       };
 
       cache.set(cacheKey, result);
