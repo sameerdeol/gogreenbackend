@@ -583,7 +583,7 @@ const bestSellProducts = (req, res) => {
     });
 };
 
-getFilteredProducts = (req, res) => {
+const getFilteredProducts = (req, res) => {
   const filters = {
     priceSort: req.body.priceSort,
     deliveryType: req.body.deliveryType
