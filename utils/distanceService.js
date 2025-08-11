@@ -6,35 +6,39 @@ const cache = new NodeCache({ stdTTL: 600 }); // cache expires in 10 minutes
 
 const API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
-const distanceCustomerVendor = async (vendorLat, vendorLng, userLat, userLng) => {
+function distanceCustomerVendor(vendorLat, vendorLng, userLat, userLng, callback) {
   const cacheKey = `distance-${vendorLat},${vendorLng}-${userLat},${userLng}`;
   const cached = cache.get(cacheKey);
 
-  if (cached) return cached;
+  if (cached) {
+    return process.nextTick(() => callback(null, cached));
+  }
 
   const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${vendorLat},${vendorLng}&destination=${userLat},${userLng}&mode=driving&key=${API_KEY}`;
 
-  try {
-    const response = await axios.get(url);
-    const route = response.data.routes[0];
+  axios.get(url)
+    .then(response => {
+      const route = response.data.routes[0];
 
-    if (!route) throw new Error("No route found");
+      if (!route) {
+        return callback(new Error("No route found"));
+      }
 
-    const distanceInMeters = route.legs[0].distance.value;
-    const durationInSeconds = route.legs[0].duration.value;
+      const distanceInMeters = route.legs[0].distance.value;
+      const durationInSeconds = route.legs[0].duration.value;
 
-    const result = {
-      distance_km: (distanceInMeters / 1000).toFixed(2),
-      duration_minutes: (durationInSeconds / 60).toFixed(1),
-    };
+      const result = {
+        distance_km: (distanceInMeters / 1000).toFixed(2),
+        duration_minutes: (durationInSeconds / 60).toFixed(1),
+      };
 
-    cache.set(cacheKey, result); // Save to cache
-    return result;
-
-  } catch (err) {
-    throw new Error('Google Maps API error: ' + err.message);
-  }
-};
+      cache.set(cacheKey, result);
+      callback(null, result);
+    })
+    .catch(err => {
+      callback(new Error('Google Maps API error: ' + err.message));
+    });
+}
 
 const getDistanceMatrix = async (vendorLat, vendorLng, riders, customerLat, customerLng) => {
   if (!riders.length) return [];
