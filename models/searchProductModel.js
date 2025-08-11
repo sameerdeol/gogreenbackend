@@ -381,18 +381,20 @@ searchVendorbyProduct: (searchTerm, userId, callback) => {
         (
             SELECT GROUP_CONCAT(DISTINCT p.featured_image)
             FROM products p
+            LEFT JOIN product_categories c ON c.id = p.category_id
+            LEFT JOIN product_subcategories sc ON sc.id = p.sub_category
             WHERE p.vendor_id = v.user_id
               AND (
                    LOWER(p.name) LIKE ?
                    OR LOWER(c.name) LIKE ?
                    OR LOWER(sc.name) LIKE ?
               )
-            LEFT JOIN product_categories c ON c.id = p.category_id
-            LEFT JOIN product_subcategories sc ON sc.id = p.sub_category
         ) AS featured_images
     FROM users u
     JOIN vendors v ON v.user_id = u.id
-    LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
+    LEFT JOIN favourite_vendors fv 
+        ON fv.vendor_id = v.user_id 
+       AND fv.user_id = ?
     WHERE u.is_verified = 1 
       AND u.status = 1
       AND EXISTS (
@@ -411,9 +413,9 @@ searchVendorbyProduct: (searchTerm, userId, callback) => {
 
   const likeSearch = `%${searchTerm.toLowerCase()}%`;
   const values = [
-    likeSearch, likeSearch, likeSearch, // for featured_images subquery
+    likeSearch, likeSearch, likeSearch, // featured_images subquery
     userId,
-    likeSearch, likeSearch, likeSearch  // for EXISTS condition
+    likeSearch, likeSearch, likeSearch  // EXISTS condition
   ];
 
   db.query(query, values, (err, results) => {
@@ -421,6 +423,7 @@ searchVendorbyProduct: (searchTerm, userId, callback) => {
     return callback(null, results);
   });
 }
+
 
 
 
