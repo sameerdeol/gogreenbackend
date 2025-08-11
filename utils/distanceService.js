@@ -36,7 +36,7 @@ const distanceCustomerVendor = async (vendorLat, vendorLng, userLat, userLng) =>
   }
 };
 
-const getDistanceMatrix = async (vendorLat, vendorLng, riders) => {
+const getDistanceMatrix = async (vendorLat, vendorLng, riders, customerLat, customerLng) => {
   if (!riders.length) return [];
 
   const origins = `${vendorLat},${vendorLng}`;
@@ -62,32 +62,51 @@ const getDistanceMatrix = async (vendorLat, vendorLng, riders) => {
     riders.map(async (rider, index) => {
       const distance = matrixData[index]?.status === 'OK' ? matrixData[index].distance.value : null;
 
-      const directionsCacheKey = `route-${rider.rider_lat},${rider.rider_lng}-${vendorLat},${vendorLng}`;
-      let polyline = cache.get(directionsCacheKey);
-
-      if (!polyline) {
+      // Rider → Vendor polyline
+      const riderVendorKey = `route-${rider.rider_lat},${rider.rider_lng}-${vendorLat},${vendorLng}`;
+      let riderVendorPolyline = cache.get(riderVendorKey);
+      if (!riderVendorPolyline) {
         try {
           const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${rider.rider_lat},${rider.rider_lng}&destination=${vendorLat},${vendorLng}&mode=driving&key=${API_KEY}`;
           const directionsRes = await axios.get(directionsUrl);
           const route = directionsRes.data.routes[0];
           if (route?.overview_polyline?.points) {
-            polyline = route.overview_polyline.points;
-            cache.set(directionsCacheKey, polyline);
+            riderVendorPolyline = route.overview_polyline.points;
+            cache.set(riderVendorKey, riderVendorPolyline);
           }
         } catch (err) {
-          console.error(`Directions API error for rider ${rider.rider_id || 'unknown'}:`, err.message);
+          console.error(`Directions API error (rider→vendor) for rider ${rider.user_id || 'unknown'}:`, err.message);
+        }
+      }
+
+      // Vendor → Customer polyline
+      const vendorCustomerKey = `route-${vendorLat},${vendorLng}-${customerLat},${customerLng}`;
+      let vendorCustomerPolyline = cache.get(vendorCustomerKey);
+      if (!vendorCustomerPolyline) {
+        try {
+          const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${vendorLat},${vendorLng}&destination=${customerLat},${customerLng}&mode=driving&key=${API_KEY}`;
+          const directionsRes = await axios.get(directionsUrl);
+          const route = directionsRes.data.routes[0];
+          if (route?.overview_polyline?.points) {
+            vendorCustomerPolyline = route.overview_polyline.points;
+            cache.set(vendorCustomerKey, vendorCustomerPolyline);
+          }
+        } catch (err) {
+          console.error(`Directions API error (vendor→customer):`, err.message);
         }
       }
 
       return {
         rider,
         distance,
-        polyline
+        riderVendorPolyline,
+        vendorCustomerPolyline
       };
     })
   );
 
   return results;
 };
+
 
 module.exports = { distanceCustomerVendor, getDistanceMatrix };

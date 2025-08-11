@@ -224,37 +224,45 @@ const updateOrderStatus = async (req, res) => {
         const notifications = [];
 
         switch (order_status) {
-            case 1:
-                notifications.push(sendNotificationToUser({
-                    userId: user_id,
-                    title: "Order Confirmed",
-                    body: `Your order from ${store_name} is being prepared.`,
-                    data: { order_id: orderIdStr, type: "order_update" }
-                }));
+        case 1:
+            notifications.push(sendNotificationToUser({
+                userId: user_id,
+                title: "Order Confirmed",
+                body: `Your order from ${store_name} is being prepared.`,
+                data: { order_id: orderIdStr, type: "order_update" }
+            }));
 
-                // Notify nearby riders
-                const nearbyRiders = await User.getNearbyRiders(vendor_lat, vendor_lng, 3);
-                const customerVendorDistance = await User.getTravelDistance(vendor_lat, vendor_lng,user_id,user_address_id);
-                console.log("riders are",nearbyRiders)
-                console.log("vendor and customer distance",customerVendorDistance)
-                for (const rider of nearbyRiders) {
-                    notifications.push(sendNotificationToUser({
-                        userId: rider.user_id,
-                        title: "New Delivery Opportunity",
-                        body: `New order from ${store_name} is ready for pickup near you.`,
-                        data: {
-                            order_id: orderIdStr,
-                            type: "new_order",
-                            vendor_id: vendor_id.toString(),
-                            distance_from_vendor: rider.distance_km.toString(),
-                            distance_from_vendor_to_customer: customerVendorDistance.distance_km.toString(),
-                            vendor_address: store_address,
-                            user_address: address,
-                            vendor_name: store_name
-                        }  
-                    }));
-                }
-                break;
+            // Get nearby riders with both polylines
+            const nearbyRiders = await User.getNearbyRidersWithPolylines(
+                vendor_id,
+                vendor_lat,
+                vendor_lng,
+                user_id,
+                user_address_id,
+                3 // radius in KM
+            );
+
+            console.log("riders are", nearbyRiders);
+
+            for (const rider of nearbyRiders) {
+                notifications.push(sendNotificationToUser({
+                    userId: String(rider.user_id || ""),
+                    title: "New Delivery Opportunity",
+                    body: `New order from ${store_name} is ready for pickup near you.`,
+                    data: {
+                        order_id: String(orderIdStr || ""),
+                        type: "new_order",
+                        vendor_id: String(vendor_id || ""),
+                        distance_from_vendor: String(rider.distance_km ?? "0"),
+                        distance_from_vendor_to_customer: String(rider.vendor_to_customer_distance_km ?? "0"),
+                        vendor_address: String(store_address || ""),
+                        user_address: String(address || ""),
+                        vendor_name: String(store_name || "")
+                    }
+                }));
+            }
+            break;
+
 
             case 2:
                 const otp = generateOtp(6);
