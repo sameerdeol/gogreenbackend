@@ -74,11 +74,9 @@ const searchAllbyVendor = (req, res) => {
 const searchVendorbyName = (req, res) => {
     const { search_name, user_id } = req.body;
 
-    // Input validation
     if (!search_name || typeof search_name !== 'string') {
         return res.status(400).json({ success: false, message: 'Valid search_name is required.' });
     }
-
     if (!user_id) {
         return res.status(400).json({ success: false, message: 'User ID is required.' });
     }
@@ -97,14 +95,24 @@ const searchVendorbyName = (req, res) => {
             });
         }
 
-        // Success
+        // Convert featured_images string into array
+        const formattedResult = result.map(vendor => {
+            return {
+                ...vendor,
+                featured_images: vendor.featured_images
+                    ? vendor.featured_images.split(',') // split into array
+                    : []
+            };
+        });
+
         res.status(200).json({
             success: true,
             message: 'Vendors found successfully.',
-            data: result
+            data: formattedResult
         });
     });
 };
+
 
 
 module.exports = { searchAll, itemSearch, searchAllbyVendor, searchVendorbyName };
