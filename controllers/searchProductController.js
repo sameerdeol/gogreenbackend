@@ -71,7 +71,7 @@ const searchAllbyVendor = (req, res) => {
     });
 };
 
-const searchVendorbyProduct = (req, res) => {
+const searchVendorbyName = (req, res) => {
     const { search_name, user_id } = req.body;
 
     // Input validation
@@ -92,7 +92,7 @@ const searchVendorbyProduct = (req, res) => {
         if (!result || result.length === 0) {
             return res.status(404).json({
                 success: true,
-                message: 'No vendors found matching that product name.',
+                message: 'No vendors found matching that product/category/subcategory name.',
                 data: []
             });
         }
@@ -106,4 +106,5 @@ const searchVendorbyProduct = (req, res) => {
     });
 };
 
-module.exports = { searchAll, itemSearch, searchAllbyVendor, searchVendorbyProduct };
+
+module.exports = { searchAll, itemSearch, searchAllbyVendor, searchVendorbyName };

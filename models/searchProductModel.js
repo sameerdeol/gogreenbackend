@@ -355,9 +355,9 @@ const searchProduct = {
 },
 
 
-searchVendorbyProduct: (productName, userId, callback) => {
-  if (!userId || !productName) {
-    return callback(new Error("userId and productName are required"), null);
+searchVendorbyProduct: (searchTerm, userId, callback) => {
+  if (!userId || !searchTerm) {
+    return callback(new Error("userId and searchTerm are required"), null);
   }
 
   const query = `
@@ -382,7 +382,13 @@ searchVendorbyProduct: (productName, userId, callback) => {
             SELECT GROUP_CONCAT(DISTINCT p.featured_image)
             FROM products p
             WHERE p.vendor_id = v.user_id
-              AND LOWER(p.name) LIKE ?
+              AND (
+                   LOWER(p.name) LIKE ?
+                   OR LOWER(c.name) LIKE ?
+                   OR LOWER(sc.name) LIKE ?
+              )
+            LEFT JOIN product_categories c ON c.id = p.category_id
+            LEFT JOIN product_subcategories sc ON sc.id = p.sub_category
         ) AS featured_images
     FROM users u
     JOIN vendors v ON v.user_id = u.id
@@ -391,20 +397,31 @@ searchVendorbyProduct: (productName, userId, callback) => {
       AND u.status = 1
       AND EXISTS (
           SELECT 1 
-          FROM products p2 
+          FROM products p2
+          LEFT JOIN product_categories c2 ON c2.id = p2.category_id
+          LEFT JOIN product_subcategories sc2 ON sc2.id = p2.sub_category
           WHERE p2.vendor_id = v.user_id
-            AND LOWER(p2.name) LIKE ?
+            AND (
+                 LOWER(p2.name) LIKE ?
+                 OR LOWER(c2.name) LIKE ?
+                 OR LOWER(sc2.name) LIKE ?
+            )
       );
   `;
 
-  const likeSearch = `%${productName.toLowerCase()}%`;
-  const values = [likeSearch, userId, likeSearch];
+  const likeSearch = `%${searchTerm.toLowerCase()}%`;
+  const values = [
+    likeSearch, likeSearch, likeSearch, // for featured_images subquery
+    userId,
+    likeSearch, likeSearch, likeSearch  // for EXISTS condition
+  ];
 
   db.query(query, values, (err, results) => {
     if (err) return callback(err, null);
     return callback(null, results);
   });
 }
+
 
 
 
