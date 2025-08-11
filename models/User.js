@@ -934,8 +934,8 @@ const User = {
 
                 if (processedCount === riders.length) {
                 // Step 6: Save all polylines in DB at once
-                console.log("vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines",vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines)
-                savePolylines(vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines, (err) => {
+                console.log("vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines",vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines.polyline)
+                savePolylines(vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines.polyline, (err) => {
                     if (err) return callback(err);
 
                     // Step 7: Return lightweight data for notifications
