@@ -847,34 +847,29 @@ const User = {
         }
     },
 
-    getNearbyRidersWithPolylines: async (vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm = 3) => {
+    getNearbyRidersWithPolylines: (vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm = 3, callback) => {
     vendorLat = Number(vendorLat);
     vendorLng = Number(vendorLng);
 
     if (isNaN(vendorLat) || isNaN(vendorLng)) {
-        throw new Error("Invalid coordinates");
+        return callback(new Error("Invalid coordinates"));
     }
 
-    try {
-        // 1️⃣ Get customer coordinates
-        const customerRows = await new Promise((resolve, reject) => {
-        const sql = `
-            SELECT customer_lat, customer_lng
-            FROM user_addresses
-            WHERE user_id = ? AND id = ?
-        `;
-        db.query(sql, [customerId, user_address_id], (err, results) => {
-            if (err) return reject(err);
-            if (!results.length) return reject(new Error("Address not found"));
-            resolve(results);
-        });
-        });
+    // Step 1: Get customer coordinates
+    const sqlCustomer = `
+        SELECT customer_lat, customer_lng
+        FROM user_addresses
+        WHERE user_id = ? AND id = ?
+    `;
+    db.query(sqlCustomer, [customerId, user_address_id], (err, customerResults) => {
+        if (err) return callback(err);
+        if (!customerResults.length) return callback(new Error("Address not found"));
 
-        const { customer_lat, customer_lng } = customerRows[0];
+        const { customer_lat, customer_lng } = customerResults[0];
         console.log("customer_lat", customer_lat);
         console.log("customer_lng", customer_lng);
 
-        // 2️⃣ Calculate bounding box for rider search
+        // Step 2: Calculate bounding box
         const latDelta = radiusInKm / 111;
         const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
         const minLat = Number((vendorLat - latDelta).toFixed(6));
@@ -882,60 +877,60 @@ const User = {
         const minLng = Number((vendorLng - lngDelta).toFixed(6));
         const maxLng = Number((vendorLng + lngDelta).toFixed(6));
 
-        // 3️⃣ Query riders
-        const riders = await new Promise((resolve, reject) => {
-        const sql = `
-            SELECT user_id AS riderId, rider_lat, rider_lng
-            FROM delivery_partners
-            WHERE rider_lat BETWEEN ? AND ?
-            AND rider_lng BETWEEN ? AND ?
+        // Step 3: Query riders
+        const sqlRiders = `
+        SELECT user_id AS riderId, rider_lat, rider_lng
+        FROM delivery_partners
+        WHERE rider_lat BETWEEN ? AND ?
+        AND rider_lng BETWEEN ? AND ?
         `;
-        db.query(sql, [minLat, maxLat, minLng, maxLng], (err, results) => {
-            if (err) return reject(err);
-            resolve(results);
-        });
-        });
+        db.query(sqlRiders, [minLat, maxLat, minLng, maxLng], (err, riders) => {
+        if (err) return callback(err);
+        if (!riders.length) return callback(null, []); // no riders found
 
         console.log("riders", riders);
 
-        if (!riders.length) return [];
+        // Step 4: Get vendor → customer route (assuming distanceCustomerVendor supports callback style)
+        distanceCustomerVendor(vendorLat, vendorLng, customer_lat, customer_lng, (err, vendorCustomerRoute) => {
+            if (err) return callback(err);
 
-        // 4️⃣ Vendor → Customer route
-        const vendorCustomerRoute = await distanceCustomerVendor(vendorLat, vendorLng, customer_lat, customer_lng);
+            // Step 5: For each rider get rider → vendor route
+            let riderPolylines = [];
+            let processedCount = 0;
 
-        // 5️⃣ Process riders and build riderPolylines array
-        const riderPolylines = await Promise.all(
-        riders.map(async (rider) => {
-            const riderVendorRoute = await distanceCustomerVendor(rider.rider_lat, rider.rider_lng, vendorLat, vendorLng);
+            riders.forEach((rider, i) => {
+            distanceCustomerVendor(rider.rider_lat, rider.rider_lng, vendorLat, vendorLng, (err, riderVendorRoute) => {
+                if (err) return callback(err);
 
-            return {
-            riderId: rider.riderId,
-            polyline: riderVendorRoute.polyline,
-            distance_km: riderVendorRoute.distance_km,
-            };
-        })
-        );
+                riderPolylines[i] = {
+                riderId: rider.riderId,
+                polyline: riderVendorRoute.polyline,
+                distance_km: riderVendorRoute.distance_km,
+                };
 
-        // 6️⃣ Save all polylines in DB at once
-        await savePolylines(
-        vendorId,
-        customerId,
-        vendorCustomerRoute.polyline,
-        riderPolylines
-        );
+                processedCount++;
+                if (processedCount === riders.length) {
+                // Step 6: Save all polylines in DB at once
+                savePolylines(vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines, (err) => {
+                    if (err) return callback(err);
 
-        // 7️⃣ Return lightweight data for notifications
-        return riderPolylines.map((rp) => ({
-        user_id: rp.riderId,
-        distance_km: rp.distance_km,
-        vendor_to_customer_distance_km: vendorCustomerRoute.distance_km,
-        }));
+                    // Step 7: Return lightweight data for notifications
+                    const result = riderPolylines.map(rp => ({
+                    user_id: rp.riderId,
+                    distance_km: rp.distance_km,
+                    vendor_to_customer_distance_km: vendorCustomerRoute.distance_km,
+                    }));
 
-    } catch (error) {
-        console.error("Error in getNearbyRidersWithPolylines:", error);
-        throw error;
-    }
+                    callback(null, result);
+                });
+                }
+            });
+            });
+        });
+        });
+    });
     },
+
 
 
 
