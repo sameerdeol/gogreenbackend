@@ -848,88 +848,124 @@ const User = {
     },
 
     getNearbyRidersWithPolylines: (vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm = 3, callback) => {
-    vendorLat = Number(vendorLat);
-    vendorLng = Number(vendorLng);
+        console.log("getNearbyRidersWithPolylines called with:", {
+            vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm
+        });
 
-    if (isNaN(vendorLat) || isNaN(vendorLng)) {
-        return callback(new Error("Invalid coordinates"));
-    }
+        vendorLat = Number(vendorLat);
+        vendorLng = Number(vendorLng);
 
-    // Step 1: Get customer coordinates
-    const sqlCustomer = `
-        SELECT customer_lat, customer_lng
-        FROM user_addresses
-        WHERE user_id = ? AND id = ?
-    `;
-    db.query(sqlCustomer, [customerId, user_address_id], (err, customerResults) => {
-        if (err) return callback(err);
-        if (!customerResults.length) return callback(new Error("Address not found"));
+        if (isNaN(vendorLat) || isNaN(vendorLng)) {
+            console.error("Invalid coordinates:", { vendorLat, vendorLng });
+            return callback(new Error("Invalid coordinates"));
+        }
 
-        const { customer_lat, customer_lng } = customerResults[0];
-        console.log("customer_lat", customer_lat);
-        console.log("customer_lng", customer_lng);
-
-        // Step 2: Calculate bounding box
-        const latDelta = radiusInKm / 111;
-        const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
-        const minLat = Number((vendorLat - latDelta).toFixed(6));
-        const maxLat = Number((vendorLat + latDelta).toFixed(6));
-        const minLng = Number((vendorLng - lngDelta).toFixed(6));
-        const maxLng = Number((vendorLng + lngDelta).toFixed(6));
-
-        // Step 3: Query riders
-        const sqlRiders = `
-        SELECT user_id AS riderId, rider_lat, rider_lng
-        FROM delivery_partners
-        WHERE rider_lat BETWEEN ? AND ?
-        AND rider_lng BETWEEN ? AND ?
+        // Step 1: Get customer coordinates
+        const sqlCustomer = `
+            SELECT customer_lat, customer_lng
+            FROM user_addresses
+            WHERE user_id = ? AND id = ?
         `;
-        db.query(sqlRiders, [minLat, maxLat, minLng, maxLng], (err, riders) => {
-        if (err) return callback(err);
-        if (!riders.length) return callback(null, []); // no riders found
+        db.query(sqlCustomer, [customerId, user_address_id], (err, customerResults) => {
+            if (err) {
+            console.error("Error fetching customer coordinates:", err);
+            return callback(err);
+            }
+            if (!customerResults.length) {
+            console.warn("No customer address found for user_id and address_id:", { customerId, user_address_id });
+            return callback(new Error("Address not found"));
+            }
 
-        console.log("riders", riders);
+            const { customer_lat, customer_lng } = customerResults[0];
+            console.log("Customer coordinates:", { customer_lat, customer_lng });
 
-        // Step 4: Get vendor → customer route (assuming distanceCustomerVendor supports callback style)
-        distanceCustomerVendor(vendorLat, vendorLng, customer_lat, customer_lng, (err, vendorCustomerRoute) => {
-            if (err) return callback(err);
+            // Step 2: Calculate bounding box
+            const latDelta = radiusInKm / 111;
+            const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
+            const minLat = Number((vendorLat - latDelta).toFixed(6));
+            const maxLat = Number((vendorLat + latDelta).toFixed(6));
+            const minLng = Number((vendorLng - lngDelta).toFixed(6));
+            const maxLng = Number((vendorLng + lngDelta).toFixed(6));
 
-            // Step 5: For each rider get rider → vendor route
-            let riderPolylines = [];
-            let processedCount = 0;
+            console.log("Bounding box for riders:", { minLat, maxLat, minLng, maxLng });
 
-            riders.forEach((rider, i) => {
-            distanceCustomerVendor(rider.rider_lat, rider.rider_lng, vendorLat, vendorLng, (err, riderVendorRoute) => {
-                if (err) return callback(err);
+            // Step 3: Query riders
+            const sqlRiders = `
+            SELECT user_id AS riderId, rider_lat, rider_lng
+            FROM delivery_partners
+            WHERE rider_lat BETWEEN ? AND ?
+            AND rider_lng BETWEEN ? AND ?
+            `;
+            db.query(sqlRiders, [minLat, maxLat, minLng, maxLng], (err, riders) => {
+            if (err) {
+                console.error("Error querying riders:", err);
+                return callback(err);
+            }
+            if (!riders.length) {
+                console.log("No riders found within bounding box");
+                return callback(null, []); // no riders found
+            }
 
-                riderPolylines[i] = {
-                riderId: rider.riderId,
-                polyline: riderVendorRoute.polyline,
-                distance_km: riderVendorRoute.distance_km,
-                };
+            console.log("Riders found:", riders);
 
-                processedCount++;
-                if (processedCount === riders.length) {
-                // Step 6: Save all polylines in DB at once
-                savePolylines(vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines, (err) => {
-                    if (err) return callback(err);
-
-                    // Step 7: Return lightweight data for notifications
-                    const result = riderPolylines.map(rp => ({
-                    user_id: rp.riderId,
-                    distance_km: rp.distance_km,
-                    vendor_to_customer_distance_km: vendorCustomerRoute.distance_km,
-                    }));
-
-                    callback(null, result);
-                });
+            // Step 4: Get vendor → customer route
+            distanceCustomerVendor(vendorLat, vendorLng, customer_lat, customer_lng, (err, vendorCustomerRoute) => {
+                if (err) {
+                console.error("Error getting vendor to customer route:", err);
+                return callback(err);
                 }
+
+                console.log("Vendor to customer route:", vendorCustomerRoute);
+
+                // Step 5: For each rider get rider → vendor route
+                let riderPolylines = [];
+                let processedCount = 0;
+
+                riders.forEach((rider, i) => {
+                distanceCustomerVendor(rider.rider_lat, rider.rider_lng, vendorLat, vendorLng, (err, riderVendorRoute) => {
+                    if (err) {
+                    console.error(`Error getting route for riderId ${rider.riderId}:`, err);
+                    return callback(err);
+                    }
+
+                    riderPolylines[i] = {
+                    riderId: rider.riderId,
+                    polyline: riderVendorRoute.polyline,
+                    distance_km: riderVendorRoute.distance_km,
+                    };
+
+                    processedCount++;
+                    console.log(`Processed ${processedCount} of ${riders.length} riders`);
+
+                    if (processedCount === riders.length) {
+                    // Step 6: Save all polylines in DB at once
+                    savePolylines(vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines, (err) => {
+                        if (err) {
+                        console.error("Error saving polylines:", err);
+                        return callback(err);
+                        }
+
+                        console.log("Successfully saved polylines");
+
+                        // Step 7: Return lightweight data for notifications
+                        const result = riderPolylines.map(rp => ({
+                        user_id: rp.riderId,
+                        distance_km: rp.distance_km,
+                        vendor_to_customer_distance_km: vendorCustomerRoute.distance_km,
+                        }));
+
+                        console.log("Final result to callback:", result);
+
+                        callback(null, result);
+                    });
+                    }
+                });
+                });
             });
             });
         });
-        });
-    });
     },
+
 
 
 
