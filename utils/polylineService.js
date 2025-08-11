@@ -75,3 +75,5 @@ function savePolylines(vendorId, customerId, vendorToCustomerPolyline, riderPoly
     }
   });
 }
+
+module.exports = savePolylines;
