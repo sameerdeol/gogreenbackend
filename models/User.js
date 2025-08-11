@@ -848,26 +848,32 @@ const User = {
     },
 
     getNearbyRidersWithPolylines: async (vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm = 3) => {
-        console.log("vendorId, vendorLat, vendorLng, customerId, user_address_id",vendorId, vendorLat, vendorLng, customerId, user_address_id)
-        vendorLat = Number(vendorLat);
-        vendorLng = Number(vendorLng);
+    vendorLat = Number(vendorLat);
+    vendorLng = Number(vendorLng);
 
-        if (isNaN(vendorLat) || isNaN(vendorLng)) {
-            throw new Error("Invalid coordinates");
-        }
+    if (isNaN(vendorLat) || isNaN(vendorLng)) {
+        throw new Error("Invalid coordinates");
+    }
 
+    try {
         // 1️⃣ Get customer coordinates
-        const [rows] = await db.query(`
+        const customerRows = await new Promise((resolve, reject) => {
+        const sql = `
             SELECT customer_lat, customer_lng
             FROM user_addresses
             WHERE user_id = ? AND id = ?
-        `, [customerId, user_address_id]);
+        `;
+        db.query(sql, [customerId, user_address_id], (err, results) => {
+            if (err) return reject(err);
+            if (!results.length) return reject(new Error("Address not found"));
+            resolve(results);
+        });
+        });
 
-        if (!rows.length) throw new Error("Address not found");
+        const { customer_lat, customer_lng } = customerRows[0];
+        console.log("customer_lat", customer_lat);
+        console.log("customer_lng", customer_lng);
 
-        const { customer_lat, customer_lng } = rows[0];
-        console.log("customer_lat",customer_lat)
-        console.log("customer_lng",customer_lng)
         // 2️⃣ Calculate bounding box for rider search
         const latDelta = radiusInKm / 111;
         const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
@@ -877,13 +883,21 @@ const User = {
         const maxLng = Number((vendorLng + lngDelta).toFixed(6));
 
         // 3️⃣ Query riders
-        const [riders] = await db.query(`
+        const riders = await new Promise((resolve, reject) => {
+        const sql = `
             SELECT user_id AS riderId, rider_lat, rider_lng
             FROM delivery_partners
             WHERE rider_lat BETWEEN ? AND ?
             AND rider_lng BETWEEN ? AND ?
-        `, [minLat, maxLat, minLng, maxLng]);
-            console.log("riders",riders)
+        `;
+        db.query(sql, [minLat, maxLat, minLng, maxLng], (err, results) => {
+            if (err) return reject(err);
+            resolve(results);
+        });
+        });
+
+        console.log("riders", riders);
+
         if (!riders.length) return [];
 
         // 4️⃣ Vendor → Customer route
@@ -891,32 +905,38 @@ const User = {
 
         // 5️⃣ Process riders and build riderPolylines array
         const riderPolylines = await Promise.all(
-            riders.map(async (rider) => {
-                const riderVendorRoute = await distanceCustomerVendor(rider.rider_lat, rider.rider_lng, vendorLat, vendorLng);
+        riders.map(async (rider) => {
+            const riderVendorRoute = await distanceCustomerVendor(rider.rider_lat, rider.rider_lng, vendorLat, vendorLng);
 
-                return {
-                    riderId: rider.riderId,
-                    polyline: riderVendorRoute.polyline,
-                    distance_km: riderVendorRoute.distance_km
-                };
-            })
+            return {
+            riderId: rider.riderId,
+            polyline: riderVendorRoute.polyline,
+            distance_km: riderVendorRoute.distance_km,
+            };
+        })
         );
 
         // 6️⃣ Save all polylines in DB at once
         await savePolylines(
-            vendorId,
-            customerId,
-            vendorCustomerRoute.polyline,
-            riderPolylines
+        vendorId,
+        customerId,
+        vendorCustomerRoute.polyline,
+        riderPolylines
         );
 
         // 7️⃣ Return lightweight data for notifications
-        return riderPolylines.map(rp => ({
-            user_id: rp.riderId,
-            distance_km: rp.distance_km,
-            vendor_to_customer_distance_km: vendorCustomerRoute.distance_km
+        return riderPolylines.map((rp) => ({
+        user_id: rp.riderId,
+        distance_km: rp.distance_km,
+        vendor_to_customer_distance_km: vendorCustomerRoute.distance_km,
         }));
+
+    } catch (error) {
+        console.error("Error in getNearbyRidersWithPolylines:", error);
+        throw error;
+    }
     },
+
 
 
 
