@@ -860,7 +860,6 @@ const User = {
         return callback(new Error("Invalid coordinates"));
     }
 
-    // Step 1: Get customer coordinates
     const sqlCustomer = `
         SELECT customer_lat, customer_lng
         FROM user_addresses
@@ -879,7 +878,6 @@ const User = {
         const { customer_lat, customer_lng } = customerResults[0];
         console.log("Customer coordinates:", { customer_lat, customer_lng });
 
-        // Step 2: Calculate bounding box
         const latDelta = radiusInKm / 111;
         const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
         const minLat = Number((vendorLat - latDelta).toFixed(6));
@@ -889,7 +887,6 @@ const User = {
 
         console.log("Bounding box for riders:", { minLat, maxLat, minLng, maxLng });
 
-        // Step 3: Query riders
         const sqlRiders = `
         SELECT user_id AS riderId, rider_lat, rider_lng
         FROM delivery_partners
@@ -903,58 +900,39 @@ const User = {
         }
         if (!riders.length) {
             console.log("No riders found within bounding box");
-            return callback(null, []); // no riders found
+            return callback(null, []);
         }
 
         console.log("Riders found:", riders);
 
-        // Step 4: Get vendor → customer route
-        console.log("Calling distanceCustomerVendor for vendor->customer route");
-        distanceCustomerVendor(vendorLat, vendorLng, customer_lat, customer_lng, (err, vendorCustomerRoute) => {
+        // Use callback-style getDistanceMatrix here
+        getDistanceMatrix(vendorLat, vendorLng, riders, customer_lat, customer_lng, (err, results) => {
             if (err) return callback(err);
 
-            console.log("Got vendorCustomerRoute:", vendorCustomerRoute);
+            const riderPolylines = results.map(({ rider, riderVendorPolyline, distance }) => ({
+            riderId: rider.riderId,
+            polyline: riderVendorPolyline || null,
+            distance_km: distance ? (distance / 1000).toFixed(2) : null,
+            }));
 
-            // Step 5: For each rider, get rider → vendor route
-            let riderPolylines = [];
-            let processedCount = 0;
+            const vendorCustomerPolyline = results[0]?.vendorCustomerPolyline || null;
 
-            riders.forEach((rider, i) => {
-            distanceCustomerVendor(rider.rider_lat, rider.rider_lng, vendorLat, vendorLng, (err, riderVendorRoute) => {
-                if (err) return callback(err);
+            savePolylines(vendorId, customerId, vendorCustomerPolyline, riderPolylines, (err) => {
+            if (err) return callback(err);
 
-                riderPolylines[i] = {
-                riderId: rider.riderId,
-                polyline: riderVendorRoute.polyline || null,
-                distance_km: riderVendorRoute.distance_km,
-                };
+            const result = riderPolylines.map(rp => ({
+                user_id: rp.riderId,
+                distance_km: rp.distance_km,
+                vendor_to_customer_distance_km: results[0]?.distance ? (results[0].distance / 1000).toFixed(2) : null,
+            }));
 
-                processedCount++;
-                console.log(`Processed ${processedCount} of ${riders.length} riders`);
-
-                if (processedCount === riders.length) {
-                // Step 6: Save all polylines in DB at once
-                console.log("vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines",vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines)
-                savePolylines(vendorId, customerId, vendorCustomerRoute.polyline, riderPolylines, (err) => {
-                    if (err) return callback(err);
-
-                    // Step 7: Return lightweight data for notifications
-                    const result = riderPolylines.map(rp => ({
-                    user_id: rp.riderId,
-                    distance_km: rp.distance_km,
-                    vendor_to_customer_distance_km: vendorCustomerRoute.distance_km,
-                    }));
-
-                    callback(null, result);
-                });
-                }
+            callback(null, result);
             });
-            });
-
-        }); // end distanceCustomerVendorCallback vendor->customer
-        }); // end db.query riders
-    }); // end db.query customer
+        });
+        });
+    });
     },
+
     
 
     updateStoreDetails: (user_id, data, callback) => {
