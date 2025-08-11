@@ -233,7 +233,7 @@ const updateOrderStatus = async (req, res) => {
             }));
 
             // Get nearby riders with both polylines
-            const nearbyRiders = await getNearbyRidersWithPolylines(
+            const nearbyRiders = await User.getNearbyRidersWithPolylines(
                 vendor_id,
                 vendor_lat,
                 vendor_lng,
