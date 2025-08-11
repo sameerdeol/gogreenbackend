@@ -848,6 +848,7 @@ const User = {
     },
 
     getNearbyRidersWithPolylines: async (vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm = 3) => {
+        console.log("vendorId, vendorLat, vendorLng, customerId, user_address_id",vendorId, vendorLat, vendorLng, customerId, user_address_id)
         vendorLat = Number(vendorLat);
         vendorLng = Number(vendorLng);
 
