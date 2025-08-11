@@ -910,7 +910,7 @@ const User = {
 
         // Step 4: Get vendor → customer route
         console.log("Calling distanceCustomerVendor for vendor->customer route");
-        distanceCustomerVendorCallback(vendorLat, vendorLng, customer_lat, customer_lng, (err, vendorCustomerRoute) => {
+        distanceCustomerVendor(vendorLat, vendorLng, customer_lat, customer_lng, (err, vendorCustomerRoute) => {
             if (err) return callback(err);
 
             console.log("Got vendorCustomerRoute:", vendorCustomerRoute);
