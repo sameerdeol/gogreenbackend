@@ -479,7 +479,7 @@ const Order = {
                 OD.rider_id = ?;
         `;
 
-        db.query(query, [order_id], callback);
+        db.query(query, [rider_id], callback);
     },
 
 
