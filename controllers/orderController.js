@@ -905,5 +905,70 @@ const handleOrderByRider = async (req, res, io) => {
   }
 };
 
+const orderDetailsForRider = (req, res) => {
+  const { rider_id } = req.params;
 
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, handleOrderByRider};
+  OrderModel.getOrdersByRiderId(rider_id, (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+
+    if (!results || results.length === 0) {
+      return res.status(200).json({ message: "No order found for this ID." });
+    }
+
+    const order = {
+      order_id: results[0].order_id,
+      user_id: results[0].user_id,
+      total_quantity: results[0].total_quantity,
+      total_price: results[0].total_price,
+      payment_method: results[0].payment_method,
+      is_fast_delivery: results[0].is_fast_delivery,
+      order_status: results[0].order_status,
+      created_at: results[0].created_at,
+
+      user: {
+        firstname: results[0].firstname,
+        lastname: results[0].lastname,
+        email: results[0].email,
+        prefix: results[0].prefix,
+        phonenumber: results[0].phonenumber,
+        custom_id: results[0].user_custom_id
+      },
+
+      vendor: {
+        store_name: results[0].store_name,
+        store_address: results[0].store_address,
+        custom_id: results[0].vendor_custom_id
+      },
+
+      rider: {
+        firstname: results[0].rider_first_name,
+        lastname: results[0].rider_last_name,
+        custom_id: results[0].rider_custom_id
+      },
+
+      address: {
+        address: results[0].address,
+        type: results[0].type,
+        floor: results[0].floor,
+        landmark: results[0].landmark
+      },
+
+      products: []
+    };
+
+    results.forEach(row => {
+      order.products.push({
+        product_name: row.product_name,
+        product_size: row.product_size,
+        product_quantity: row.product_quantity,
+        total_item_price: row.total_item_price,
+        single_item_price: row.single_item_price
+      });
+    });
+
+    res.status(200).json(order);
+  });
+};
+
+
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, handleOrderByRider, orderDetailsForRider};

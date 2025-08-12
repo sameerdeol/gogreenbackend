@@ -13,7 +13,8 @@ const {
   verifyOtp,
   getAllOrders,
   orderHistory,
-  handleOrderByRider
+  handleOrderByRider,
+  orderDetailsForRider
 } = require("../controllers/orderController");
 
 // Accept `io` when initializing routes
@@ -32,6 +33,7 @@ module.exports = (io) => {
   router.post('/handle-orderbyrider', verifyToken, (req, res) =>
     handleOrderByRider(req, res, io)
   );
+  router.get('/orderdetailsforrider/:rider_id', verifyToken, orderDetailsForRider)
 
   return router;
 };
