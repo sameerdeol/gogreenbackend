@@ -970,7 +970,11 @@ const orderDetailsForRider = (req, res) => {
       });
     });
 
-    res.status(200).json(Object.values(ordersMap));
+    res.status(200).json({
+    status: true,
+    message: "Orders fetched successfully",
+    data: Object.values(ordersMap)
+    });
   });
 };
 
