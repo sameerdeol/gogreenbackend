@@ -225,45 +225,44 @@ const updateOrderStatus = async (req, res) => {
 
         switch (order_status) {
             case 1:
-            notifications.push(sendNotificationToUser({
-                userId: user_id,
-                title: "Order Confirmed",
-                body: `Your order from ${store_name} is being prepared.`,
-                data: { order_id: orderIdStr, type: "order_update" }
-            }));
-
-            // Get nearby riders with both polylines
-            const nearbyRiders = await User.getNearbyRidersWithPolylines(
-                vendor_id,
-                vendor_lat,
-                vendor_lng,
-                user_id,
-                user_address_id,
-                3 // radius in KM
-            );
-
-            console.log("riders are", nearbyRiders);
-
-            for (const rider of nearbyRiders) {
                 notifications.push(sendNotificationToUser({
-                userId: String(rider.user_id || ""),
-                title: "New Delivery Opportunity",
-                body: `New order from ${store_name} is ready for pickup near you.`,
-                data: {
-                    order_id: String(orderIdStr || ""),
-                    type: "new_order",
-                    vendor_id: String(vendor_id || ""),
-                    distance_from_vendor: String(rider.distance_km ?? "0"),
-                    distance_from_vendor_to_customer: String(rider.vendor_to_customer_distance_km ?? "0"),
-                    vendor_address: String(store_address || ""),
-                    user_address: String(address || ""),
-                    vendor_name: String(store_name || "")
-                }
+                    userId: user_id,
+                    title: "Order Confirmed",
+                    body: `Your order from ${store_name} is being prepared.`,
+                    data: { order_id: orderIdStr, type: "order_update" }
                 }));
-            }
-            break;
 
+                // Get nearby riders with both polylines
+                    User.getNearbyRidersWithPolylines(
+                        vendor_id,
+                        vendor_lat,
+                        vendor_lng,
+                        user_id,
+                        user_address_id,
+                        3, // radius in KM
+                        (err, nearbyRiders) => {
+                            if (err) {
+                                console.error("Error getting nearby riders:", err);
+                                return;
+                            }
 
+                            // console.log("riders are", nearbyRiders);
+
+                            for (const rider of nearbyRiders) {
+                                notifications.push(sendNotificationToUser({
+                                    userId: String(rider.user_id || ""),
+                                    title: "New Delivery Opportunity",
+                                    body: `New order from ${store_name} is ready for pickup near you.`,
+                                    data: {
+                                        order_id: String(orderIdStr || ""),
+                                        type: "new_order",
+                                        vendor_id: String(vendor_id || "")
+                                    }
+                                }));
+                            }
+                        }
+                    );
+                break;
 
             case 2:
                 const otp = generateOtp(6);
@@ -761,6 +760,7 @@ const orderHistory = async (req, res) => {
         if (!results || results.length === 0) {
             return res.status(200).json({ message: "No order found." });
         }
+
         // Group orders by order_id
         const ordersMap = {};
 
@@ -830,7 +830,9 @@ const orderHistory = async (req, res) => {
             }
         });
 
-        const groupedOrders = Object.values(ordersMap);
+        // Sort grouped orders by created_at DESC
+        const groupedOrders = Object.values(ordersMap)
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         res.status(200).json({
             total: groupedOrders.length,
@@ -838,6 +840,7 @@ const orderHistory = async (req, res) => {
         });
     });
 };
+
 
 const handleOrderByRider = async (req, res, io) => {
   const { orderId, riderId, action } = req.body;

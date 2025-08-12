@@ -848,9 +848,9 @@ const User = {
     },
 
     getNearbyRidersWithPolylines: (vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm = 3, callback) => {
-    console.log("getNearbyRidersWithPolylines called with:", {
-        vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm
-    });
+    // console.log("getNearbyRidersWithPolylines called with:", {
+    //     vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm
+    // });
 
     vendorLat = Number(vendorLat);
     vendorLng = Number(vendorLng);
@@ -876,7 +876,7 @@ const User = {
         }
 
         const { customer_lat, customer_lng } = customerResults[0];
-        console.log("Customer coordinates:", { customer_lat, customer_lng });
+        // console.log("Customer coordinates:", { customer_lat, customer_lng });
 
         const latDelta = radiusInKm / 111;
         const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
@@ -885,7 +885,7 @@ const User = {
         const minLng = Number((vendorLng - lngDelta).toFixed(6));
         const maxLng = Number((vendorLng + lngDelta).toFixed(6));
 
-        console.log("Bounding box for riders:", { minLat, maxLat, minLng, maxLng });
+        // console.log("Bounding box for riders:", { minLat, maxLat, minLng, maxLng });
 
         const sqlRiders = `
         SELECT user_id AS riderId, rider_lat, rider_lng
@@ -903,7 +903,7 @@ const User = {
             return callback(null, []);
         }
 
-        console.log("Riders found:", riders);
+        // console.log("Riders found:", riders);
 
         // Use callback-style getDistanceMatrix here
         getDistanceMatrix(vendorLat, vendorLng, riders, customer_lat, customer_lng, (err, results) => {
