@@ -912,52 +912,56 @@ const orderDetailsForRider = (req, res) => {
     if (err) return res.status(500).json({ error: "Database error" });
 
     if (!results || results.length === 0) {
-      return res.status(200).json({ message: "No order found for this ID." });
+      return res.status(404).json({ message: "No order found for this rider." });
     }
 
-    const order = {
-      order_id: results[0].order_id,
-      user_id: results[0].user_id,
-      total_quantity: results[0].total_quantity,
-      total_price: results[0].total_price,
-      payment_method: results[0].payment_method,
-      is_fast_delivery: results[0].is_fast_delivery,
-      order_status: results[0].order_status,
-      created_at: results[0].created_at,
-
-      user: {
-        firstname: results[0].firstname,
-        lastname: results[0].lastname,
-        email: results[0].email,
-        prefix: results[0].prefix,
-        phonenumber: results[0].phonenumber,
-        custom_id: results[0].user_custom_id
-      },
-
-      vendor: {
-        store_name: results[0].store_name,
-        store_address: results[0].store_address,
-        custom_id: results[0].vendor_custom_id
-      },
-
-      rider: {
-        firstname: results[0].rider_first_name,
-        lastname: results[0].rider_last_name,
-        custom_id: results[0].rider_custom_id
-      },
-
-      address: {
-        address: results[0].address,
-        type: results[0].type,
-        floor: results[0].floor,
-        landmark: results[0].landmark
-      },
-
-      products: []
-    };
+    const ordersMap = {};
 
     results.forEach(row => {
-      order.products.push({
+      if (!ordersMap[row.order_id]) {
+        ordersMap[row.order_id] = {
+          order_id: row.order_id,
+          user_id: row.user_id,
+          total_quantity: row.total_quantity,
+          total_price: row.total_price,
+          payment_method: row.payment_method,
+          is_fast_delivery: row.is_fast_delivery,
+          order_status: row.order_status,
+          created_at: row.created_at,
+
+          user: {
+            firstname: row.firstname,
+            lastname: row.lastname,
+            email: row.email,
+            prefix: row.prefix,
+            phonenumber: row.phonenumber,
+            custom_id: row.user_custom_id
+          },
+
+          vendor: {
+            store_name: row.store_name,
+            store_address: row.store_address,
+            custom_id: row.vendor_custom_id
+          },
+
+          rider: {
+            firstname: row.rider_first_name,
+            lastname: row.rider_last_name,
+            custom_id: row.rider_custom_id
+          },
+
+          address: {
+            address: row.address,
+            type: row.type,
+            floor: row.floor,
+            landmark: row.landmark
+          },
+
+          products: []
+        };
+      }
+
+      ordersMap[row.order_id].products.push({
         product_name: row.product_name,
         product_size: row.product_size,
         product_quantity: row.product_quantity,
@@ -966,9 +970,10 @@ const orderDetailsForRider = (req, res) => {
       });
     });
 
-    res.status(200).json(order);
+    res.status(200).json(Object.values(ordersMap));
   });
 };
+
 
 
  module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, handleOrderByRider, orderDetailsForRider};
