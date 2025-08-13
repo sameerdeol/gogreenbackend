@@ -250,7 +250,7 @@ const Product = {
     
         db.query(query, values, (err, result) => {
             if (err) {
-                return callback('Database error while updating product.', null);
+                return callback('Database error while updating product.',err, null);
             }
             if (result.affectedRows === 0) {
                 return callback('Product not found or no changes made.', null);
