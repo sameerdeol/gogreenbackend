@@ -167,7 +167,7 @@ const Order = {
         ;
     `;
 
-    db.query(query, [vendor_id], callback);
+    db.query(query, [order_id], callback);
     },
     // getOrdersByOrderId : (order_id, callback) => {
     //     const query = `
