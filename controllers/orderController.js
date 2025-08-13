@@ -511,71 +511,161 @@ const getAllOrders = async (req, res) => {
 };
 
 
-const getOrderDetails = (req, res) => {
-  const { order_id } = req.body;
+// const getOrderDetails = (req, res) => {
+//   const { order_id } = req.body;
 
-//   OrderModel.getOrdersByOrderId(order_id, (err, results) => {
-//     if (err) return res.status(500).json({ error: "Database error" });
+// //   OrderModel.getOrdersByOrderId(order_id, (err, results) => {
+// //     if (err) return res.status(500).json({ error: "Database error" });
 
-//     if (!results || results.length === 0) {
-//       return res.status(200).json({ message: "No order found for this ID." });
-//     }
+// //     if (!results || results.length === 0) {
+// //       return res.status(200).json({ message: "No order found for this ID." });
+// //     }
 
-//     const order = {
-//       order_id: results[0].order_id,
-//       order_uid: results[0].order_uid,
-//       user_id: results[0].user_id,
-//       total_quantity: results[0].total_quantity,
-//       total_price: results[0].total_price,
-//       payment_method: results[0].payment_method,
-//       is_fast_delivery: results[0].is_fast_delivery,
-//       order_status: results[0].order_status,
-//       created_at: results[0].created_at,
+// //     const order = {
+// //       order_id: results[0].order_id,
+// //       order_uid: results[0].order_uid,
+// //       user_id: results[0].user_id,
+// //       total_quantity: results[0].total_quantity,
+// //       total_price: results[0].total_price,
+// //       payment_method: results[0].payment_method,
+// //       is_fast_delivery: results[0].is_fast_delivery,
+// //       order_status: results[0].order_status,
+// //       created_at: results[0].created_at,
 
-//       user: {
-//         firstname: results[0].firstname,
-//         lastname: results[0].lastname,
-//         email: results[0].email,
-//         prefix: results[0].prefix,
-//         phonenumber: results[0].phonenumber,
-//         custom_id: results[0].user_custom_id
-//       },
+// //       user: {
+// //         firstname: results[0].firstname,
+// //         lastname: results[0].lastname,
+// //         email: results[0].email,
+// //         prefix: results[0].prefix,
+// //         phonenumber: results[0].phonenumber,
+// //         custom_id: results[0].user_custom_id
+// //       },
 
-//       vendor: {
-//         store_name: results[0].store_name,
-//         store_address: results[0].store_address,
-//         custom_id: results[0].vendor_custom_id
-//       },
+// //       vendor: {
+// //         store_name: results[0].store_name,
+// //         store_address: results[0].store_address,
+// //         custom_id: results[0].vendor_custom_id
+// //       },
 
-//       rider: {
-//         firstname: results[0].rider_first_name,
-//         lastname: results[0].rider_last_name,
-//         custom_id: results[0].rider_custom_id
-//       },
+// //       rider: {
+// //         firstname: results[0].rider_first_name,
+// //         lastname: results[0].rider_last_name,
+// //         custom_id: results[0].rider_custom_id
+// //       },
 
-//       address: {
-//         address: results[0].address,
-//         type: results[0].type,
-//         floor: results[0].floor,
-//         landmark: results[0].landmark
-//       },
+// //       address: {
+// //         address: results[0].address,
+// //         type: results[0].type,
+// //         floor: results[0].floor,
+// //         landmark: results[0].landmark
+// //       },
 
-//       products: []
-//     };
+// //       products: []
+// //     };
 
-//     results.forEach(row => {
-//       order.products.push({
-//         product_name: row.product_name,
-//         product_size: row.product_size,
-//         product_quantity: row.product_quantity,
-//         total_item_price: row.total_item_price,
-//         single_item_price: row.single_item_price
-//       });
+// //     results.forEach(row => {
+// //       order.products.push({
+// //         product_name: row.product_name,
+// //         product_size: row.product_size,
+// //         product_quantity: row.product_quantity,
+// //         total_item_price: row.total_item_price,
+// //         single_item_price: row.single_item_price
+// //       });
+// //     });
+
+// //     res.status(200).json(order);
+// //   });
+//         OrderModel.getOrdersByOrderId(order_id, (err, results) => {
+//         if (err) return res.status(500).json({ error: "Database error" });
+
+//         if (!results || results.length === 0) {
+//             return res.status(200).json({ message: "No order found for this vendor." });
+//         }
+
+//         const ordersMap = {};
+
+//         results.forEach(row => {
+//             const {
+//                 order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
+//                 payment_method, order_status, order_created_at,
+//                 product_id, product_name, product_description,
+//                 product_price, food_type, total_item_price,
+//                 variant_id, variant_type, variant_value, variant_price,
+//                 addon_id, addon_name, addon_price,
+//                 address, type, floor, landmark,
+//                 firstname, lastname, phonenumber, prefix, is_fast_delivery
+//             } = row;
+
+//             if (!ordersMap[order_id]) {
+//                 ordersMap[order_id] = {
+//                     order_id,
+//                     order_uid,
+//                     preparing_time,
+//                     is_fast_delivery,
+//                     user_id,
+//                     total_quantity,
+//                     total_price,
+//                     payment_method,
+//                     order_status,
+//                     order_created_at,
+//                     firstname,
+//                     lastname,
+//                     phonenumber,
+//                     prefix,
+//                     address,
+//                     type,
+//                     floor,
+//                     landmark,
+//                     items: []
+//                 };
+//             }
+
+//             // Find if the item (product + variant) already exists
+//             const existingItem = ordersMap[order_id].items.find(item =>
+//                 item.product_id === product_id &&
+//                 item.variant_id === variant_id
+//             );
+
+//             const addonObj = addon_id
+//                 ? {
+//                     addon_id,
+//                     addon_name,
+//                     addon_price
+//                 }
+//                 : null;
+
+//             if (existingItem) {
+//                 // Add addon to existing item
+//                 if (addonObj) {
+//                     existingItem.addons.push(addonObj);
+//                 }
+//             } else {
+//                 // Create new item with optional addon
+//                 const newItem = {
+//                     product_id,
+//                     product_name,
+//                     product_description,
+//                     product_price,
+//                     food_type,
+//                     total_item_price,
+//                     variant_id,
+//                     variant_type,
+//                     variant_value,
+//                     variant_price,
+//                     addons: addonObj ? [addonObj] : []
+//                 };
+//                 ordersMap[order_id].items.push(newItem);
+//             }
+//         });
+
+//         const groupedOrders = Object.values(ordersMap);
+//         res.status(200).json(groupedOrders);
 //     });
+// };
+const getOrderDetails = (req, res) => {
+    const { order_id } = req.body;
 
-//     res.status(200).json(order);
-//   });
-        OrderModel.getOrdersByOrderId(order_id, (err, results) => {
+    OrderModel.getOrdersByOrderId(order_id, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
 
         if (!results || results.length === 0) {
@@ -588,7 +678,7 @@ const getOrderDetails = (req, res) => {
             const {
                 order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
                 payment_method, order_status, order_created_at,
-                product_id, product_name, product_description,
+                order_item_id, product_id, product_name, product_description,
                 product_price, food_type, total_item_price,
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
@@ -596,6 +686,7 @@ const getOrderDetails = (req, res) => {
                 firstname, lastname, phonenumber, prefix, is_fast_delivery
             } = row;
 
+            // If this order doesn't exist in map, initialize it
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
                     order_id,
@@ -620,42 +711,23 @@ const getOrderDetails = (req, res) => {
                 };
             }
 
-            // Find if the item (product + variant) already exists
-            const existingItem = ordersMap[order_id].items.find(item =>
-                item.product_id === product_id &&
-                item.variant_id === variant_id
-            );
+            // Create item entry (each DB row = 1 item)
+            const newItem = {
+                order_item_id,
+                product_id,
+                product_name,
+                product_description,
+                product_price,
+                food_type,
+                total_item_price,
+                variant_id,
+                variant_type,
+                variant_value,
+                variant_price,
+                addons: addon_id ? [{ addon_id, addon_name, addon_price }] : []
+            };
 
-            const addonObj = addon_id
-                ? {
-                    addon_id,
-                    addon_name,
-                    addon_price
-                }
-                : null;
-
-            if (existingItem) {
-                // Add addon to existing item
-                if (addonObj) {
-                    existingItem.addons.push(addonObj);
-                }
-            } else {
-                // Create new item with optional addon
-                const newItem = {
-                    product_id,
-                    product_name,
-                    product_description,
-                    product_price,
-                    food_type,
-                    total_item_price,
-                    variant_id,
-                    variant_type,
-                    variant_value,
-                    variant_price,
-                    addons: addonObj ? [addonObj] : []
-                };
-                ordersMap[order_id].items.push(newItem);
-            }
+            ordersMap[order_id].items.push(newItem);
         });
 
         const groupedOrders = Object.values(ordersMap);
