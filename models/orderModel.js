@@ -99,6 +99,7 @@ const Order = {
         const query = `
         SELECT 
             OD.id AS order_id,
+            OD.order_uid,
             OD.user_id,
             OD.total_quantity,
             OD.total_price,

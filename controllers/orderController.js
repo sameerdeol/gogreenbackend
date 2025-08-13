@@ -523,6 +523,7 @@ const getOrderDetails = (req, res) => {
 
     const order = {
       order_id: results[0].order_id,
+      order_uid: results[0].order_uid,
       user_id: results[0].user_id,
       total_quantity: results[0].total_quantity,
       total_price: results[0].total_price,
