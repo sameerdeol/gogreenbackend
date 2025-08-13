@@ -96,69 +96,143 @@ const Order = {
         db.query(query, [vendor_id], callback);
     },
     getOrdersByOrderId : (order_id, callback) => {
-        const query = `
+    const query = `
         SELECT 
             OD.id AS order_id,
             OD.order_uid,
+            OD.preparing_time,
+            OD.is_fast_delivery,
             OD.user_id,
             OD.total_quantity,
             OD.total_price,
             OD.payment_method,
-            OD.is_fast_delivery,
             OD.order_status,
-            OD.created_at,
+            OD.created_at AS order_created_at,
 
-            U.firstname,
-            U.lastname,
-            U.email,
-            U.prefix,
-            U.phonenumber,
-            U.custom_id AS user_custom_id,
+            OI.id AS order_item_id,
+            OI.product_id,
+
+            -- Total item price = product + variant + addon
+            (P.price + IFNULL(PV.price, 0) + IFNULL(PA.price, 0)) AS total_item_price,
+
+            P.name AS product_name,
+            P.description AS product_description,
+            P.price AS product_price,
+            P.food_type,
 
             UA.address,
             UA.type,
             UA.floor,
             UA.landmark,
 
-            V.store_address,
-            V.store_name,
-            VU.custom_id AS vendor_custom_id,
+            U.firstname,
+            U.lastname,
+            U.phonenumber,
 
-            R.firstname AS rider_first_name,
-            R.lastname AS rider_last_name,
-            R.custom_id AS rider_custom_id,
+            PV.id AS variant_id,
+            PV.type AS variant_type,
+            PV.value AS variant_value,
+            PV.price AS variant_price,
 
-            OI.product_quantity,
-            OI.total_item_price,
-            OI.single_item_price,
-
-            P.name AS product_name,
-            P.size AS product_size
+            PA.id AS addon_id,
+            PA.name AS addon_name,
+            PA.price AS addon_price
 
         FROM 
             order_details OD
         LEFT JOIN 
-            users U ON U.id = OD.user_id               /* Customer */
+            order_items OI ON OD.id = OI.order_id
         LEFT JOIN 
-            users VU ON VU.id = OD.vendor_id           /* Vendor */
+            products P ON OI.product_id = P.id
         LEFT JOIN 
-            users R ON R.id = OD.rider_id              /* Rider */
+            users U ON OD.user_id = U.id
         LEFT JOIN 
-            user_addresses UA ON UA.id = OD.user_address_id
+            user_addresses UA ON OD.user_address_id = UA.id
+
+        -- Join variant
         LEFT JOIN 
-            vendors V ON V.user_id = OD.vendor_id
+            product_variants PV ON OI.variant_id = PV.id
+
+        -- Join addon directly (no separate addons table)
         LEFT JOIN 
-            order_items OI ON OI.order_id = OD.id
+            order_item_addons OIA ON OIA.order_item_id = OI.id
         LEFT JOIN 
-            products P ON P.id = OI.product_id
+            product_addons PA ON OIA.addon_id = PA.id
+
+
         WHERE 
             OD.id = ?
-        LIMIT 0, 1000;
+        ORDER BY 
+            OD.created_at DESC;
         ;
-        `;
+    `;
 
-        db.query(query, [order_id], callback);
+    db.query(query, [vendor_id], callback);
     },
+    // getOrdersByOrderId : (order_id, callback) => {
+    //     const query = `
+    //     SELECT 
+    //         OD.id AS order_id,
+    //         OD.order_uid,
+    //         OD.user_id,
+    //         OD.total_quantity,
+    //         OD.total_price,
+    //         OD.payment_method,
+    //         OD.is_fast_delivery,
+    //         OD.order_status,
+    //         OD.created_at,
+
+    //         U.firstname,
+    //         U.lastname,
+    //         U.email,
+    //         U.prefix,
+    //         U.phonenumber,
+    //         U.custom_id AS user_custom_id,
+
+    //         UA.address,
+    //         UA.type,
+    //         UA.floor,
+    //         UA.landmark,
+
+    //         V.store_address,
+    //         V.store_name,
+    //         VU.custom_id AS vendor_custom_id,
+
+    //         R.firstname AS rider_first_name,
+    //         R.lastname AS rider_last_name,
+    //         R.custom_id AS rider_custom_id,
+
+    //         OI.product_quantity,
+    //         OI.total_item_price,
+    //         OI.single_item_price,
+
+    //         P.name AS product_name,
+    //         P.size AS product_size
+
+    //     FROM 
+    //         order_details OD
+    //     LEFT JOIN 
+    //         users U ON U.id = OD.user_id               /* Customer */
+    //     LEFT JOIN 
+    //         users VU ON VU.id = OD.vendor_id           /* Vendor */
+    //     LEFT JOIN 
+    //         users R ON R.id = OD.rider_id              /* Rider */
+    //     LEFT JOIN 
+    //         user_addresses UA ON UA.id = OD.user_address_id
+    //     LEFT JOIN 
+    //         vendors V ON V.user_id = OD.vendor_id
+    //     LEFT JOIN 
+    //         order_items OI ON OI.order_id = OD.id
+    //     LEFT JOIN 
+    //         products P ON P.id = OI.product_id
+    //     WHERE 
+    //         OD.id = ?
+    //     LIMIT 0, 1000;
+    //     ;
+    //     `;
+
+    //     db.query(query, [order_id], callback);
+    // },
     getAllOrders : (callback) => {
         const query = `
         SELECT 

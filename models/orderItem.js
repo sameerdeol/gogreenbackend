@@ -1,11 +1,11 @@
 const db = require("../config/db");
 
 const OrderItem = {
-    addItem: (order_id, user_id, product_id, product_quantity, single_item_price, item_price, variant_price, variant_id, callback) => {
+    addItem: (order_id, user_id, product_id, product_quantity, single_item_price, item_price, variant_id, variant_price, callback) => {
         const sql = `INSERT INTO order_items 
-            (user_id, order_id, product_id, product_quantity, single_item_price, total_item_price, variant_price, variant_id) 
+            (user_id, order_id, product_id, product_quantity, single_item_price, total_item_price, variant_id, variant_price) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-        db.query(sql, [user_id, order_id, product_id, product_quantity, single_item_price, item_price, variant_price, variant_id], callback);
+        db.query(sql, [user_id, order_id, product_id, product_quantity, single_item_price, item_price, variant_id, variant_price], callback);
     },
 
     getOrderItems: (order_id, callback) => {
