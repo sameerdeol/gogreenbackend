@@ -97,61 +97,63 @@ const Order = {
     },
     getOrdersByOrderId : (order_id, callback) => {
         const query = `
-            SELECT 
-                OD.id AS order_id,
-                OD.user_id,
-                OD.total_quantity,
-                OD.total_price,
-                OD.payment_method,
-                OD.is_fast_delivery,
-                OD.order_status,
-                OD.created_at,
+        SELECT 
+            OD.id AS order_id,
+            OD.user_id,
+            OD.total_quantity,
+            OD.total_price,
+            OD.payment_method,
+            OD.is_fast_delivery,
+            OD.order_status,
+            OD.created_at,
 
-                U.firstname,
-                U.lastname,
-                U.email,
-                U.prefix,
-                U.phonenumber,
-                U.custom_id AS user_custom_id,
+            U.firstname,
+            U.lastname,
+            U.email,
+            U.prefix,
+            U.phonenumber,
+            U.custom_id AS user_custom_id,
 
-                UA.address,
-                UA.type,
-                UA.floor,
-                UA.landmark,
+            UA.address,
+            UA.type,
+            UA.floor,
+            UA.landmark,
 
-                V.store_address,
-                V.store_name,
-                VU.custom_id AS vendor_custom_id,
+            V.store_address,
+            V.store_name,
+            VU.custom_id AS vendor_custom_id,
 
-                R.firstname AS rider_first_name,
-                R.lastname AS rider_last_name,
-                R.custom_id AS rider_custom_id,
+            R.firstname AS rider_first_name,
+            R.lastname AS rider_last_name,
+            R.custom_id AS rider_custom_id,
 
-                OI.product_quantity,
-                OI.total_item_price,
-                OI.single_item_price,
+            OI.product_quantity,
+            OI.total_item_price,
+            OI.single_item_price,
 
-                P.name AS product_name,
-                P.size AS product_size
+            P.name AS product_name,
+            P.size AS product_size
 
-            FROM 
-                order_details OD
-            JOIN 
-                users U ON U.id = OD.user_id               -- Customer
-            JOIN 
-                users VU ON VU.id = OD.vendor_id           -- Vendor
-            JOIN 
-                users R ON R.id = OD.rider_id              -- Rider
-            JOIN 
-                user_addresses UA ON UA.id = OD.user_address_id
-            JOIN 
-                vendors V ON V.user_id = OD.vendor_id
-            JOIN 
-                order_items OI ON OI.order_id = OD.id
-            JOIN 
-                products P ON P.id = OI.product_id
-            WHERE 
-                OD.id = ?;
+        FROM 
+            order_details OD
+        LEFT JOIN 
+            users U ON U.id = OD.user_id               /* Customer */
+        LEFT JOIN 
+            users VU ON VU.id = OD.vendor_id           /* Vendor */
+        LEFT JOIN 
+            users R ON R.id = OD.rider_id              /* Rider */
+        LEFT JOIN 
+            user_addresses UA ON UA.id = OD.user_address_id
+        LEFT JOIN 
+            vendors V ON V.user_id = OD.vendor_id
+        LEFT JOIN 
+            order_items OI ON OI.order_id = OD.id
+        LEFT JOIN 
+            products P ON P.id = OI.product_id
+        WHERE 
+            OD.id = ?
+        LIMIT 0, 1000;
+        ;
         `;
 
         db.query(query, [order_id], callback);
