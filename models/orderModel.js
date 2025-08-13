@@ -128,6 +128,7 @@ const Order = {
             U.firstname,
             U.lastname,
             U.phonenumber,
+            U.prefix,
 
             PV.id AS variant_id,
             PV.type AS variant_type,

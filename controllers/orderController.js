@@ -593,7 +593,7 @@ const getOrderDetails = (req, res) => {
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
                 address, type, floor, landmark,
-                firstname, lastname, phonenumber, is_fast_delivery
+                firstname, lastname, phonenumber, prefix, is_fast_delivery
             } = row;
 
             if (!ordersMap[order_id]) {
@@ -611,6 +611,7 @@ const getOrderDetails = (req, res) => {
                     firstname,
                     lastname,
                     phonenumber,
+                    prefix,
                     address,
                     type,
                     floor,
