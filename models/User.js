@@ -606,11 +606,29 @@ const User = {
         }else {
             query = `
                 SELECT 
-                    u.firstname, u.lastname, u.email, u.phonenumber,u.custom_id, 
-                    c.id AS customer_id, c.dob, c.gender
-                FROM users u 
-                LEFT JOIN customers c ON c.user_id = u.id 
-                WHERE u.id = ? AND u.role_id = ?;
+                    u.firstname, 
+                    u.lastname, 
+                    u.email, 
+                    u.phonenumber, 
+                    u.custom_id, 
+                    c.id AS customer_id, 
+                    c.dob, 
+                    c.gender, 
+                    ua.*
+                FROM users u
+                LEFT JOIN customers c 
+                    ON c.user_id = u.id
+                LEFT JOIN user_addresses ua 
+                    ON ua.id = (
+                        SELECT od.user_address_id
+                        FROM order_details od
+                        WHERE od.user_id = u.id
+                        ORDER BY od.created_at DESC
+                        LIMIT 1
+                    )
+                WHERE u.id = ? 
+                AND u.role_id = ?;
+                ;
             `;
             queryParams.push(roleId); // You also need to push roleId here!
         }
