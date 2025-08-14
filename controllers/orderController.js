@@ -817,6 +817,7 @@ const verifyOtp = async (req, res) => {
 
 const getOrdersByVendorId = (req, res) => {
     const { vendor_id } = req.body;
+    const { filter } = req.params; // "today" or "all"
 
     OrderModel.getOrdersByUserId(vendor_id, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
@@ -825,9 +826,27 @@ const getOrdersByVendorId = (req, res) => {
             return res.status(200).json({ message: "No order found for this vendor." });
         }
 
+        // ✅ Filter orders for today if filter is "today"
+        let filteredResults = results;
+        if (filter && filter.toLowerCase() === "today") {
+            const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+            filteredResults = results.filter(row => {
+                const orderDate = new Date(row.order_created_at).toISOString().split("T")[0];
+                return orderDate === today;
+            });
+        }
+
+        if (filteredResults.length === 0) {
+            return res.status(200).json({
+                message: filter.toLowerCase() === "today"
+                    ? "No order found for today."
+                    : "No order found for this vendor."
+            });
+        }
+
         const ordersMap = {};
 
-        results.forEach(row => {
+        filteredResults.forEach(row => {
             const {
                 order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
                 payment_method, order_status, order_created_at,
@@ -862,28 +881,21 @@ const getOrdersByVendorId = (req, res) => {
                 };
             }
 
-            // Find if the item (product + variant) already exists
             const existingItem = ordersMap[order_id].items.find(item =>
                 item.product_id === product_id &&
                 item.variant_id === variant_id
             );
 
             const addonObj = addon_id
-                ? {
-                    addon_id,
-                    addon_name,
-                    addon_price
-                }
+                ? { addon_id, addon_name, addon_price }
                 : null;
 
             if (existingItem) {
-                // Add addon to existing item
                 if (addonObj) {
                     existingItem.addons.push(addonObj);
                 }
             } else {
-                // Create new item with optional addon
-                const newItem = {
+                ordersMap[order_id].items.push({
                     product_id,
                     product_name,
                     product_description,
@@ -895,15 +907,15 @@ const getOrdersByVendorId = (req, res) => {
                     variant_value,
                     variant_price,
                     addons: addonObj ? [addonObj] : []
-                };
-                ordersMap[order_id].items.push(newItem);
+                });
             }
         });
 
-        const groupedOrders = Object.values(ordersMap);
-        res.status(200).json(groupedOrders);
+        res.status(200).json(Object.values(ordersMap));
     });
 };
+
+
 
 
 

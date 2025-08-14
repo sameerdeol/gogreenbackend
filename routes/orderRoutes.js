@@ -23,7 +23,7 @@ module.exports = (io) => {
   router.put('/updateorderstatus', verifyToken, updateOrderStatus);
   router.post('/getorderbyuserID', verifyToken, getOrdersByUserId);
   router.post('/getorderdetails', verifyToken, getOrderDetails);
-  router.post('/getallorderbyvendorid', verifyToken, getOrdersByVendorId);
+  router.post('/getallorderbyvendorid/:filter', verifyToken, getOrdersByVendorId);
   router.post('/list', verifyToken, getAllOrders);
   router.post('/updateordertiming', verifyToken, updateOrderTiming);
   router.post('/verifyotprider', verifyOtp);
