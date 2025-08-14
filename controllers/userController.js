@@ -20,7 +20,6 @@ const appsignup = async (req, res) => {
     try {
         const { phonenumber, otp, prefix, role_id } = req.body;
 
-        // Validate required fields
         if (!phonenumber || !prefix) {
             return res.status(400).json({
                 success: false,
@@ -35,14 +34,16 @@ const appsignup = async (req, res) => {
                 message: "Invalid OTP",
             });
         }
+
         const userData = {
-            prefix: prefix,
-            phonenumber: phonenumber,
-            role_id: role_id,
-            is_verified:1
+            prefix,
+            phonenumber,
+            role_id,
+            is_verified: 1
         };
+
         // Check if user already exists
-        User.findCustomerByPhone(phonenumber,role_id, (err, result) => {
+        User.findCustomerByPhoneWithAddressFlag(phonenumber, role_id, (err, result) => {
             if (err) {
                 console.error("Error checking user:", err);
                 return res.status(500).json({
@@ -63,9 +64,11 @@ const appsignup = async (req, res) => {
                     success: true,
                     message: "Login successful",
                     token,
+                    is_user_address_available: !!user.is_user_address_available // Convert to boolean
                 });
             }
-            console.log
+
+            // If user doesn't exist, insert
             User.insertUser(userData, (err, newUserResult) => {
                 if (err) {
                     console.error("Error inserting user:", err);
@@ -76,9 +79,9 @@ const appsignup = async (req, res) => {
                     });
                 }
 
-                const newUserId = newUserResult.insertId; // Get new user ID
+                const newUserId = newUserResult.insertId;
                 const token = jwt.sign(
-                    { id: newUserId, role_id: role_id, phonenumber: phonenumber},
+                    { id: newUserId, role_id, phonenumber },
                     process.env.JWT_SECRET
                 );
 
@@ -87,9 +90,11 @@ const appsignup = async (req, res) => {
                     message: "User created and logged in successfully",
                     user: { id: newUserId, phonenumber, role_id },
                     token,
+                    is_user_address_available: false // New user → no addresses yet
                 });
             });
         });
+
     } catch (error) {
         console.error("Unexpected Error:", error);
         res.status(500).json({
@@ -99,6 +104,7 @@ const appsignup = async (req, res) => {
         });
     }
 };
+
 
 
 

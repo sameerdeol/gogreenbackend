@@ -353,7 +353,19 @@ const User = {
     
 
     findCustomerByPhone : (phonenumber,role_id, callback) => {
-        const sql = `SELECT * FROM users WHERE phonenumber = ? and role_id= ?`;
+        const sql = `SELECT 
+                        u.*,
+                        CASE 
+                            WHEN COUNT(ua.id) > 0 THEN TRUE
+                            ELSE FALSE
+                        END AS is_user_address_available
+                    FROM users u
+                    LEFT JOIN user_addresses ua 
+                        ON ua.user_id = u.id
+                    WHERE u.phonenumber = ? 
+                    AND u.role_id = ?
+                    GROUP BY u.id;
+                    `;
         db.query(sql, [phonenumber,role_id], (err, result) => {
             if (err) {
                 return callback(err, null);
