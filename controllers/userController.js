@@ -43,7 +43,7 @@ const appsignup = async (req, res) => {
         };
 
         // Check if user already exists
-        User.findCustomerByPhoneWithAddressFlag(phonenumber, role_id, (err, result) => {
+        User.findCustomerByPhone(phonenumber, role_id, (err, result) => {
             if (err) {
                 console.error("Error checking user:", err);
                 return res.status(500).json({
