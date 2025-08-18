@@ -22,5 +22,6 @@ router.put('/chnage-riderPwd', userController.changePassword); // If needed, imp
 router.put('/updateRider-location', verifyToken, riderController.updateRiderLocation);
 router.get('/getallridersforadmin', verifyToken, riderController.allRidersforAdmin);
 router.get('/getallridersforadminbyID/:rider_id', verifyToken, riderController.allRidersforAdminbyRiderID);
+router.post('/rider-analytics', verifyToken, riderController.riderAnalytics);
 
 module.exports = router; 

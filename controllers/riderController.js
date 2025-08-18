@@ -668,6 +668,23 @@ const updateVehicleDetails = async (req, res) => {
     });
 };
 
+const riderAnalytics = (req, res) => {
+    const { rider_id } = req.body;
+
+    if (!rider_id) {
+        return res.status(400).json({ success: false, message: "Vendor ID is required" });
+    }
+
+    User.getVendorAnalytics(rider_id, (err, analytics) => {
+        if (err) {
+            console.error("Analytics Error:", err);
+            return res.status(500).json({ success: false, message: "Internal Server Error" });
+        }
+
+        return res.json({ success: true, data: analytics });
+    });
+}
+
 
 
 
@@ -683,5 +700,6 @@ module.exports = {
     allRidersforAdminbyRiderID,
     riderPersonalDetails,
     vehicleDetails,
-    updateVehicleDetails
+    updateVehicleDetails,
+    riderAnalytics
 }; 

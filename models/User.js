@@ -552,11 +552,39 @@ const User = {
         if (roleId === 4) {
             query = `
                 SELECT 
-                    u.username ,u.firstname, u.lastname, u.email, u.phonenumber, u.prefix, u.status,u.custom_id, 
-                    dp.id AS delivery_partners_id, dp.sin_code, dp.license_number, dp.profile_pic, dp.license_number, other_phone_number, dob, address  
-                FROM users u 
-                LEFT JOIN delivery_partners dp ON dp.user_id = u.id 
-                WHERE u.id = ? AND u.role_id = ?;
+                    u.username,
+                    u.firstname,
+                    u.lastname,
+                    u.email,
+                    u.phonenumber,
+                    u.prefix,
+                    u.status,
+                    u.custom_id,
+                    dp.id AS delivery_partners_id,
+                    dp.sin_code,
+                    dp.license_number,
+                    dp.profile_pic,
+                    dp.license_number,
+                    dp.other_phone_number,
+                    dp.dob,
+                    dp.address,
+                    CAST(IFNULL(od.total_orders, 0) AS SIGNED) AS total_orders,
+                    CAST(IFNULL(od.completed_orders, 0) AS SIGNED) AS completed_orders,
+                    CAST(IFNULL(od.rejected_orders, 0) AS SIGNED) AS rejected_orders
+                FROM users u
+                LEFT JOIN delivery_partners dp 
+                    ON dp.user_id = u.id
+                LEFT JOIN (
+                    SELECT 
+                        rider_id,
+                        COUNT(*) AS total_orders,
+                        SUM(order_status = 4) AS completed_orders,
+                        SUM(order_status = 5) AS rejected_orders
+                    FROM order_details
+                    WHERE order_status IN (4, 5)
+                    GROUP BY rider_id
+                ) od ON od.rider_id = dp.user_id
+                WHERE u.id = 63 AND u.role_id = 4;
             `;
             queryParams.push(roleId); // Add roleId to parameters
         } else if(roleId ===3) {
@@ -1250,6 +1278,124 @@ const User = {
                                                 SELECT user_id 
                                                 FROM order_details 
                                                 WHERE vendor_id = ? AND user_id IS NOT NULL
+                                                GROUP BY user_id 
+                                                HAVING COUNT(*) > 1
+                                            ) AS repeat_customers
+                                        ) AS rc
+                                        JOIN (
+                                            SELECT COUNT(DISTINCT user_id) AS total_users 
+                                            FROM order_details 
+                                            WHERE vendor_id = ? AND user_id IS NOT NULL
+                                        ) AS t
+                                    `;
+                                    db.query(repeatCustomerQuery, [vendorId, vendorId], (err, result8) => {
+                                        if (err) return callback(err);
+                                        analytics.repeatCustomerPercentage = parseFloat(result8[0]?.repeat_percentage || 0).toFixed(2);
+
+                                        return callback(null, analytics);
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    },
+    getRiderAnalytics: (rider_id, callback) => {
+        const analytics = {};
+
+        const completionRateQuery = `
+            SELECT 
+                (SUM(CASE WHEN order_status = 4 THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS completion_rate 
+            FROM order_details 
+            WHERE rider_id = ?
+        `;
+
+        db.query(completionRateQuery, [vendorId], (err, result1) => {
+            if (err) return callback(err);
+            analytics.completionRate = parseFloat(result1[0]?.completion_rate || 0).toFixed(2);
+
+            const ordersByHourQuery = `
+                SELECT HOUR(created_at) AS order_hour, COUNT(*) AS order_count 
+                FROM order_details 
+                WHERE rider_id = ? 
+                GROUP BY order_hour
+            `;
+            db.query(ordersByHourQuery, [vendorId], (err, result2) => {
+                if (err) return callback(err);
+                analytics.ordersByHour = result2;
+                analytics.topHour = result2.reduce((top, curr) =>
+                    curr.order_count > (top?.order_count || 0) ? curr : top, null
+                );
+
+                const dayOfWeekQuery = `
+                    SELECT DAYNAME(created_at) AS day, COUNT(*) AS orders
+                    FROM order_details
+                    WHERE rider_id = ?
+                    GROUP BY day
+                `;
+                db.query(dayOfWeekQuery, [vendorId], (err, result3) => {
+                    if (err) return callback(err);
+                    analytics.dayOfWeekOrders = result3;
+                    analytics.topDay = result3.reduce((top, curr) =>
+                        curr.orders > (top?.orders || 0) ? curr : top, null
+                    );
+
+                    const weekOfMonthQuery = `
+                        SELECT 
+                            WEEK(created_at) - WEEK(DATE_SUB(created_at, INTERVAL DAYOFMONTH(created_at)-1 DAY)) + 1 AS week_of_month,
+                            COUNT(*) AS order_count
+                        FROM order_details
+                        WHERE rider_id = ?
+                        GROUP BY week_of_month
+                    `;
+                    db.query(weekOfMonthQuery, [vendorId], (err, result4) => {
+                        if (err) return callback(err);
+                        analytics.weekOfMonthOrders = result4;
+                        analytics.topWeek = result4.reduce((top, curr) =>
+                            curr.order_count > (top?.order_count || 0) ? curr : top, null
+                        );
+
+                        const todayOrderQuery = `
+                            SELECT COUNT(*) AS total_today 
+                            FROM order_details 
+                            WHERE rider_id = ? AND DATE(created_at) = CURDATE()
+                        `;
+                        db.query(todayOrderQuery, [vendorId], (err, result5) => {
+                            if (err) return callback(err);
+                            analytics.totalOrdersToday = result5[0]?.total_today || 0;
+
+                            const weekOrderQuery = `
+                                SELECT COUNT(*) AS total_week 
+                                FROM order_details 
+                                WHERE rider_id = ? 
+                                AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)
+                            `;
+                            db.query(weekOrderQuery, [vendorId], (err, result6) => {
+                                if (err) return callback(err);
+                                analytics.totalOrdersWeek = result6[0]?.total_week || 0;
+
+                                const monthOrderQuery = `
+                                    SELECT COUNT(*) AS total_month 
+                                    FROM order_details 
+                                    WHERE rider_id = ? 
+                                    AND MONTH(created_at) = MONTH(CURDATE()) 
+                                    AND YEAR(created_at) = YEAR(CURDATE())
+                                `;
+                                db.query(monthOrderQuery, [vendorId], (err, result7) => {
+                                    if (err) return callback(err);
+                                    analytics.totalOrdersMonth = result7[0]?.total_month || 0;
+
+                                    const repeatCustomerQuery = `
+                                        SELECT 
+                                            (rc.repeat_count / t.total_users) * 100 AS repeat_percentage
+                                        FROM (
+                                            SELECT COUNT(*) AS repeat_count
+                                            FROM (
+                                                SELECT user_id 
+                                                FROM order_details 
+                                                WHERE rider_id = ? AND user_id IS NOT NULL
                                                 GROUP BY user_id 
                                                 HAVING COUNT(*) > 1
                                             ) AS repeat_customers
