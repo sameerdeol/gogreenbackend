@@ -22,9 +22,12 @@ const createOrder = async (req, res) => {
         const order_uid = `ORD${Date.now()}`;
 
         cart.forEach((item) => {
-            const variant_price = Number(item.variant_price || 0);
+            const hasVariant = item.variant_price && Number(item.variant_price) > 0;
+            const baseOrVariantPrice = hasVariant ? Number(item.variant_price) : Number(item.price || 0);
+
             const addon_total = (item.addons || []).reduce((sum, a) => sum + Number(a.price || 0), 0);
-            const item_unit_price = Number(item.price || 0) + variant_price + addon_total;
+
+            const item_unit_price = baseOrVariantPrice + addon_total;
             const item_total_price = parseFloat((item_unit_price * item.quantity).toFixed(2));
 
             total_quantity += item.quantity;
@@ -63,9 +66,10 @@ const createOrder = async (req, res) => {
                             variant_price = 0,
                             addons = []
                         } = item;
-
+                        const hasVariant = variant_price && Number(variant_price) > 0;
+                        const baseOrVariantPrice = hasVariant ? Number(variant_price) : Number(price || 0);
                         const addon_total = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
-                        const item_unit_price = Number(price || 0) + Number(variant_price || 0) + addon_total;
+                        const item_unit_price = baseOrVariantPrice + addon_total;
                         const total_item_price = parseFloat((item_unit_price * quantity).toFixed(2));
 
                         return new Promise((resolve, reject) => {
