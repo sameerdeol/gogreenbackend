@@ -675,7 +675,7 @@ const riderAnalytics = (req, res) => {
         return res.status(400).json({ success: false, message: "Vendor ID is required" });
     }
 
-    User.getVendorAnalytics(rider_id, (err, analytics) => {
+    User.getRiderAnalytics(rider_id, (err, analytics) => {
         if (err) {
             console.error("Analytics Error:", err);
             return res.status(500).json({ success: false, message: "Internal Server Error" });
