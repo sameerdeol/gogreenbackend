@@ -1403,7 +1403,7 @@ const User = {
                                         JOIN (
                                             SELECT COUNT(DISTINCT user_id) AS total_users 
                                             FROM order_details 
-                                            WHERE vendor_id = ? AND user_id IS NOT NULL
+                                            WHERE rider_id = ? AND user_id IS NOT NULL
                                         ) AS t
                                     `;
                                     db.query(repeatCustomerQuery, [vendorId, vendorId], (err, result8) => {
