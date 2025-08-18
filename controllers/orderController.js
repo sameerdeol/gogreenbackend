@@ -826,7 +826,7 @@ const getOrdersByVendorId = (req, res) => {
             return res.status(200).json({ message: "No order found for this vendor." });
         }
 
-        // ✅ Filter orders for today if filter is "today"
+        // ✅ Filter orders for today if filter = "today"
         let filteredResults = results;
         if (filter && filter.toLowerCase() === "today") {
             const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
@@ -838,7 +838,7 @@ const getOrdersByVendorId = (req, res) => {
 
         if (filteredResults.length === 0) {
             return res.status(200).json({
-                message: filter.toLowerCase() === "today"
+                message: filter && filter.toLowerCase() === "today"
                     ? "No order found for today."
                     : "No order found for this vendor."
             });
@@ -858,6 +858,7 @@ const getOrdersByVendorId = (req, res) => {
                 firstname, lastname, phonenumber, is_fast_delivery
             } = row;
 
+            // ✅ Create order object if not exists
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
                     order_id,
@@ -881,21 +882,15 @@ const getOrdersByVendorId = (req, res) => {
                 };
             }
 
-            const existingItem = ordersMap[order_id].items.find(item =>
+            // ✅ Check if this product (with variant) already exists inside items
+            let productItem = ordersMap[order_id].items.find(item =>
                 item.product_id === product_id &&
                 item.variant_id === variant_id
             );
 
-            const addonObj = addon_id
-                ? { addon_id, addon_name, addon_price }
-                : null;
-
-            if (existingItem) {
-                if (addonObj) {
-                    existingItem.addons.push(addonObj);
-                }
-            } else {
-                ordersMap[order_id].items.push({
+            if (!productItem) {
+                // Create a new product item
+                productItem = {
                     product_id,
                     product_name,
                     product_description,
@@ -906,14 +901,26 @@ const getOrdersByVendorId = (req, res) => {
                     variant_type,
                     variant_value,
                     variant_price,
-                    addons: addonObj ? [addonObj] : []
+                    addons: []
+                };
+                ordersMap[order_id].items.push(productItem);
+            }
+
+            // ✅ Add addon if exists
+            if (addon_id && !productItem.addons.some(a => a.addon_id === addon_id)) {
+                productItem.addons.push({
+                    addon_id,
+                    addon_name,
+                    addon_price
                 });
             }
         });
 
+        // ✅ Send final response
         res.status(200).json(Object.values(ordersMap));
     });
 };
+
 
 
 
