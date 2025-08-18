@@ -40,7 +40,14 @@ const Order = {
                 OI.product_quantity,
 
                 -- Total item price = product + variant + addon
-                (P.price + IFNULL(PV.price, 0) + IFNULL(PA.price, 0)) AS total_item_price,
+                -- Total item price = product + variant + addon
+                (
+                    CASE 
+                        WHEN PV.id IS NOT NULL THEN PV.price
+                        ELSE P.price
+                    END
+                    + IFNULL(PA.price, 0)
+                ) AS total_item_price,
 
                 P.name AS product_name,
                 P.description AS product_description,
