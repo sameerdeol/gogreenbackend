@@ -584,7 +584,7 @@ const User = {
                     WHERE order_status IN (4, 5)
                     GROUP BY rider_id
                 ) od ON od.rider_id = dp.user_id
-                WHERE u.id = 63 AND u.role_id = 4;
+                WHERE u.id = ? AND u.role_id = ?;
             `;
             queryParams.push(roleId); // Add roleId to parameters
         } else if(roleId ===3) {
