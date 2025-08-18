@@ -1406,7 +1406,7 @@ const User = {
                                             WHERE rider_id = ? AND user_id IS NOT NULL
                                         ) AS t
                                     `;
-                                    db.query(repeatCustomerQuery, [vendorId, vendorId], (err, result8) => {
+                                    db.query(repeatCustomerQuery, [rider_id, rider_id], (err, result8) => {
                                         if (err) return callback(err);
                                         analytics.repeatCustomerPercentage = parseFloat(result8[0]?.repeat_percentage || 0).toFixed(2);
 
