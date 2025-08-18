@@ -1312,7 +1312,7 @@ const User = {
             WHERE rider_id = ?
         `;
 
-        db.query(completionRateQuery, [vendorId], (err, result1) => {
+        db.query(completionRateQuery, [rider_id], (err, result1) => {
             if (err) return callback(err);
             analytics.completionRate = parseFloat(result1[0]?.completion_rate || 0).toFixed(2);
 
@@ -1322,7 +1322,7 @@ const User = {
                 WHERE rider_id = ? 
                 GROUP BY order_hour
             `;
-            db.query(ordersByHourQuery, [vendorId], (err, result2) => {
+            db.query(ordersByHourQuery, [rider_id], (err, result2) => {
                 if (err) return callback(err);
                 analytics.ordersByHour = result2;
                 analytics.topHour = result2.reduce((top, curr) =>
@@ -1335,7 +1335,7 @@ const User = {
                     WHERE rider_id = ?
                     GROUP BY day
                 `;
-                db.query(dayOfWeekQuery, [vendorId], (err, result3) => {
+                db.query(dayOfWeekQuery, [rider_id], (err, result3) => {
                     if (err) return callback(err);
                     analytics.dayOfWeekOrders = result3;
                     analytics.topDay = result3.reduce((top, curr) =>
@@ -1350,7 +1350,7 @@ const User = {
                         WHERE rider_id = ?
                         GROUP BY week_of_month
                     `;
-                    db.query(weekOfMonthQuery, [vendorId], (err, result4) => {
+                    db.query(weekOfMonthQuery, [rider_id], (err, result4) => {
                         if (err) return callback(err);
                         analytics.weekOfMonthOrders = result4;
                         analytics.topWeek = result4.reduce((top, curr) =>
@@ -1362,7 +1362,7 @@ const User = {
                             FROM order_details 
                             WHERE rider_id = ? AND DATE(created_at) = CURDATE()
                         `;
-                        db.query(todayOrderQuery, [vendorId], (err, result5) => {
+                        db.query(todayOrderQuery, [rider_id], (err, result5) => {
                             if (err) return callback(err);
                             analytics.totalOrdersToday = result5[0]?.total_today || 0;
 
@@ -1372,7 +1372,7 @@ const User = {
                                 WHERE rider_id = ? 
                                 AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)
                             `;
-                            db.query(weekOrderQuery, [vendorId], (err, result6) => {
+                            db.query(weekOrderQuery, [rider_id], (err, result6) => {
                                 if (err) return callback(err);
                                 analytics.totalOrdersWeek = result6[0]?.total_week || 0;
 
@@ -1383,7 +1383,7 @@ const User = {
                                     AND MONTH(created_at) = MONTH(CURDATE()) 
                                     AND YEAR(created_at) = YEAR(CURDATE())
                                 `;
-                                db.query(monthOrderQuery, [vendorId], (err, result7) => {
+                                db.query(monthOrderQuery, [rider_id], (err, result7) => {
                                     if (err) return callback(err);
                                     analytics.totalOrdersMonth = result7[0]?.total_month || 0;
 
