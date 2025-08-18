@@ -37,6 +37,7 @@ const Order = {
 
                 OI.id AS order_item_id,
                 OI.product_id,
+                OI.product_quantity,
 
                 -- Total item price = product + variant + addon
                 (P.price + IFNULL(PV.price, 0) + IFNULL(PA.price, 0)) AS total_item_price,
