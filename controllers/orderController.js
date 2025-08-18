@@ -829,7 +829,7 @@ const getOrdersByVendorId = (req, res) => {
         // ✅ Filter orders for today if filter = "today"
         let filteredResults = results;
         if (filter && filter.toLowerCase() === "today") {
-            const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+            const today = new Date().toISOString().split("T")[0];
             filteredResults = results.filter(row => {
                 const orderDate = new Date(row.order_created_at).toISOString().split("T")[0];
                 return orderDate === today;
@@ -850,7 +850,7 @@ const getOrdersByVendorId = (req, res) => {
             const {
                 order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
                 payment_method, order_status, order_created_at,
-                product_id, product_name, product_description,
+                order_item_id, product_id, product_name, product_description,
                 product_price, food_type, total_item_price,
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
@@ -878,19 +878,16 @@ const getOrdersByVendorId = (req, res) => {
                     type,
                     floor,
                     landmark,
-                    items: []
+                    items: {}
                 };
             }
 
-            // ✅ Check if this product (with variant) already exists inside items
-            let productItem = ordersMap[order_id].items.find(item =>
-                item.product_id === product_id &&
-                item.variant_id === variant_id
-            );
+            const order = ordersMap[order_id];
 
-            if (!productItem) {
-                // Create a new product item
-                productItem = {
+            // ✅ Use order_item_id as unique key
+            if (!order.items[order_item_id]) {
+                order.items[order_item_id] = {
+                    order_item_id,
                     product_id,
                     product_name,
                     product_description,
@@ -903,12 +900,11 @@ const getOrdersByVendorId = (req, res) => {
                     variant_price,
                     addons: []
                 };
-                ordersMap[order_id].items.push(productItem);
             }
 
-            // ✅ Add addon if exists
-            if (addon_id && !productItem.addons.some(a => a.addon_id === addon_id)) {
-                productItem.addons.push({
+            // ✅ Add addon if exists (avoid duplicates)
+            if (addon_id && !order.items[order_item_id].addons.some(a => a.addon_id === addon_id)) {
+                order.items[order_item_id].addons.push({
                     addon_id,
                     addon_name,
                     addon_price
@@ -916,12 +912,15 @@ const getOrdersByVendorId = (req, res) => {
             }
         });
 
-        // ✅ Send final response
-        res.status(200).json(Object.values(ordersMap));
+        // ✅ Convert items map → array before sending
+        const finalOrders = Object.values(ordersMap).map(order => ({
+            ...order,
+            items: Object.values(order.items)
+        }));
+
+        res.status(200).json(finalOrders);
     });
 };
-
-
 
 
 
