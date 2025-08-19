@@ -24,6 +24,7 @@ const OrderDetails = {
         const sql = `
             SELECT 
             o.user_id,
+            o.rider_id,
             v.store_name,
             v.vendor_lat,
             v.vendor_lng,
