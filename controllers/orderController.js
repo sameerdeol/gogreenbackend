@@ -253,19 +253,20 @@ const updateOrderStatus = async (req, res) => {
                             // console.log("riders are", nearbyRiders);
 
                             for (const rider of nearbyRiders) {
-                                notifications.push(sendNotificationToUser({
-                                    userId: String(rider.user_id || ""),
-                                    title: "New Delivery Opportunity",
-                                    body: `New order from ${store_name} is ready for pickup near you.`,
-                                    data: {
-                                        order_id: String(orderIdStr || ""),
-                                        type: "new_order",
-                                        vendor_id: String(vendor_id || ""),
-                                        vendor_to_customer_distance_km: String(vendor_to_customer_distance_km || ""),
-                                        rider_to_vendor_distance_km: String(distance_km || "")
-                                    }
-                                }));
+                            notifications.push(sendNotificationToUser({
+                                userId: String(rider.user_id || ""),
+                                title: "New Delivery Opportunity",
+                                body: `New order from ${store_name} is ready for pickup near you.`,
+                                data: {
+                                order_id: String(orderIdStr || ""),
+                                type: "new_order",
+                                vendor_id: String(vendor_id || ""),
+                                vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
+                                rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00")
+                                }
+                            }));
                             }
+
                         }
                     );
                 break;
