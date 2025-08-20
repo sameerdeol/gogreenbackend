@@ -164,7 +164,7 @@ const Order = {
             V.store_name,
             V.store_address,
             S.phonenumber as vendor_phonenumber,
-            S.phonenumber as vendor_prefix
+            S.prefix as vendor_prefix
 
         FROM 
             order_details OD
@@ -188,7 +188,7 @@ const Order = {
             order_item_addons OIA ON OIA.order_item_id = OI.id
         LEFT JOIN 
             product_addons PA ON OIA.addon_id = PA.id
-            
+
         LEFT JOIN 
             users S ON S.id = OD.vendor_id     
 
