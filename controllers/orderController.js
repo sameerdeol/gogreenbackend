@@ -250,7 +250,7 @@ const updateOrderStatus = async (req, res) => {
                                 return;
                             }
 
-                            // console.log("riders are", nearbyRiders);
+                            console.log("riders are", nearbyRiders);
 
                             for (const rider of nearbyRiders) {
                                 notifications.push(sendNotificationToUser({
