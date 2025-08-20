@@ -40,7 +40,6 @@ const Order = {
                 OI.product_quantity,
 
                 -- Total item price = product + variant + addon
-                -- Total item price = product + variant + addon
                 (
                     CASE 
                         WHEN PV.id IS NOT NULL THEN PV.price
@@ -59,9 +58,13 @@ const Order = {
                 UA.floor,
                 UA.landmark,
 
+                -- Customer details
                 U.firstname,
                 U.lastname,
                 U.phonenumber,
+
+                -- Rider details
+                R.custom_id AS rider_unique_id,
 
                 PV.id AS variant_id,
                 PV.type AS variant_type,
@@ -79,7 +82,7 @@ const Order = {
             LEFT JOIN 
                 products P ON OI.product_id = P.id
             LEFT JOIN 
-                users U ON OD.user_id = U.id
+                users U ON OD.user_id = U.id                -- customer
             LEFT JOIN 
                 user_addresses UA ON OD.user_address_id = UA.id
 
@@ -87,17 +90,21 @@ const Order = {
             LEFT JOIN 
                 product_variants PV ON OI.variant_id = PV.id
 
-            -- Join addon directly (no separate addons table)
+            -- Join addon
             LEFT JOIN 
                 order_item_addons OIA ON OIA.order_item_id = OI.id
             LEFT JOIN 
                 product_addons PA ON OIA.addon_id = PA.id
 
+            -- Rider join
+            LEFT JOIN 
+                users R ON OD.rider_id = R.id
 
             WHERE 
                 OD.vendor_id = ?
             ORDER BY 
                 OD.created_at DESC;
+
             ;
         `;
     
