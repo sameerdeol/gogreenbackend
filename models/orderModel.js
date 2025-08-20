@@ -73,12 +73,7 @@ const Order = {
 
                 PA.id AS addon_id,
                 PA.name AS addon_name,
-                PA.price AS addon_price,
-
-                V.store_name,
-                V.store_address,
-                S.phonenumber as vendor_phonenumber,
-                S.phonenumber as vendor_prefix
+                PA.price AS addon_price
 
             FROM 
                 order_details OD
@@ -87,9 +82,7 @@ const Order = {
             LEFT JOIN 
                 products P ON OI.product_id = P.id
             LEFT JOIN 
-                users U ON OD.user_id = U.id                -- customer
-            LEFT JOIN 
-                vendors V ON V.user_id = OD.vendor_id     
+                users U ON OD.user_id = U.id                -- customer    
             LEFT JOIN 
                 user_addresses UA ON OD.user_address_id = UA.id
 
@@ -105,10 +98,7 @@ const Order = {
 
             -- Rider join
             LEFT JOIN 
-                users R ON OD.rider_id = R.id
-
-            LEFT JOIN 
-                users S ON S.id = OD.vendor_id    
+                users R ON OD.rider_id = R.id   
 
             WHERE 
                 OD.vendor_id = ?
@@ -169,7 +159,12 @@ const Order = {
 
             PA.id AS addon_id,
             PA.name AS addon_name,
-            PA.price AS addon_price
+            PA.price AS addon_price,
+
+            V.store_name,
+            V.store_address,
+            S.phonenumber as vendor_phonenumber,
+            S.phonenumber as vendor_prefix
 
         FROM 
             order_details OD
@@ -179,6 +174,8 @@ const Order = {
             products P ON OI.product_id = P.id
         LEFT JOIN 
             users U ON OD.user_id = U.id
+        LEFT JOIN 
+            vendors V ON V.user_id = OD.vendor_id 
         LEFT JOIN 
             user_addresses UA ON OD.user_address_id = UA.id
 
@@ -191,6 +188,9 @@ const Order = {
             order_item_addons OIA ON OIA.order_item_id = OI.id
         LEFT JOIN 
             product_addons PA ON OIA.addon_id = PA.id
+            
+        LEFT JOIN 
+            users S ON S.id = OD.vendor_id     
 
 
         WHERE 

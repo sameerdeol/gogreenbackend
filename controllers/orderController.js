@@ -687,7 +687,7 @@ const getOrderDetails = (req, res) => {
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
                 address, type, floor, landmark,
-                firstname, lastname, phonenumber, prefix, is_fast_delivery
+                firstname, lastname, phonenumber, prefix, is_fast_delivery,  store_name, store_address, vendor_phonenumber, vendor_prefix
             } = row;
 
             // If this order doesn't exist in map, initialize it
@@ -711,6 +711,10 @@ const getOrderDetails = (req, res) => {
                     type,
                     floor,
                     landmark,
+                    store_name,
+                    store_address,
+                    vendor_phonenumber,
+                    vendor_prefix,
                     items: []
                 };
             }
@@ -859,7 +863,7 @@ const getOrdersByVendorId = (req, res) => {
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
                 address, type, floor, landmark,
-                firstname, lastname, phonenumber, is_fast_delivery, rider_unique_id, store_name, store_address, vendor_phonenumber, vendor_prefix
+                firstname, lastname, phonenumber, is_fast_delivery, rider_unique_id
             } = row;
 
             // ✅ Create order object if not exists
@@ -878,10 +882,6 @@ const getOrdersByVendorId = (req, res) => {
                     firstname,
                     lastname,
                     rider_unique_id,
-                    store_name,
-                    store_address,
-                    vendor_phonenumber,
-                    vendor_prefix,
                     phonenumber,
                     address,
                     type,
