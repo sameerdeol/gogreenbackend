@@ -250,7 +250,7 @@ const updateOrderStatus = async (req, res) => {
                                 return;
                             }
 
-                            console.log("riders are", nearbyRiders);
+                            // console.log("riders are", nearbyRiders);
 
                             for (const rider of nearbyRiders) {
                                 notifications.push(sendNotificationToUser({
@@ -260,7 +260,9 @@ const updateOrderStatus = async (req, res) => {
                                     data: {
                                         order_id: String(orderIdStr || ""),
                                         type: "new_order",
-                                        vendor_id: String(vendor_id || "")
+                                        vendor_id: String(vendor_id || ""),
+                                        vendor_to_customer_distance_km: String(vendor_to_customer_distance_km || ""),
+                                        rider_to_vendor_distance_km: String(distance_km || "")
                                     }
                                 }));
                             }

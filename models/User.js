@@ -905,93 +905,104 @@ const User = {
         }
     },
 
-    getNearbyRidersWithPolylines: (vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm = 3, callback) => {
-    // console.log("getNearbyRidersWithPolylines called with:", {
-    //     vendorId, vendorLat, vendorLng, customerId, user_address_id, radiusInKm
-    // });
+    getNearbyRidersWithPolylines: (
+        vendorId,
+        vendorLat,
+        vendorLng,
+        customerId,
+        user_address_id,
+        radiusInKm = 3,
+        callback
+    ) => {
+        vendorLat = Number(vendorLat);
+        vendorLng = Number(vendorLng);
 
-    vendorLat = Number(vendorLat);
-    vendorLng = Number(vendorLng);
-
-    if (isNaN(vendorLat) || isNaN(vendorLng)) {
-        console.error("Invalid coordinates:", { vendorLat, vendorLng });
-        return callback(new Error("Invalid coordinates"));
-    }
-
-    const sqlCustomer = `
-        SELECT customer_lat, customer_lng
-        FROM user_addresses
-        WHERE user_id = ? AND id = ?
-    `;
-    db.query(sqlCustomer, [customerId, user_address_id], (err, customerResults) => {
-        if (err) {
-        console.error("Error fetching customer coordinates:", err);
-        return callback(err);
-        }
-        if (!customerResults.length) {
-        console.warn("No customer address found for user_id and address_id:", { customerId, user_address_id });
-        return callback(new Error("Address not found"));
+        if (isNaN(vendorLat) || isNaN(vendorLng)) {
+            console.error("❌ Invalid coordinates:", { vendorLat, vendorLng });
+            return callback(new Error("Invalid coordinates"));
         }
 
-        const { customer_lat, customer_lng } = customerResults[0];
-        // console.log("Customer coordinates:", { customer_lat, customer_lng });
-
-        const latDelta = radiusInKm / 111;
-        const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
-        const minLat = Number((vendorLat - latDelta).toFixed(6));
-        const maxLat = Number((vendorLat + latDelta).toFixed(6));
-        const minLng = Number((vendorLng - lngDelta).toFixed(6));
-        const maxLng = Number((vendorLng + lngDelta).toFixed(6));
-
-        // console.log("Bounding box for riders:", { minLat, maxLat, minLng, maxLng });
-
-        const sqlRiders = `
-        SELECT user_id AS riderId, rider_lat, rider_lng
-        FROM delivery_partners
-        WHERE rider_lat BETWEEN ? AND ?
-        AND rider_lng BETWEEN ? AND ?
+        const sqlCustomer = `
+            SELECT customer_lat, customer_lng
+            FROM user_addresses
+            WHERE user_id = ? AND id = ?
         `;
-        db.query(sqlRiders, [minLat, maxLat, minLng, maxLng], (err, riders) => {
-        if (err) {
-            console.error("Error querying riders:", err);
-            return callback(err);
-        }
-        if (!riders.length) {
-            console.log("No riders found within bounding box");
-            return callback(null, []);
-        }
 
-        // console.log("Riders found:", riders);
+        db.query(sqlCustomer, [customerId, user_address_id], (err, customerResults) => {
+            if (err) {
+                console.error("❌ Error fetching customer coordinates:", err);
+                return callback(err);
+            }
+            if (!customerResults.length) {
+                console.warn("⚠️ No customer address found:", { customerId, user_address_id });
+                return callback(new Error("Address not found"));
+            }
 
-        // Use callback-style getDistanceMatrix here
-        getDistanceMatrix(vendorLat, vendorLng, riders, customer_lat, customer_lng, (err, results) => {
-            if (err) return callback(err);
+            const { customer_lat, customer_lng } = customerResults[0];
 
-            const riderPolylines = results.map(({ rider, riderVendorPolyline, distance }) => ({
-            riderId: rider.riderId,
-            polyline: riderVendorPolyline || null,
-            distance_km: distance ? (distance / 1000).toFixed(2) : null,
-            }));
+            const latDelta = radiusInKm / 111;
+            const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
+            const minLat = vendorLat - latDelta;
+            const maxLat = vendorLat + latDelta;
+            const minLng = vendorLng - lngDelta;
+            const maxLng = vendorLng + lngDelta;
 
-            const vendorCustomerPolyline = results[0]?.vendorCustomerPolyline || null;
+            const sqlRiders = `
+                SELECT user_id AS riderId, rider_lat, rider_lng
+                FROM delivery_partners
+                WHERE rider_lat BETWEEN ? AND ?
+                AND rider_lng BETWEEN ? AND ?
+            `;
 
-            savePolylines(vendorId, customerId, vendorCustomerPolyline, riderPolylines, (err) => {
-            if (err) return callback(err);
+            db.query(sqlRiders, [minLat, maxLat, minLng, maxLng], (err, riders) => {
+                if (err) {
+                    console.error("❌ Error querying riders:", err);
+                    return callback(err);
+                }
+                if (!riders.length) {
+                    console.log("⚠️ No riders found within bounding box");
+                    return callback(null, []);
+                }
 
-            const result = riderPolylines.map(rp => ({
-                user_id: rp.riderId,
-                distance_km: rp.distance_km,
-                vendor_to_customer_distance_km: results[0]?.distance ? (results[0].distance / 1000).toFixed(2) : null,
-            }));
+                getDistanceMatrix(vendorLat, vendorLng, riders, customer_lat, customer_lng, (err, results) => {
+                    if (err) return callback(err);
 
-            callback(null, result);
+                    // ✅ Fix: ensure distance is always a number string, not null
+                    const riderPolylines = results.map(({ rider, riderVendorPolyline, distance_rider_to_vendor }) => {
+                        let distanceKm = "0.00"; // default if missing
+                        if (distance_rider_to_vendor && !isNaN(distance_rider_to_vendor)) {
+                            distanceKm = (distance_rider_to_vendor / 1000).toFixed(2);
+                        }
+
+                        return {
+                            riderId: rider.riderId,
+                            polyline: riderVendorPolyline || null,
+                            distance_km: distanceKm,
+                        };
+                    });
+
+                    const vendorCustomerPolyline = results[0]?.vendorCustomerPolyline || null;
+                    let vendorToCustomerDistance = "0.00";
+                    if (results[0]?.vendor_to_customer_distance && !isNaN(results[0].vendor_to_customer_distance)) {
+                        vendorToCustomerDistance = (results[0].vendor_to_customer_distance / 1000).toFixed(2);
+                    }
+
+                    savePolylines(vendorId, customerId, vendorCustomerPolyline, riderPolylines, (err) => {
+                        if (err) return callback(err);
+
+                        const result = riderPolylines.map(rp => ({
+                            user_id: rp.riderId,
+                            distance_km: rp.distance_km,
+                            vendor_to_customer_distance_km: vendorToCustomerDistance,
+                        }));
+
+                        callback(null, result);
+                    });
+                });
             });
         });
-        });
-    });
     },
 
-    
 
     updateStoreDetails: (user_id, data, callback) => {
         const keys = Object.keys(data);

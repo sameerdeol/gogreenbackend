@@ -45,9 +45,9 @@ function distanceCustomerVendor(vendorLat, vendorLng, userLat, userLng, callback
 function getDistanceMatrix(vendorLat, vendorLng, riders, customerLat, customerLng, callback) {
   if (!riders.length) return callback(null, []);
 
-  const origins = `${vendorLat},${vendorLng}`;
-  const destinations = riders.map(r => `${r.rider_lat},${r.rider_lng}`).join('|');
-  const matrixCacheKey = `matrix-${origins}-${destinations}`;
+  const origins = riders.map(r => `${r.rider_lat},${r.rider_lng}`).join('|');
+  const destination = `${vendorLat},${vendorLng}`;
+  const matrixCacheKey = `matrix-${origins}-${destination}`;
 
   let matrixData = cache.get(matrixCacheKey);
 
@@ -126,14 +126,14 @@ function getDistanceMatrix(vendorLat, vendorLng, riders, customerLat, customerLn
       processRiders(matrixData, polyline, distance);
     });
   } else {
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&mode=driving&key=${API_KEY}`;
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destination}&mode=driving&key=${API_KEY}`;
     axios.get(url)
       .then(response => {
         const data = response.data;
         if (data.status !== 'OK') {
           return callback(new Error(`Google Distance Matrix API error: ${data.status}`));
         }
-        matrixData = data.rows[0].elements;
+        matrixData = data.rows.map(row => row.elements[0]); // pick first destination (vendor)
         cache.set(matrixCacheKey, matrixData);
 
         fetchVendorCustomerPolylineAndDistance((err, { polyline, distance }) => {
@@ -144,6 +144,7 @@ function getDistanceMatrix(vendorLat, vendorLng, riders, customerLat, customerLn
       .catch(err => callback(err));
   }
 }
+
 
 
 module.exports = { distanceCustomerVendor, getDistanceMatrix };
