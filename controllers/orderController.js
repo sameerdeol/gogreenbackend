@@ -343,7 +343,6 @@ const createOrder = async (req, res) => {
 
 const updateOrderStatus = async (req, res) => {
     const { order_id, vendor_id, order_status, rider_id } = req.body;
-    console.log("order_status",order_status)
 
     if (!order_id || !order_status) {
         return res.status(400).json({ error: "Order ID and Order Status are required" });
@@ -358,7 +357,6 @@ const updateOrderStatus = async (req, res) => {
                     resolve(results);
                 });
             });
-
             if (orderResult.length === 0) {
                 return res.status(403).json({ error: "Unauthorized to update this order" });
             }
@@ -366,12 +364,11 @@ const updateOrderStatus = async (req, res) => {
 
         // Step 2: Update order status (and rider_id if provided)
         await new Promise((resolve, reject) => {
-            OrderDetails.updateOrderStatus(order_id, order_status, rider_id || null, (err) => {
+            OrderDetails.updateOrderStatus(order_id, order_status, (err) => {
                 if (err) return reject(err);
                 resolve();
             });
         });
-
         // Step 3: Fetch user info
         const userResult = await new Promise((resolve, reject) => {
             OrderDetails.getUserIdByOrderId(order_id, (err, result) => {
@@ -379,7 +376,6 @@ const updateOrderStatus = async (req, res) => {
                 resolve(result);
             });
         });
-
         if (userResult.length === 0 || !userResult[0].user_id) {
             console.warn("User not found for notification");
             return res.status(200).json({ message: "Order updated, but user notification skipped" });
@@ -388,7 +384,6 @@ const updateOrderStatus = async (req, res) => {
         const { user_id, store_name, vendor_lat, vendor_lng, user_address_id, rider_id: assigned_rider_id } = userResult[0];
         const orderIdStr = order_id.toString();
         const notifications = [];
-        console.log("user_id, store_name, vendor_lat, vendor_lng, user_address_id, rider_id: assigned_rider_id",userResult[0])
         // Step 4: Handle notifications
         switch (order_status) {
             case 1: // Vendor confirmed order
@@ -409,7 +404,6 @@ const updateOrderStatus = async (req, res) => {
                         user_address_id,
                         3, // radius in KM
                         (err, nearbyRiders) => {
-                            console.log("nearbyRiders",nearbyRiders)
                             if (err) return console.error("Error getting nearby riders:", err);
                             for (const rider of nearbyRiders) {
                                 notifications.push(sendNotificationToUser({
