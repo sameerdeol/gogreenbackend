@@ -897,6 +897,7 @@ const handleOrderByRider = async (req, res, io) => {
             });
 
             io.emit(`stop-buzzer-${orderId}`, { orderId });
+            console.log(`Socket emitted: stop-buzzer-${orderId}`, { orderId });
             return res.status(200).json({ success: true, message: "Order accepted by rider" });
           } catch (notificationError) {
             return res.status(500).json({ success: false, message: "Failed to send notification" });
