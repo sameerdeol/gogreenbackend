@@ -343,6 +343,7 @@ const createOrder = async (req, res) => {
 
 const updateOrderStatus = async (req, res) => {
     const { order_id, vendor_id, order_status, rider_id } = req.body;
+    console.log("order_status",order_status)
 
     if (!order_id || !order_status) {
         return res.status(400).json({ error: "Order ID and Order Status are required" });
@@ -387,7 +388,7 @@ const updateOrderStatus = async (req, res) => {
         const { user_id, store_name, vendor_lat, vendor_lng, user_address_id, rider_id: assigned_rider_id } = userResult[0];
         const orderIdStr = order_id.toString();
         const notifications = [];
-
+        console.log("user_id, store_name, vendor_lat, vendor_lng, user_address_id, rider_id: assigned_rider_id",userResult[0])
         // Step 4: Handle notifications
         switch (order_status) {
             case 1: // Vendor confirmed order
