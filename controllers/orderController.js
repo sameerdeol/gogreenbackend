@@ -852,7 +852,7 @@ const orderHistory = async (req, res) => {
 
 const handleOrderByRider = async (req, res, io) => {
   const { orderId, riderId, status } = req.body;
-
+    console.log(status)
   if (![2, 3, 4, 5].includes(status)) {
     return res.status(400).json({ success: false, message: "Invalid status" });
   }
