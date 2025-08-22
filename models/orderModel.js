@@ -70,7 +70,12 @@ const Order = {
 
                 PA.id AS addon_id,
                 PA.name AS addon_name,
-                PA.price AS addon_price
+                PA.price AS addon_price,
+
+                SV.store_name,
+                SV.store_address,
+                SU.phonenumber as vendor_phonenumber,
+                SU.prefix as vendor_prefix
 
             FROM 
                 order_details OD
@@ -82,6 +87,8 @@ const Order = {
             LEFT JOIN order_item_addons OIA ON OIA.order_item_id = OI.id
             LEFT JOIN product_addons PA ON OIA.addon_id = PA.id
             LEFT JOIN users R ON OD.rider_id = R.id
+            LEFT JOIN users SU ON OD.vendor_id = U.id
+            LEFT JOIN vendors SV ON OD.vendor_id = SV.user_id
             WHERE 
                 ${role_id === 3 ? 'OD.vendor_id = ?' : 'OD.rider_id = ?'}
             ORDER BY OD.created_at DESC;
