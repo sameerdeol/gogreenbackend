@@ -652,7 +652,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
         if (err) return res.status(500).json({ error: "Database error" });
 
         if (!results || results.length === 0) {
-            return res.status(200).json({ message: "No order found for this vendor." });
+            return res.status(200).json({ message: "No order found for this user." });
         }
 
         // ✅ Filter orders for today if filter = "today"
@@ -668,8 +668,8 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
         if (filteredResults.length === 0) {
             return res.status(200).json({
                 message: filter && filter.toLowerCase() === "today"
-                    ? "No order found for today."
-                    : "No order found for this vendor."
+                    ? "No order found for user."
+                    : "No order found for this user."
             });
         }
 
