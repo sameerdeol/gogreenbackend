@@ -21,8 +21,8 @@ const Order = {
         db.query(sql, [order_id], callback);
     },
 
-    getOrdersByUserId : (vendor_id, callback) => {
-        const query = `
+    getOrdersByUserId: (user_id, role_id, callback) => {
+        let query = `
             SELECT 
                 OD.id AS order_id,
                 OD.order_uid,
@@ -39,7 +39,6 @@ const Order = {
                 OI.product_id,
                 OI.product_quantity,
 
-                -- Total item price = product + variant + addon
                 (
                     CASE 
                         WHEN PV.id IS NOT NULL THEN PV.price
@@ -58,12 +57,10 @@ const Order = {
                 UA.floor,
                 UA.landmark,
 
-                -- Customer details
                 U.firstname,
                 U.lastname,
                 U.phonenumber,
 
-                -- Rider details
                 R.custom_id AS rider_unique_id,
 
                 PV.id AS variant_id,
@@ -77,39 +74,23 @@ const Order = {
 
             FROM 
                 order_details OD
-            LEFT JOIN 
-                order_items OI ON OD.id = OI.order_id
-            LEFT JOIN 
-                products P ON OI.product_id = P.id
-            LEFT JOIN 
-                users U ON OD.user_id = U.id                -- customer    
-            LEFT JOIN 
-                user_addresses UA ON OD.user_address_id = UA.id
-
-            -- Join variant
-            LEFT JOIN 
-                product_variants PV ON OI.variant_id = PV.id
-
-            -- Join addon
-            LEFT JOIN 
-                order_item_addons OIA ON OIA.order_item_id = OI.id
-            LEFT JOIN 
-                product_addons PA ON OIA.addon_id = PA.id
-
-            -- Rider join
-            LEFT JOIN 
-                users R ON OD.rider_id = R.id   
-
+            LEFT JOIN order_items OI ON OD.id = OI.order_id
+            LEFT JOIN products P ON OI.product_id = P.id
+            LEFT JOIN users U ON OD.user_id = U.id
+            LEFT JOIN user_addresses UA ON OD.user_address_id = UA.id
+            LEFT JOIN product_variants PV ON OI.variant_id = PV.id
+            LEFT JOIN order_item_addons OIA ON OIA.order_item_id = OI.id
+            LEFT JOIN product_addons PA ON OIA.addon_id = PA.id
+            LEFT JOIN users R ON OD.rider_id = R.id
             WHERE 
-                OD.vendor_id = ?
-            ORDER BY 
-                OD.created_at DESC;
-
-            ;
+                ${role_id === 3 ? 'OD.vendor_id = ?' : 'OD.rider_id = ?'}
+            ORDER BY OD.created_at DESC;
         `;
-    
-        db.query(query, [vendor_id], callback);
+
+        // Use user_id as the parameter for vendor_id or rider_id dynamically
+        db.query(query, [user_id], callback);
     },
+
     getOrdersByOrderId : (order_id, callback) => {
     const query = `
         SELECT 

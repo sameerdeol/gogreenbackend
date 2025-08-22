@@ -7,7 +7,7 @@ const {
   createOrder,
   getOrdersByUserId,
   updateOrderStatus,
-  getOrdersByVendorId,
+  getOrdersByVendorIdandRiderID,
   getOrderDetails,
   updateOrderTiming,
   verifyOtp,
@@ -23,7 +23,7 @@ module.exports = (io) => {
   router.put('/updateorderstatus', verifyToken, updateOrderStatus);
   router.post('/getorderbyuserID', verifyToken, getOrdersByUserId);
   router.post('/getorderdetails', verifyToken, getOrderDetails);
-  router.post('/getallorderbyvendorid/:filter', verifyToken, getOrdersByVendorId);
+  router.post('/getallorderbyvendorid/:filter', verifyToken, getOrdersByVendorIdandRiderID);
   router.post('/list', verifyToken, getAllOrders);
   router.post('/updateordertiming', verifyToken, updateOrderTiming);
   router.post('/verifyotprider', verifyOtp);
@@ -34,6 +34,6 @@ module.exports = (io) => {
     handleOrderByRider(req, res, io)
   );
   router.get('/orderdetailsforrider/:rider_id', verifyToken, orderDetailsForRider)
-
+  
   return router;
 };

@@ -644,11 +644,11 @@ const verifyOtp = async (req, res) => {
   }
 };
 
-const getOrdersByVendorId = (req, res) => {
-    const { vendor_id } = req.body;
+const getOrdersByVendorIdandRiderID = (req, res) => {
+    const { user_id, role_id } = req.body;
     const { filter } = req.params; // "today" or "all"
 
-    OrderModel.getOrdersByUserId(vendor_id, (err, results) => {
+    OrderModel.getOrdersByUserId(user_id,role_id, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
 
         if (!results || results.length === 0) {
@@ -1021,4 +1021,4 @@ const orderDetailsForRider = (req, res) => {
 
 
 
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorId, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, handleOrderByRider, orderDetailsForRider};
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorIdandRiderID, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, handleOrderByRider, orderDetailsForRider};
