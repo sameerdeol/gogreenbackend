@@ -61,4 +61,4 @@ const getPolyLines = (req, res) => {
 };
 
 
-module.exports = { getPolyLines };
+module.exports = { getPolyLines, getLatLngByPlaceName };
