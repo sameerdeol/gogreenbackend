@@ -76,6 +76,7 @@ const Order = {
                 SV.store_address,
                 SU.phonenumber as vendor_phonenumber,
                 SU.prefix as vendor_prefix
+                SU.store_image
 
             FROM 
                 order_details OD

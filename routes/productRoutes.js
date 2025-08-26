@@ -66,6 +66,6 @@ router.post('/productbybrandID', verifyToken, getproductbybrandID);
 
 router.post('/bestsellerproducts', verifyToken, bestSellProducts);
 
-router.post("/filter", verifyToken, getFilteredProducts);
+router.post("/filter", getFilteredProducts);
 
 module.exports = router;
