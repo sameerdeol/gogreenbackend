@@ -856,99 +856,94 @@ const orderHistory = async (req, res) => {
     });
 };
 
-const handleOrderByRider = async (req, res, io) => {
-  const { orderId, riderId, status } = req.body;
-  if (![2, 3, 4, 5].includes(status)) {
-    return res.status(400).json({ success: false, message: "Invalid status" });
-  }
+    const handleOrderByRider = async (req, res, io) => {
+    const { orderId, riderId, status } = req.body;
 
-  try {
-    const isHandled = await OrderModel.handleOrder(orderId, riderId, status);
-    if (!isHandled) {
-      return res.status(400).json({ success: false, message: "Order already handled" });
+    // Allowed statuses
+    if (![2, 3, 4, 5].includes(status)) {
+        return res.status(400).json({ success: false, message: "Invalid status" });
     }
 
-    switch (status) {
-      case 2: { // Rider accepted
-        OrderModel.getOrderandRiderDetails(orderId, async (err, results) => {
-          if (err) return res.status(500).json({ success: false, message: "Database error" });
-          if (!results || results.length === 0) return res.status(404).json({ success: false, message: "Order not found" });
+    try {
+        const isHandled = await OrderModel.handleOrder(orderId, riderId, status);
+        if (!isHandled) {
+        return res.status(400).json({ success: false, message: "Order already handled" });
+        }
 
-          const orderDetails = results[0];
-          const otp = generateOtp(6);
-          const expiry = new Date(Date.now() + 10 * 60 * 1000);
+        switch (status) {
+        case 2: { // Rider accepted
+            OrderModel.getOrderandRiderDetails(orderId, async (err, results) => {
+            if (err) return res.status(500).json({ success: false, message: "Database error" });
+            if (!results || results.length === 0) return res.status(404).json({ success: false, message: "Order not found" });
 
-          await OrderModel.updateOtpAndStatus(orderId.toString(), otp, expiry);
+            const orderDetails = results[0];
 
-          try {
-            // Notify customer
+            try {
+                // Notify customer only
+                await sendNotificationToUser({
+                userId: orderDetails.customer_id,
+                title: "Meet Your Delivery Partner",
+                body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
+                data: {
+                    order_id: orderId.toString(),
+                    rider_name: orderDetails.rider_firstname,
+                    rider_phone: orderDetails.rider_number.toString(),
+                    type: "order_update"
+                }
+                });
+
+                io.emit(`stop-buzzer-${orderId}`, { orderId });
+                return res.status(200).json({ success: true, message: "Order accepted by rider" });
+            } catch (notificationError) {
+                return res.status(500).json({ success: false, message: "Failed to send notification" });
+            }
+            });
+            break;
+        }
+
+        case 3: { // Rider reached vendor → Generate OTP
+            const otp = generateOtp(6);
+            const expiry = new Date(Date.now() + 10 * 60 * 1000);
+            await OrderModel.updateOtpAndStatus(orderId.toString(), otp, expiry);
+
+            // Send OTP to rider
             await sendNotificationToUser({
-              userId: orderDetails.customer_id,
-              title: "Meet Your Delivery Partner",
-              body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
-              data: {
-                order_id: orderId.toString(),
-                rider_name: orderDetails.rider_firstname,
-                rider_phone: orderDetails.rider_number.toString(),
-                type: "order_update"
-              }
+            userId: riderId,
+            title: "OTP for Vendor",
+            body: `Show this OTP to the vendor: ${otp}`,
+            data: { order_id: orderId.toString(), type: "otp_info" }
             });
 
-            // Notify rider OTP
+            io.emit(`rider-reached-vendor-${orderId}`, { orderId, riderId });
+            return res.json({ success: true, message: "OTP generated and sent to rider when reached vendor" });
+        }
+
+        case 4: { // Rider delivered
+            await OrderModel.updateOrderStatus(orderId, 4, riderId);
             await sendNotificationToUser({
-              userId: riderId,
-              title: "OTP for Vendor",
-              body: `Show this OTP to the vendor: ${otp}`,
-              data: { order_id: orderId.toString(), type: "otp_info" }
+            userId: await OrderModel.getCustomerId(orderId),
+            title: "Order Delivered",
+            body: "Your order has been delivered successfully.",
+            data: { order_id: orderId.toString(), type: "order_update" }
             });
+            io.emit(`order-delivered-${orderId}`, { orderId, riderId });
+            return res.json({ success: true, message: "Order delivered" });
+        }
 
-            io.emit(`stop-buzzer-${orderId}`, { orderId });
-            console.log(`Socket emitted: stop-buzzer-${orderId}`, { orderId });
-            return res.status(200).json({ success: true, message: "Order accepted by rider" });
-          } catch (notificationError) {
-            return res.status(500).json({ success: false, message: "Failed to send notification" });
-          }
-        });
-        break;
-      }
+        case 5: { // Rider rejected
+            io.emit(`order-rejected-${orderId}`, { orderId, riderId });
+            return res.status(200).json({ success: true, message: "Order rejected by rider" });
+        }
 
-      case 3: { // Rider picked up
-        await OrderModel.updateOrderStatus(orderId, 3, riderId);
-        await sendNotificationToUser({
-          userId: await OrderModel.getCustomerId(orderId),
-          title: "Order Picked Up",
-          body: "Your order is on the way!",
-          data: { order_id: orderId.toString(), type: "order_update" }
-        });
-        io.emit(`order-pickedup-${orderId}`, { orderId, riderId });
-        return res.json({ success: true, message: "Order picked up" });
-      }
-
-      case 4: { // Rider delivered
-        await OrderModel.updateOrderStatus(orderId, 4, riderId);
-        await sendNotificationToUser({
-          userId: await OrderModel.getCustomerId(orderId),
-          title: "Order Delivered",
-          body: "Your order has been delivered successfully.",
-          data: { order_id: orderId.toString(), type: "order_update" }
-        });
-        io.emit(`order-delivered-${orderId}`, { orderId, riderId });
-        return res.json({ success: true, message: "Order delivered" });
-      }
-
-      case 5: { // Rider rejected
-        io.emit(`order-rejected-${orderId}`, { orderId, riderId });
-        return res.status(200).json({ success: true, message: "Order rejected by rider" });
-      }
-
-      default:
-        return res.status(400).json({ success: false, message: "Unhandled status" });
+        default:
+            return res.status(400).json({ success: false, message: "Unhandled status" });
+        }
+    } catch (error) {
+        console.error("Error in handleOrderByRider:", error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
     }
-  } catch (error) {
-    console.error("Error in handleOrderByRider:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
-  }
 };
+
 
 
 
