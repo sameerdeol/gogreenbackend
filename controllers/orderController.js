@@ -1199,4 +1199,4 @@ const orderDetailsForRider = (req, res) => {
 
 
 
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorIdandRiderID, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, handleOrderByRider, orderDetailsForRider, updateOrder};
+ module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorIdandRiderID, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, handleOrderByRider, orderDetailsForRider};
