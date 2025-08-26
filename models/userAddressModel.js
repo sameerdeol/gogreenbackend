@@ -11,9 +11,27 @@ const UserAddress = {
 
     // Get all addresses of a specific user
     findByUserId: (user_id, callback) => {
-        const sql = "SELECT * FROM user_addresses WHERE user_id = ?";
+        const sql = `
+            SELECT DISTINCT 
+                ua.*,
+                CASE 
+                    WHEN ua.id = (
+                        SELECT od2.user_address_id
+                        FROM order_details od2
+                        WHERE od2.user_id = ua.user_id
+                        ORDER BY od2.created_at DESC
+                        LIMIT 1
+                    ) THEN 1
+                    ELSE 0
+                END AS last_used
+            FROM user_addresses ua
+            LEFT JOIN order_details od 
+                ON ua.id = od.user_address_id
+            WHERE ua.user_id = ?`;
+        
         db.query(sql, [user_id], callback);
     },
+
 
     // Get a single address by its ID
     findById: (id, user_id, callback) => {

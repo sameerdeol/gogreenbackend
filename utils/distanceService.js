@@ -51,17 +51,35 @@ function getDistanceMatrix(vendorLat, vendorLng, riders, customerLat, customerLn
 
   let matrixData = cache.get(matrixCacheKey);
 
+  // 🔹 Helper to pick shortest route
+  function getShortestRoute(directionsData) {
+    if (!directionsData.routes || !directionsData.routes.length) return null;
+
+    let shortestRoute = null;
+    let shortestDistance = Infinity;
+
+    directionsData.routes.forEach(route => {
+      const distance = route.legs?.[0]?.distance?.value || Infinity;
+      if (distance < shortestDistance) {
+        shortestDistance = distance;
+        shortestRoute = route;
+      }
+    });
+
+    return shortestRoute;
+  }
+
   function fetchRiderVendorPolyline(rider, cb) {
     const riderVendorKey = `route-${rider.rider_lat},${rider.rider_lng}-${vendorLat},${vendorLng}`;
     let polyline = cache.get(riderVendorKey);
 
     if (polyline) return cb(null, polyline);
 
-    const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${rider.rider_lat},${rider.rider_lng}&destination=${vendorLat},${vendorLng}&mode=driving&key=${API_KEY}`;
+    const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${rider.rider_lat},${rider.rider_lng}&destination=${vendorLat},${vendorLng}&mode=driving&alternatives=true&key=${API_KEY}`;
     axios.get(directionsUrl)
       .then(directionsRes => {
-        const route = directionsRes.data.routes[0];
-        polyline = route?.overview_polyline?.points || null;
+        const shortestRoute = getShortestRoute(directionsRes.data);
+        polyline = shortestRoute?.overview_polyline?.points || null;
         if (polyline) cache.set(riderVendorKey, polyline);
         cb(null, polyline);
       })
@@ -78,12 +96,12 @@ function getDistanceMatrix(vendorLat, vendorLng, riders, customerLat, customerLn
 
     if (polyline && distance) return cb(null, { polyline, distance });
 
-    const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${vendorLat},${vendorLng}&destination=${customerLat},${customerLng}&mode=driving&key=${API_KEY}`;
+    const directionsUrl = `https://maps.googleapis.com/maps/api/directions/json?origin=${vendorLat},${vendorLng}&destination=${customerLat},${customerLng}&mode=driving&alternatives=true&key=${API_KEY}`;
     axios.get(directionsUrl)
       .then(directionsRes => {
-        const route = directionsRes.data.routes[0];
-        polyline = route?.overview_polyline?.points || null;
-        distance = route?.legs?.[0]?.distance?.value || null; // in meters
+        const shortestRoute = getShortestRoute(directionsRes.data);
+        polyline = shortestRoute?.overview_polyline?.points || null;
+        distance = shortestRoute?.legs?.[0]?.distance?.value || null; // meters
         if (polyline) cache.set(vendorCustomerKey, polyline);
         if (distance) cache.set(`${vendorCustomerKey}-distance`, distance);
         cb(null, { polyline, distance });
@@ -101,7 +119,7 @@ function getDistanceMatrix(vendorLat, vendorLng, riders, customerLat, customerLn
     riders.forEach((rider, i) => {
       let riderToVendorDistance = null;
       if (matrixData[i] && matrixData[i].status === 'OK') {
-        riderToVendorDistance = matrixData[i].distance?.value || null; // in meters
+        riderToVendorDistance = matrixData[i].distance?.value || null;
       }
 
       fetchRiderVendorPolyline(rider, (err, riderVendorPolyline) => {
@@ -133,7 +151,7 @@ function getDistanceMatrix(vendorLat, vendorLng, riders, customerLat, customerLn
         if (data.status !== 'OK') {
           return callback(new Error(`Google Distance Matrix API error: ${data.status}`));
         }
-        matrixData = data.rows.map(row => row.elements[0]); // pick first destination (vendor)
+        matrixData = data.rows.map(row => row.elements[0]); // first destination (vendor)
         cache.set(matrixCacheKey, matrixData);
 
         fetchVendorCustomerPolylineAndDistance((err, { polyline, distance }) => {
@@ -144,6 +162,7 @@ function getDistanceMatrix(vendorLat, vendorLng, riders, customerLat, customerLn
       .catch(err => callback(err));
   }
 }
+
 
 
 
