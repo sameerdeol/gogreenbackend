@@ -1096,11 +1096,15 @@ const handleOrderByRider = async (req, res, io) => {
             // Emit socket event with OTP so frontend can show it in real-time
             io.emit(`otp-generated-${orderId}`, { orderId, riderId, otp });
 
+            // ✅ Console log for debug
+            console.log(`Socket emitted: otp-generated-${orderId}`, { orderId, riderId, otp });
+
             return res.json({ 
                 success: true, 
                 message: "OTP generated and sent to rider when reached vendor" 
             });
         }
+
 
         case 4: { // Rider delivered
             await OrderModel.updateOrderStatus(orderId, 4, riderId);
