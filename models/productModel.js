@@ -3,7 +3,7 @@ const sqlString = require('sqlstring');
 
 const Product = {
     create: (
-            vendor_id, name, description, price, category, sub_category, stock, featured_image,
+            vendor_id, name, description, price, discounted_price, category, sub_category, stock, featured_image,
             manufacturer_details, title, subtitle, size, fast_delivery_available,
             feature_title, feature_description, product_brand,
             nutritional_facts, miscellaneous, ingredients,
@@ -14,18 +14,19 @@ const Product = {
             const query = sqlString.format(
                 `INSERT INTO products 
                 (
-                    vendor_id, name, description, price, category_id, sub_category, stock, featured_image,
+                    vendor_id, name, description, price, discounted_price, category_id, sub_category, stock, featured_image,
                     manufacturer_details, title, subtitle, size, fast_delivery_available,
                     feature_title, feature_description, brand_id,
                     nutritional_facts, miscellaneous, ingredients,
                     product_unit, product_quantity
                 ) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     vendor_id || null,
                     name || null,
                     description || null,
                     parseFloat(price) || 0,
+                    parseFloat(discounted_price) || 0,
                     parseInt(category, 10) || null,
                     sub_category ? parseInt(sub_category, 10) : null,
                     parseInt(stock, 10) || 0,

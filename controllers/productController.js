@@ -11,7 +11,7 @@ const db = require('../config/db');
 // Create a new product
 const createProduct = async (req, res) => { 
     try {
-        let { vendor_id, name, description, price, category, sub_category,
+        let { vendor_id, name, description, price, discounted_price, category, sub_category,
             stock, manufacturer_details, title, subtitle, size, fast_delivery_available, 
             feature_title, feature_description, product_brand, nutritional_facts , ingredients , miscellaneous, product_unit, product_quantity 
         } = req.body;
@@ -69,7 +69,7 @@ const createProduct = async (req, res) => {
 
         // Insert product into MySQL
         Product.create(
-            vendor_id, name, description, price, category, sub_category, stock, featuredImage, manufacturer_details,
+            vendor_id, name, description, price, discounted_price, category, sub_category, stock, featuredImage, manufacturer_details,
             title, subtitle, size, fast_delivery_available, feature_title, feature_description, product_brand,
             nutritional_facts, miscellaneous, ingredients, product_unit, product_quantity,
             (err, productResult) => {

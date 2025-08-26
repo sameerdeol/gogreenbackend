@@ -49,8 +49,9 @@ const UserAddress = {
     // Delete an address by its ID
     delete: (id, user_id, callback) => {
         const sql = "DELETE FROM user_addresses WHERE id = ? AND user_id = ?";
-        db.query(sql, [id], user_id, callback);
+        db.query(sql, [id, user_id], callback);
     }
+
 };
 
 module.exports = UserAddress;
