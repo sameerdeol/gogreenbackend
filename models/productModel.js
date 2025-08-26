@@ -656,34 +656,41 @@ const Product = {
         });
     },
 
-      filterProducts: (filters, callback) => {
-        let { priceSort, deliveryType } = filters;
+    filterProducts: (filters, callback) => {
+        let { priceSort, deliveryType, vendor_id } = filters;
 
         let sql = "SELECT * FROM products WHERE 1=1";
         let params = [];
 
+        // Vendor filter (always apply)
+        if (vendor_id) {
+            sql += " AND vendor_id = ?";
+            params.push(vendor_id);
+        }
+
         // Delivery filter
         if (deliveryType) {
-        if (deliveryType === "Fast Delivery") {
-            sql += " AND fast_delivery_available = ?";
-            params.push(1);
-        } else if (deliveryType === "Normal Delivery") {
-            sql += " AND fast_delivery_available = ?";
-            params.push(0);
-        }
+            if (deliveryType === "Fast Delivery") {
+                sql += " AND fast_delivery_available = ?";
+                params.push(1);
+            } else if (deliveryType === "Normal Delivery") {
+                sql += " AND fast_delivery_available = ?";
+                params.push(0);
+            }
         }
 
         // Price sorting
         if (priceSort) {
-        if (priceSort === "High to Low") {
-            sql += " ORDER BY price DESC";
-        } else if (priceSort === "Low to High") {
-            sql += " ORDER BY price ASC";
-        }
+            if (priceSort === "High to Low") {
+                sql += " ORDER BY price DESC";
+            } else if (priceSort === "Low to High") {
+                sql += " ORDER BY price ASC";
+            }
         }
 
         db.query(sql, params, callback);
     }
+
     
 };
 

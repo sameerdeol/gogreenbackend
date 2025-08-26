@@ -233,6 +233,7 @@ const updateOrderStatus = async (req, res) => {
                 // Notify nearby riders only if vendor_id exists
                 if (vendor_id) {
                     User.getNearbyRidersWithPolylines(
+                        order_id,
                         vendor_id,
                         vendor_lat,
                         vendor_lng,

@@ -906,6 +906,7 @@ const User = {
     },
 
     getNearbyRidersWithPolylines: (
+        order_id,
         vendorId,
         vendorLat,
         vendorLng,
@@ -987,7 +988,7 @@ const User = {
                         vendorToCustomerDistance = (results[0].vendor_to_customer_distance / 1000).toFixed(2);
                     }
 
-                    savePolylines(vendorId, customerId, vendorCustomerPolyline, riderPolylines, (err) => {
+                    savePolylines(order_id,vendorId, customerId, vendorCustomerPolyline, riderPolylines, (err) => {
                         if (err) return callback(err);
 
                         const result = riderPolylines.map(rp => ({
