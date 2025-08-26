@@ -685,7 +685,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
                 address, type, floor, landmark,
-                firstname, lastname, phonenumber, is_fast_delivery, rider_unique_id, vendor_prefix, vendor_phonenumber, store_address, store_name
+                firstname, lastname, phonenumber, is_fast_delivery, rider_unique_id, vendor_prefix, vendor_phonenumber, store_address, store_name, store_image
             } = row;
 
             // ✅ Create order object if not exists
@@ -707,6 +707,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                     phonenumber,
                     store_address,
                     store_name,
+                    store_image,
                     vendor_prefix,
                     vendor_phonenumber,
                     address,
