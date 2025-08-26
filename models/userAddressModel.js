@@ -16,9 +16,9 @@ const UserAddress = {
     },
 
     // Get a single address by its ID
-    findById: (id, callback) => {
-        const sql = "SELECT * FROM user_addresses WHERE id = ?";
-        db.query(sql, [id], callback);
+    findById: (id, user_id, callback) => {
+        const sql = "SELECT * FROM user_addresses WHERE id = ? AND user_id = ?";
+        db.query(sql, [id, user_id], callback);
     },
 
     // Update an address by its ID
@@ -47,9 +47,9 @@ const UserAddress = {
     
 
     // Delete an address by its ID
-    delete: (id, callback) => {
-        const sql = "DELETE FROM user_addresses WHERE id = ?";
-        db.query(sql, [id], callback);
+    delete: (id, user_id, callback) => {
+        const sql = "DELETE FROM user_addresses WHERE id = ? AND user_id = ?";
+        db.query(sql, [id], user_id, callback);
     }
 };
 

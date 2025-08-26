@@ -90,20 +90,20 @@ const updateAddressById = (req, res) => {
 
 // Delete address by ID
 const deleteAddressById = (req, res) => {
-    const { id } = req.body;
+    const { user_id, address_id } = req.body;
 
-    if (!id) {
-        return res.status(400).json({ success: false, message: 'Address ID is required.' });
+    if (!address_id || !user_id) {
+        return res.status(400).json({ success: false, message: 'Address ID and user_id is required.' });
     }
 
-    UserAddress.findById(id, (err, addressData) => {
+    UserAddress.findById(address_id,user_id, (err, addressData) => {
         if (err) return res.status(500).json({ success: false, message: 'Error fetching address', error: err });
 
         if (!addressData.length) {
             return res.status(404).json({ success: false, message: 'Address not found' });
         }
 
-        UserAddress.delete(id, (err) => {
+        UserAddress.delete(address_id,user_id, (err) => {
             if (err) {
                 return res.status(500).json({ success: false, message: 'Error deleting address', error: err });
             }
