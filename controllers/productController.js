@@ -586,7 +586,8 @@ const bestSellProducts = (req, res) => {
 const getFilteredProducts = (req, res) => {
   const filters = {
     priceSort: req.body.priceSort,
-    deliveryType: req.body.deliveryType
+    deliveryType: req.body.deliveryType,
+    vendor_id: req.body.vendor_id
   };
 
   Product.filterProducts(filters, (err, results) => {
