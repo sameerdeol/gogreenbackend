@@ -1081,18 +1081,25 @@ const handleOrderByRider = async (req, res, io) => {
         case 3: { // Rider reached vendor → Generate OTP
             const otp = generateOtp(6);
             const expiry = new Date(Date.now() + 10 * 60 * 1000);
+            
+            // Save OTP and expiry in DB
             await OrderModel.updateOtpAndStatus(orderId.toString(), otp, expiry);
 
-            // Send OTP to rider
+            // Send OTP to rider via notification
             await sendNotificationToUser({
-            userId: riderId,
-            title: "OTP for Vendor",
-            body: `Show this OTP to the vendor: ${otp}`,
-            data: { order_id: orderId.toString(), type: "otp_info" }
+                userId: riderId,
+                title: "OTP for Vendor",
+                body: `Show this OTP to the vendor: ${otp}`,
+                data: { order_id: orderId.toString(), type: "otp_info" }
             });
 
-            io.emit(`rider-reached-vendor-${orderId}`, { orderId, riderId });
-            return res.json({ success: true, message: "OTP generated and sent to rider when reached vendor" });
+            // Emit socket event with OTP so frontend can show it in real-time
+            io.emit(`otp-generated-${orderId}`, { orderId, riderId, otp });
+
+            return res.json({ 
+                success: true, 
+                message: "OTP generated and sent to rider when reached vendor" 
+            });
         }
 
         case 4: { // Rider delivered
