@@ -579,7 +579,7 @@ const Order = {
         `;
 
         db.query(query, [rider_id], callback);
-    },
+    }
 
 
 };
