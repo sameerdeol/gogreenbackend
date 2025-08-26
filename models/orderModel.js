@@ -496,7 +496,7 @@ const Order = {
         const sql = `
         UPDATE order_details 
         SET rider_status = ?, rider_id = ? 
-        WHERE id = ? AND rider_status = 0
+        WHERE id = ?
         `;
         const values = [riderStatus, riderId, orderId];
 
