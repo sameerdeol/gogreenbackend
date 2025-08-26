@@ -1,4 +1,5 @@
 const axios = require('axios');
+const Location = require('../models/locationModel');
 
 const getLatLngByPlaceName = async (req, res) => {
     try {
@@ -37,4 +38,27 @@ const getLatLngByPlaceName = async (req, res) => {
     }
 };
 
-module.exports = { getLatLngByPlaceName };
+const getPolyLines = (req, res) => {
+    const { order_id } = req.params;
+    
+    if (!order_id) {
+        return res.status(400).json({ error: "order_id is required" });
+    }
+
+    Location.getPolyline(order_id, (err, results) => {
+        if (err) {
+            console.error("DB error:", err);
+            return res.status(500).json({ success: false, message: 'Database error' });
+        }
+
+        if (!results || results.length === 0) {
+            return res.status(404).json({ success: false, message: 'Order polylines not found' });
+        }
+
+        // send first row (since order_id is unique)
+        res.status(200).json({ success: true, data: results[0] });
+    });
+};
+
+
+module.exports = { getPolyLines };
