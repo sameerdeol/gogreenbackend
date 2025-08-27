@@ -33,6 +33,7 @@ const Order = {
                 OD.total_price,
                 OD.payment_method,
                 OD.order_status,
+                OD.rider_status,
                 OD.created_at AS order_created_at,
 
                 OI.id AS order_item_id,
@@ -111,6 +112,7 @@ const Order = {
             OD.total_price,
             OD.payment_method,
             OD.order_status,
+            OD.rider_status,
             OD.created_at AS order_created_at,
 
             OI.id AS order_item_id,
@@ -265,6 +267,7 @@ const Order = {
             OD.payment_method,
             OD.is_fast_delivery,
             OD.order_status,
+            OD.rider_status,
             OD.vendor_id,
             OD.created_at,
 

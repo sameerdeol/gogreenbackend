@@ -567,6 +567,7 @@ const getAllOrders = async (req, res) => {
                     payment_method: row.payment_method,
                     is_fast_delivery: row.is_fast_delivery,
                     order_status: row.order_status,
+                    rider_status: row.rider_status,
                     created_at: row.created_at,
 
                     user: {
@@ -656,7 +657,7 @@ const getOrderDetails = (req, res) => {
         results.forEach(row => {
             const {
                 order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
-                payment_method, order_status, order_created_at,
+                payment_method, order_status, rider_status, order_created_at,
                 order_item_id, product_id, product_name, product_description,
                 product_price, product_quantity, food_type, total_item_price,
                 variant_id, variant_type, variant_value, variant_price,
@@ -677,6 +678,7 @@ const getOrderDetails = (req, res) => {
                     total_price,
                     payment_method,
                     order_status,
+                    rider_status,
                     order_created_at,
                     firstname,
                     lastname,
@@ -856,7 +858,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
         filteredResults.forEach(row => {
             const {
                 order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
-                payment_method, order_status, order_created_at,
+                payment_method, order_status, rider_status, order_created_at,
                 order_item_id, product_id, product_name, product_description,
                 product_price, product_quantity, food_type, total_item_price,
                 variant_id, variant_type, variant_value, variant_price,
@@ -877,6 +879,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                     total_price,
                     payment_method,
                     order_status,
+                    rider_status,
                     order_created_at,
                     firstname,
                     lastname,
