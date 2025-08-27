@@ -780,7 +780,7 @@ const updateOrderTiming = (req, res) => {
   });
 };
 
-const verifyOtp = async (req, res) => {
+const verifyOtp = async (req, res, io) => {
   try {
     const { order_id, entered_otp } = req.body;
 

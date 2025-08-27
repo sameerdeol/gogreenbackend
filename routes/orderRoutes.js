@@ -26,7 +26,7 @@ module.exports = (io) => {
   router.post('/getallorderbyvendorid/:filter', verifyToken, getOrdersByVendorIdandRiderID);
   router.post('/list', verifyToken, getAllOrders);
   router.post('/updateordertiming', verifyToken, updateOrderTiming);
-  router.post('/verifyotprider', verifyOtp);
+  router.post('/verifyotprider', verifyOtp(req, res, io));
   router.post('/orderhistorybyuserid', verifyToken, orderHistory);
 
   // 🛠️ Pass `io` to the controller function
