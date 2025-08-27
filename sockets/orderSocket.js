@@ -37,7 +37,27 @@ module.exports = (io) => {
     });
 
     socket.on('disconnect', () => {
-      console.log(`[Socket Disconnected] ID: ${socket.id}`);
+          console.log(`[Socket Disconnected] ID: ${socket.id}`);
+        });
+        socket.on('generateOtp', async ({ orderId, riderId }) => {
+      try {
+        const otp = generateOtp(6); // your OTP generator function
+        const expiry = new Date(Date.now() + 10 * 60 * 1000);
+
+        // Save OTP & status in DB
+        await OrderModel.updateOtpAndStatus(orderId, otp, expiry);
+
+        // Emit OTP to the rider in the order room
+        io.to(`order_${orderId}`).emit(`otp-generated-${orderId}`, {
+          orderId,
+          riderId,
+          otp
+        });
+
+        console.log(`[OTP Generated] Order: ${orderId}, Rider: ${riderId}, OTP: ${otp}`);
+      } catch (err) {
+        console.error(`[OTP Error] Order: ${orderId}, Rider: ${riderId}`, err);
+      }
     });
   });
 };
