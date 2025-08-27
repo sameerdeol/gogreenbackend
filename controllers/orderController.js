@@ -803,15 +803,28 @@ const verifyOtp = async (req, res) => {
         return res.status(401).json({ message: "Invalid OTP" });
 
       case 'verified':
+        // ✅ Update order status
         await OrderDetails.updateOrderStatus(order_id, 7);
 
+        // ✅ Send notification to user
         await sendNotificationToUser({
           userId: result.user_id,
           title: "Order Picked Up",
           body: "Your order is on the way!",
           data: { order_id: order_id.toString(), type: "order_update" }
         });
-        return res.status(200).json({ message: "OTP verified successfully. Order picked up." });
+
+        // ✅ Emit socket event for OTP verified
+        io.emit(`otp-verified-${order_id}`, { 
+          orderId: order_id, 
+          userId: result.user_id, 
+          riderId: result.rider_id || null, 
+          status: "verified" 
+        });
+
+        return res.status(200).json({ 
+          message: "OTP verified successfully. Order picked up." 
+        });
 
       default:
         return res.status(500).json({ message: "Unexpected error" });
@@ -821,6 +834,7 @@ const verifyOtp = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 const getOrdersByVendorIdandRiderID = (req, res) => {
     const { user_id, role_id } = req.body;
