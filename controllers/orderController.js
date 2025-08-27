@@ -804,7 +804,7 @@ const verifyOtp = async (req, res, io) => {
 
       case 'verified':
         // ✅ Update order status
-        await OrderDetails.updateOrderStatus(order_id, 7);
+        // await OrderDetails.updateOrderStatus(order_id, 4);
 
         // ✅ Send notification to user
         await sendNotificationToUser({
