@@ -261,29 +261,7 @@ const updateOrderStatus = async (req, res) => {
                 }
                 break;
 
-            case 2: // Rider accepted
-                const otp = generateOtp(6);
-                const expiry = new Date(Date.now() + 10 * 60 * 1000);
-                await OrderModel.updateOtpAndStatus(orderIdStr, otp, expiry);
-
-                notifications.push(sendNotificationToUser({
-                    userId: user_id,
-                    title: "Delivery Assigned",
-                    body: `A rider has been assigned to deliver your order.`,
-                    data: { order_id: orderIdStr, type: "order_update" }
-                }));
-
-                // if (assigned_rider_id) {
-                //     notifications.push(sendNotificationToUser({
-                //         userId: assigned_rider_id,
-                //         title: "OTP for Vendor",
-                //         body: `Show this OTP to the vendor: ${otp}`,
-                //         data: { order_id: orderIdStr, type: "otp_info" }
-                //     }));
-                // }
-                break;
-
-            case 5: // Rejected
+            case 3: // Rejected
                 notifications.push(sendNotificationToUser({
                     userId: user_id,
                     title: "Order Rejected",
@@ -804,7 +782,7 @@ const verifyOtp = async (req, res, io) => {
 
       case 'verified':
         // ✅ Update order status
-        // await OrderDetails.updateOrderStatus(order_id, 4);
+        await OrderDetails.updateOrderStatus(order_id, 2);
 
         // ✅ Send notification to user
         await sendNotificationToUser({
@@ -1071,6 +1049,7 @@ const handleOrderByRider = async (req, res, io) => {
 
         switch (status) {
         case 2: { // Rider accepted
+            await OrderDetails.updateOrderStatusbyRider(orderId, 2, riderId);
             OrderModel.getOrderandRiderDetails(orderId, async (err, results) => {
             if (err) return res.status(500).json({ success: false, message: "Database error" });
             if (!results || results.length === 0) return res.status(404).json({ success: false, message: "Order not found" });
@@ -1101,6 +1080,7 @@ const handleOrderByRider = async (req, res, io) => {
         }
 
         case 3: { // Rider reached vendor → Generate OTP
+            await OrderDetails.updateOrderStatusbyRider(orderId, 3, riderId);
             const otp = generateOtp(6);
             const expiry = new Date(Date.now() + 10 * 60 * 1000);
             
@@ -1129,7 +1109,7 @@ const handleOrderByRider = async (req, res, io) => {
 
 
         case 4: { // Rider delivered
-            await OrderModel.updateOrderStatus(orderId, 4, riderId);
+            await OrderDetails.updateOrderStatusbyRider(orderId, 4, riderId);
             await sendNotificationToUser({
             userId: await OrderModel.getCustomerId(orderId),
             title: "Order Delivered",
