@@ -822,6 +822,14 @@ const verifyOtp = async (req, res) => {
           status: "verified" 
         });
 
+        // ✅ Console log for debug
+        console.log(`Socket emitted: otp-verified-${order_id}`, { 
+          orderId: order_id, 
+          userId: result.user_id, 
+          riderId: result.rider_id || null, 
+          status: "verified" 
+        });
+
         return res.status(200).json({ 
           message: "OTP verified successfully. Order picked up." 
         });
