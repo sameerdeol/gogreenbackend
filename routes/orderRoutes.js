@@ -26,14 +26,20 @@ module.exports = (io) => {
   router.post('/getallorderbyvendorid/:filter', verifyToken, getOrdersByVendorIdandRiderID);
   router.post('/list', verifyToken, getAllOrders);
   router.post('/updateordertiming', verifyToken, updateOrderTiming);
-  router.post('/verifyotprider', verifyOtp(req, res, io));
+
+  // 🛠️ Wrap in a callback to pass io
+  router.post('/verifyotprider', verifyToken, (req, res) =>
+    verifyOtp(req, res, io)
+  );
+
   router.post('/orderhistorybyuserid', verifyToken, orderHistory);
 
-  // 🛠️ Pass `io` to the controller function
+  // 🛠️ Pass io to the controller function
   router.post('/handle-orderbyrider', verifyToken, (req, res) =>
     handleOrderByRider(req, res, io)
   );
-  router.get('/orderdetailsforrider/:rider_id', verifyToken, orderDetailsForRider)
+
+  router.get('/orderdetailsforrider/:rider_id', verifyToken, orderDetailsForRider);
   
   return router;
 };
