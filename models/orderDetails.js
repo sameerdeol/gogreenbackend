@@ -20,9 +20,9 @@ const OrderDetails = {
         db.query(sql, [status, order_id], callback);
     },
 
-    updateOrderStatusbyRider: (order_id, status, callback) => {
-        const sql = `UPDATE order_details SET rider_status = ? WHERE id = ?`;
-        db.query(sql, [status, order_id], callback);
+    updateOrderStatusbyRider: (order_id, status, rider_id, callback) => {
+        const sql = `UPDATE order_details SET rider_status = ? WHERE rider_id = ?`;
+        db.query(sql, [status, order_id, rider_id], callback);
     },
     
     getUserIdByOrderId: (order_id, callback) => {
