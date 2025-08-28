@@ -564,7 +564,6 @@ const User = {
                     dp.sin_code,
                     dp.license_number,
                     dp.profile_pic,
-                    dp.license_number,
                     dp.other_phone_number,
                     dp.dob,
                     dp.address,
@@ -581,10 +580,10 @@ const User = {
                         SUM(order_status = 4) AS completed_orders,
                         SUM(order_status = 5) AS rejected_orders
                     FROM order_details
-                    WHERE order_status IN (4, 5)
                     GROUP BY rider_id
-                ) od ON od.rider_id = dp.user_id
+                ) od ON od.rider_id = u.id   -- ✅ fixed join
                 WHERE u.id = ? AND u.role_id = ?;
+                ;
             `;
             queryParams.push(roleId); // Add roleId to parameters
         } else if(roleId ===3) {
