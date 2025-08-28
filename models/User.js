@@ -647,10 +647,10 @@ const User = {
                     ON c.user_id = u.id
                 LEFT JOIN user_addresses ua 
                     ON ua.id = (
-                        SELECT od.user_address_id
-                        FROM order_details od
-                        WHERE od.user_id = u.id
-                        ORDER BY od.created_at DESC
+                        SELECT uad.id
+                        FROM user_addresses uad
+                        WHERE uad.user_id = u.id
+                        ORDER BY uad.created_at DESC
                         LIMIT 1
                     )
                 WHERE u.id = ? 
