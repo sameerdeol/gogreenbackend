@@ -934,7 +934,8 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
             ...order,
             items: Object.values(order.items)
         }));
-
+        finalOrders.sort((a, b) => new Date(b.order_created_at) - new Date(a.order_created_at));
+        
         res.status(200).json(finalOrders);
     });
 };
