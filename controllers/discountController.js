@@ -15,8 +15,7 @@ const createOrUpdateDiscount = (req, res) => {
 
         if (existingDiscount && existingDiscount.length > 0) {
             // ✅ Record Found
-            const discountId = existingDiscount[0].id;
-
+            const discountId = existingDiscount[0].discount_id;
             if (discount_percent == 0) {
                 // 👉 Delete the existing discount
                 DiscountModel.deleteDiscountById(discountId, (err, result) => {
