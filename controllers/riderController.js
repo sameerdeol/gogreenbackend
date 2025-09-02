@@ -166,12 +166,16 @@ const riderSignup = async (req, res) => {
 const riderLogin = async (req, res) => {
     try {
         req.body.role_id = 4;
-        const { email, password, googleauthToken, role_id } = req.body;
+        const { email, password, googleauthToken, appleAuthToken, role_id } = req.body;
+
         if (!role_id) {
             return res.status(401).json({ success: false, message: "role_id is mandatory." });
         }
+
         let finalemail = email;
         let finalpassword = password;
+
+        // ✅ Google Login
         if (googleauthToken) {
             try {
                 const decoded = await require('../middleware/googleAuthToken')(googleauthToken);
@@ -181,9 +185,27 @@ const riderLogin = async (req, res) => {
                 return res.status(401).json({ success: false, message: "Invalid Google token" });
             }
         }
+
+        // ✅ Apple Login
+        if (appleAuthToken) {
+            try {
+                const { verifyAppleToken } = require('../middleware/appleAuthToken');
+                const decoded = await verifyAppleToken(appleAuthToken);
+
+                finalemail = decoded.email || decoded.sub + "@apple.com"; 
+                // Some Apple accounts hide email → use sub (unique identifier) as fallback
+                finalpassword = decoded.sub; // unique stable identifier from Apple
+            } catch (err) {
+                console.error("Apple token verification failed:", err);
+                return res.status(401).json({ success: false, message: "Invalid Apple token" });
+            }
+        }
+
         if (!finalemail || !finalpassword) {
             return res.status(400).json({ success: false, message: "Email and password are required." });
         }
+
+        // 🔍 Find user
         User.findByEmailForVendorRider(finalemail, 4, async (err, results) => {
             if (err) {
                 return res.status(500).json({ success: false, message: "Internal server error", error: err });
@@ -191,11 +213,19 @@ const riderLogin = async (req, res) => {
             if (!results || !results.success) {
                 return res.status(404).json({ success: false, message: results?.message || "User not found" });
             }
+
             const user = results.user;
-            const isValid = await bcrypt.compare(String(finalpassword), String(user.password));
+
+            // ⚡ If social login, skip password check
+            let isValid = true;
+            if (!googleauthToken && !appleAuthToken) {
+                isValid = await bcrypt.compare(String(finalpassword), String(user.password));
+            }
+
             if (!isValid) {
                 return res.status(401).json({ success: false, message: "Invalid credentials" });
             }
+
             const token = jwt.sign(
                 {
                     user_id: user.id,
@@ -208,6 +238,7 @@ const riderLogin = async (req, res) => {
                 },
                 process.env.JWT_SECRET
             );
+
             return res.json({
                 success: true,
                 message: "Login successful",
@@ -220,6 +251,7 @@ const riderLogin = async (req, res) => {
         return res.status(500).json({ success: false, message: "Authentication error", error });
     }
 };
+
 
 const riderVerification = async (req, res) => {
     try {
