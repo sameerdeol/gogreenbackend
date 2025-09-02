@@ -64,6 +64,7 @@ const appsignup = async (req, res) => {
                     success: true,
                     message: "Login successful",
                     token,
+                    is_new_user: false, // 🚀 Existing user
                     is_user_address_available: !!user.is_user_address_available // Convert to boolean
                 });
             }
@@ -90,6 +91,7 @@ const appsignup = async (req, res) => {
                     message: "User created and logged in successfully",
                     user: { id: newUserId, phonenumber, role_id },
                     token,
+                    is_new_user: true, // 🚀 New user
                     is_user_address_available: false // New user → no addresses yet
                 });
             });
@@ -104,9 +106,6 @@ const appsignup = async (req, res) => {
         });
     }
 };
-
-
-
 
 // login user api
 const loginadmin = async (req, res) => {
