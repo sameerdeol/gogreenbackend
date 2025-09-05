@@ -565,6 +565,8 @@ const User = {
                     dp.license_number,
                     dp.profile_pic,
                     dp.other_phone_number,
+                    dp.rider_start_time,
+                    dp.rider_close_time,
                     dp.dob,
                     dp.address,
                     CAST(IFNULL(od.total_orders, 0) AS SIGNED) AS total_orders,
