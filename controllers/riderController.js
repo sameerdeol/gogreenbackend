@@ -557,8 +557,9 @@ const riderStatus = (req, res) => {
         deactivated_by
     };
 
-    if (start_time) updateFields.start_time = start_time;
-    if (close_time) updateFields.close_time = close_time;
+    // Only update times if they are provided in the request
+    if (typeof start_time !== 'undefined') updateFields.start_time = start_time;
+    if (typeof close_time !== 'undefined') updateFields.close_time = close_time;
 
     User.Status(updateFields, (err, user) => {
         if (err) {
