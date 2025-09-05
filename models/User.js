@@ -688,36 +688,59 @@ const User = {
     },
 
     Status: (data, callback) => {
-        const { user_id, status, deactivated_by, vendor_start_time, vendor_close_time } = data;
+        const { role_id, user_id, status, deactivated_by, start_time, close_time } = data;
 
-        // Update vendors table
-        const vendorSql = `
-            UPDATE vendors 
-            SET vendor_start_time = ?, vendor_close_time = ?
-            WHERE user_id = ?
-        `;
+        let updateSql;
+        let updateValues;
 
-        // Update users table
+        if (role_id === 3) {
+            // Update vendors table
+            updateSql = `
+                UPDATE vendors 
+                SET vendor_start_time = ?, vendor_close_time = ? 
+                WHERE user_id = ?
+            `;
+            updateValues = [start_time, close_time, user_id];
+        } else if (role_id === 4) {
+            // Update delivery_partners table
+            updateSql = `
+                UPDATE delivery_partners
+                SET rider_start_time = ?, rider_close_time = ? 
+                WHERE user_id = ?
+            `;
+            updateValues = [start_time, close_time, user_id];
+        } else {
+            // If role_id is neither 3 nor 4, just update users table
+            updateSql = null;
+        }
+
         const userSql = `
             UPDATE users 
-            SET status = ?, deactivated_by = ?
+            SET status = ?, deactivated_by = ? 
             WHERE id = ?
         `;
+        const userValues = [status, deactivated_by, user_id];
 
-        // First update vendors
-        db.query(vendorSql, [vendor_start_time, vendor_close_time, user_id], (err, vendorResult) => {
-            if (err) return callback(err);
-
-            // Then update users
-            db.query(userSql, [status, deactivated_by, user_id], (err, userResult) => {
+        if (updateSql) {
+            // Update role-specific table first
+            db.query(updateSql, updateValues, (err, result) => {
                 if (err) return callback(err);
-                if (vendorResult.affectedRows === 0 && userResult.affectedRows === 0) {
-                    return callback(null, null); // Nothing updated
-                }
+
+                // Then update users table
+                db.query(userSql, userValues, (err, userResult) => {
+                    if (err) return callback(err);
+                    callback(null, true);
+                });
+            });
+        } else {
+            // Only update users table
+            db.query(userSql, userValues, (err, userResult) => {
+                if (err) return callback(err);
                 callback(null, true);
             });
-        });
+        }
     },
+
 
 
 

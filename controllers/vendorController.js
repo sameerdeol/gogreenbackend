@@ -373,7 +373,7 @@ const vendorProfile = (req, res) => {
 };
 
 const vendorStatus = (req, res) => {
-    const { user_id, status, role_id, vendor_start_time, vendor_close_time } = req.body;
+    const { user_id, status, role_id, start_time, close_time } = req.body;
 
     if (!user_id || typeof status === 'undefined' || !role_id) {
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
@@ -392,13 +392,14 @@ const vendorStatus = (req, res) => {
     }
 
     const updateFields = {
+        role_id,
         user_id,
         status,
         deactivated_by
     };
 
-    if (vendor_start_time) updateFields.vendor_start_time = vendor_start_time;
-    if (vendor_close_time) updateFields.vendor_close_time = vendor_close_time;
+    if (start_time) updateFields.start_time = start_time;
+    if (close_time) updateFields.close_time = close_time;
 
     User.Status(updateFields, (err, user) => {
         if (err) {

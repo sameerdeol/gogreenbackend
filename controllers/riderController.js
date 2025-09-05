@@ -532,7 +532,7 @@ const vehicleDetails = (req, res) => {
 
 
 const riderStatus = (req, res) => {
-    const { user_id, status, role_id, rider_start_time, rider_close_time } = req.body;
+    const { user_id, status, role_id, start_time, close_time } = req.body;
     console.log(role_id)
     if (!user_id || typeof status === 'undefined' || !role_id) {
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
@@ -551,13 +551,14 @@ const riderStatus = (req, res) => {
     }
 
     const updateFields = {
+        role_id,
         user_id,
         status,
         deactivated_by
     };
 
-    if (rider_start_time) updateFields.rider_start_time = rider_start_time;
-    if (rider_close_time) updateFields.rider_close_time = rider_close_time;
+    if (start_time) updateFields.start_time = start_time;
+    if (close_time) updateFields.close_time = close_time;
 
     User.Status(updateFields, (err, user) => {
         if (err) {
