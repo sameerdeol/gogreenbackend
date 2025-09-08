@@ -410,11 +410,14 @@ const Product = {
     },
 
 
-    findallByVendorId: (vendorID, searchTerm, callback) => {
+    findallByVendorId: (vendorID, searchTerm,userID, callback) => {
         const query = `
             SELECT 
                 p.*, 
-                p.is_featured AS is_favourite,
+                CASE 
+                    WHEN f.product_id IS NOT NULL THEN TRUE 
+                    ELSE FALSE 
+                END AS is_favourite,   -- ✅ now dynamic from favourites table
                 c.name AS category_name, 
                 s.name AS sub_category_name, 
                 b.name AS brand_name, 
@@ -433,11 +436,13 @@ const Product = {
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
             LEFT JOIN product_brands b ON p.brand_id = b.id
             LEFT JOIN product_discounts d ON p.id = d.product_id
+            LEFT JOIN favourite_products f 
+                ON f.product_id = p.id AND f.user_id = ?   -- ✅ match favourite for given user
             WHERE p.vendor_id = ?
             ORDER BY match_priority DESC, p.id DESC;
         `;
 
-        db.query(query, [searchTerm, searchTerm, vendorID], (err, results) => {
+        db.query(query, [searchTerm, searchTerm, userID, vendorID], (err, results) => {
             if (err) return callback(err, null);
             if (!results.length) return callback(null, []);
 
