@@ -706,7 +706,7 @@ const riderAnalytics = (req, res) => {
     const { rider_id } = req.body;
 
     if (!rider_id) {
-        return res.status(400).json({ success: false, message: "Vendor ID is required" });
+        return res.status(400).json({ success: false, message: "ID is required" });
     }
 
     User.getRiderAnalytics(rider_id, (err, analytics) => {
