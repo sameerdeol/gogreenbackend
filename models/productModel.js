@@ -414,6 +414,7 @@ const Product = {
         const query = `
             SELECT 
                 p.*, 
+                p.is_featured AS is_favourite,
                 c.name AS category_name, 
                 s.name AS sub_category_name, 
                 b.name AS brand_name, 
