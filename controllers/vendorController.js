@@ -306,6 +306,7 @@ const updateVendorProfile = async (req, res) => {
     const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob, vendor_lat, vendor_lng } = req.body;
     let profile_pic = null;
     let vendor_thumb = null;
+    let store_image = null;
     if (req.files && req.files['worker_profilePic'] && req.files['worker_profilePic'].length > 0) {
         const file = req.files['worker_profilePic'][0];
         profile_pic = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
@@ -313,6 +314,10 @@ const updateVendorProfile = async (req, res) => {
     if (req.files && req.files['vendor_thumbnail'] && req.files['vendor_thumbnail'].length > 0) {
         const file = req.files['vendor_thumbnail'][0];
         vendor_thumb = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+    }
+    if (req.files && req.files['store_image'] && req.files['store_image'].length > 0) {
+        const file = req.files['store_image'][0];
+        store_image = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
     }
     if ([1, 2].includes(parseInt(role_id))) {
         return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
@@ -330,9 +335,13 @@ const updateVendorProfile = async (req, res) => {
         if (vendor_thumb && user.vendor_thumb) {
             await deleteS3Image(user.vendor_thumb);
         }
+        if (vendor_thumb && user.vendor_thumb) {
+            await deleteS3Image(user.vendor_thumb);
+        }
         const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob, vendor_lat, vendor_lng };
         if (profile_pic) userData.profile_pic = profile_pic;
         if (vendor_thumb) userData.vendor_thumb = vendor_thumb;
+        if (store_image) userData.store_image = store_image;
         User.updateWorkerData(user_id, role_id, userData, (err, results) => {
             if (err) {
                 if (err.code === 'ER_DUP_ENTRY') {
