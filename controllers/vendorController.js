@@ -303,7 +303,7 @@ const vendorVerification = async (req, res) => {
 
 const updateVendorProfile = async (req, res) => {
     req.body.role_id = 3;
-    const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number, gender, dob, vendor_lat, vendor_lng } = req.body;
+    const { role_id, firstname, lastname, store_name, store_address, email, sin_code, phonenumber, user_id, prefix, license_number,business_reg_number, gender, dob, vendor_lat, vendor_lng } = req.body;
     let profile_pic = null;
     let vendor_thumb = null;
     let store_image = null;
@@ -338,7 +338,7 @@ const updateVendorProfile = async (req, res) => {
         if (vendor_thumb && user.vendor_thumb) {
             await deleteS3Image(user.vendor_thumb);
         }
-        const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob, vendor_lat, vendor_lng };
+        const userData = { firstname, prefix, phonenumber, email, store_name, store_address, sin_code, license_number, lastname, gender, dob, vendor_lat, vendor_lng, business_reg_number };
         if (profile_pic) userData.profile_pic = profile_pic;
         if (vendor_thumb) userData.vendor_thumb = vendor_thumb;
         if (store_image) userData.store_image = store_image;
