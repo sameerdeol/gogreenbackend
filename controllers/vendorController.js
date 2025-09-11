@@ -460,8 +460,12 @@ const allVendors = (req, res) => {
             });
         }
 
+        // Current time in India
         const now = new Date();
-        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+        const indiaTime = new Date(
+            now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+        );
+        const nowMinutes = indiaTime.getHours() * 60 + indiaTime.getMinutes();
 
         const vendors = users.map(user => {
             let is_vendor_opened = false;
