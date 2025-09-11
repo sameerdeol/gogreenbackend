@@ -117,9 +117,9 @@
 const db = require("../config/db");
 
 function savePolylines(order_id, vendorId, customerId, vendorToCustomerPolyline, riderPolylines, callback) {
-  // Step 1: Vendor → Customer (insert new row per order)
+  // Step 1: Vendor → Customer (INSERT IGNORE)
   const sqlInsertVendorCustomer = `
-    INSERT INTO vendor_customer_polylines (order_id, vendor_id, customer_id, polyline) 
+    INSERT IGNORE INTO vendor_customer_polylines (order_id, vendor_id, customer_id, polyline) 
     VALUES (?, ?, ?, ?)
   `;
   
@@ -167,5 +167,4 @@ function savePolylines(order_id, vendorId, customerId, vendorToCustomerPolyline,
 }
 
 module.exports = savePolylines;
-
 
