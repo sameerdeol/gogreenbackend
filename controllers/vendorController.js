@@ -460,17 +460,21 @@ const allVendors = (req, res) => {
             });
         }
 
-        const currentTime = new Date(); // Current time
+        const now = new Date();
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
         const vendors = users.map(user => {
-            // Parse vendor start and close times
-            const startTime = user.vendor_start_time ? new Date(`1970-01-01T${user.vendor_start_time}`) : null;
-            const closeTime = user.vendor_close_time ? new Date(`1970-01-01T${user.vendor_close_time}`) : null;
+            let is_vendor_opened = false;
 
-            // Determine if vendor is open
-            const is_vendor_opened = startTime && closeTime
-                ? currentTime.getHours() >= startTime.getHours() && currentTime.getHours() < closeTime.getHours()
-                : false;
+            if (user.vendor_start_time && user.vendor_close_time) {
+                const [startHour, startMinute] = user.vendor_start_time.split(':').map(Number);
+                const [closeHour, closeMinute] = user.vendor_close_time.split(':').map(Number);
+
+                const startMinutes = startHour * 60 + startMinute;
+                const closeMinutes = closeHour * 60 + closeMinute;
+
+                is_vendor_opened = nowMinutes >= startMinutes && nowMinutes < closeMinutes;
+            }
 
             return {
                 ...user,
