@@ -435,10 +435,8 @@ const allVendors = (req, res) => {
     let filterIds = [];
 
     if (Array.isArray(vendor_type_id)) {
-        // Already an array (correct format)
         filterIds = vendor_type_id.map(id => parseInt(id)).filter(id => !isNaN(id));
     } else if (typeof vendor_type_id === 'string') {
-        // Comma-separated string
         filterIds = vendor_type_id
             .split(',')
             .map(id => parseInt(id.trim()))
@@ -462,12 +460,24 @@ const allVendors = (req, res) => {
             });
         }
 
-        const vendors = users.map(user => ({
-            ...user,
-            featured_images: user.featured_images
-                ? user.featured_images.split(',')
-                : []
-        }));
+        const currentTime = new Date(); // Current time
+
+        const vendors = users.map(user => {
+            // Parse vendor start and close times
+            const startTime = user.vendor_start_time ? new Date(`1970-01-01T${user.vendor_start_time}`) : null;
+            const closeTime = user.vendor_close_time ? new Date(`1970-01-01T${user.vendor_close_time}`) : null;
+
+            // Determine if vendor is open
+            const is_vendor_opened = startTime && closeTime
+                ? currentTime.getHours() >= startTime.getHours() && currentTime.getHours() < closeTime.getHours()
+                : false;
+
+            return {
+                ...user,
+                featured_images: user.featured_images ? user.featured_images.split(',') : [],
+                is_vendor_opened
+            };
+        });
 
         return res.status(200).json({
             success: true,
@@ -476,6 +486,7 @@ const allVendors = (req, res) => {
         });
     });
 };
+
 
 
 const allVendorsforAdmin = (req, res) => {
