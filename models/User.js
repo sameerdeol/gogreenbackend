@@ -692,30 +692,52 @@ const User = {
     Status: (data, callback) => {
         const { role_id, user_id, status, deactivated_by, start_time, close_time } = data;
 
-        let updateSql;
-        let updateValues;
+        let updateSql = null;
+        let updateValues = [];
 
         if (role_id === 3) {
-            // Update vendors table
-            updateSql = `
-                UPDATE vendors 
-                SET vendor_start_time = ?, vendor_close_time = ? 
-                WHERE user_id = ?
-            `;
-            updateValues = [start_time, close_time, user_id];
+            // Vendors table
+            let setFields = [];
+            if (typeof start_time !== 'undefined') {
+                setFields.push(`vendor_start_time = ?`);
+                updateValues.push(start_time);
+            }
+            if (typeof close_time !== 'undefined') {
+                setFields.push(`vendor_close_time = ?`);
+                updateValues.push(close_time);
+            }
+
+            if (setFields.length > 0) {
+                updateSql = `
+                    UPDATE vendors 
+                    SET ${setFields.join(', ')} 
+                    WHERE user_id = ?
+                `;
+                updateValues.push(user_id);
+            }
         } else if (role_id === 4) {
-            // Update delivery_partners table
-            updateSql = `
-                UPDATE delivery_partners
-                SET rider_start_time = ?, rider_close_time = ? 
-                WHERE user_id = ?
-            `;
-            updateValues = [start_time, close_time, user_id];
-        } else {
-            // If role_id is neither 3 nor 4, just update users table
-            updateSql = null;
+            // Delivery partners table
+            let setFields = [];
+            if (typeof start_time !== 'undefined') {
+                setFields.push(`rider_start_time = ?`);
+                updateValues.push(start_time);
+            }
+            if (typeof close_time !== 'undefined') {
+                setFields.push(`rider_close_time = ?`);
+                updateValues.push(close_time);
+            }
+
+            if (setFields.length > 0) {
+                updateSql = `
+                    UPDATE delivery_partners 
+                    SET ${setFields.join(', ')} 
+                    WHERE user_id = ?
+                `;
+                updateValues.push(user_id);
+            }
         }
 
+        // Always update users table
         const userSql = `
             UPDATE users 
             SET status = ?, deactivated_by = ? 
@@ -724,18 +746,15 @@ const User = {
         const userValues = [status, deactivated_by, user_id];
 
         if (updateSql) {
-            // Update role-specific table first
             db.query(updateSql, updateValues, (err, result) => {
                 if (err) return callback(err);
 
-                // Then update users table
                 db.query(userSql, userValues, (err, userResult) => {
                     if (err) return callback(err);
                     callback(null, true);
                 });
             });
         } else {
-            // Only update users table
             db.query(userSql, userValues, (err, userResult) => {
                 if (err) return callback(err);
                 callback(null, true);
