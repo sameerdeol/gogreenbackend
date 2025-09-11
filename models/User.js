@@ -1572,6 +1572,47 @@ const User = {
         const params = [user_id, vendor_id];
 
         db.query(sql, params, callback);
+    },
+    
+    getVendorDashboardAnalytics : (vendor_Id, start_date, end_date, callback) => {
+        let sql, values;
+
+        if (start_date === end_date) {
+            // ✅ Same date → group by HOUR
+            sql = `
+                SELECT 
+                    HOUR(created_at) AS order_hour,
+                    SUM(total_price) AS total_earning,
+                    COUNT(*) AS total_orders,
+                    COUNT(DISTINCT user_id) AS total_customers
+                FROM order_details
+                WHERE vendor_id = ?
+                AND DATE(created_at) = ?
+                GROUP BY order_hour
+                ORDER BY order_hour
+            `;
+            values = [vendor_Id, start_date];
+        } else {
+            // ✅ Different dates → group by DATE
+            sql = `
+                SELECT 
+                    DATE(created_at) AS order_date,
+                    SUM(total_price) AS total_earning,
+                    COUNT(*) AS total_orders,
+                    COUNT(DISTINCT user_id) AS total_customers
+                FROM order_details
+                WHERE vendor_id = ?
+                AND created_at BETWEEN ? AND ?
+                GROUP BY order_date
+                ORDER BY order_date
+            `;
+            values = [vendor_Id, `${start_date} 00:00:00`, `${end_date} 23:59:59`];
+        }
+
+        db.query(sql, values, (err, results) => {
+            if (err) return callback(err);
+            callback(null, results);
+        });
     }
 
 

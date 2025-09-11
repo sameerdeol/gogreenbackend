@@ -956,6 +956,23 @@ const VendorbyID = (req, res) => {
     });
 };
 
+const vendorDashboardAnalytics = (req, res) => {
+    const { vendor_Id, start_date, end_date } = req.body;
+
+    if (!vendor_Id || !start_date || !end_date) {
+        return res.status(400).json({ success: false, message: "vendor_Id, start_date, end_date are required" });
+    }
+
+    User.getVendorDashboardAnalytics(vendor_Id, start_date, end_date, (err, analytics) => {
+        if (err) {
+            console.error("Analytics Error:", err);
+            return res.status(500).json({ success: false, message: "Internal Server Error" });
+        }
+
+        return res.json({ success: true, data: analytics });
+    });
+};
+
 
 module.exports = {
     vendorSignup,
@@ -976,5 +993,6 @@ module.exports = {
     vendorBankDetails,
     vendorAnalytics,
     allVendorsforAdminbySubcatID,
-    VendorbyID
+    VendorbyID,
+    vendorDashboardAnalytics
 }; 
