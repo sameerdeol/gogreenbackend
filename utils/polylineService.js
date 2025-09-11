@@ -114,22 +114,22 @@
 // }
 
 // module.exports = savePolylines;
-const db = require("../config/db"); // adjust path if needed
+const db = require("../config/db");
 
 function savePolylines(order_id, vendorId, customerId, vendorToCustomerPolyline, riderPolylines, callback) {
-  // Step 1: Vendor → Customer (manual check for accuracy)
-  const sqlVendorCustomerCheck = `
-    SELECT id, polyline FROM vendor_customer_polylines 
-    WHERE order_id = ? AND vendor_id = ? AND customer_id = ? LIMIT 1
+  // Step 1: Vendor → Customer (insert new row per order)
+  const sqlInsertVendorCustomer = `
+    INSERT INTO vendor_customer_polylines (order_id, vendor_id, customer_id, polyline) 
+    VALUES (?, ?, ?, ?)
   `;
-
-  db.query(sqlVendorCustomerCheck, [order_id, vendorId, customerId], (err, vendorCustomerRows) => {
+  
+  db.query(sqlInsertVendorCustomer, [order_id, vendorId, customerId, vendorToCustomerPolyline], (err) => {
     if (err) {
-      console.error("❌ Error checking vendor-customer polyline:", err);
+      console.error("❌ Error inserting vendor-customer polyline:", err);
       return callback(err);
     }
 
-    // Helper → process rider polylines
+    // Step 2: Rider → Vendor (UPSERT because location changes)
     function insertRiderPolylines(done) {
       let index = 0;
 
@@ -141,98 +141,31 @@ function savePolylines(order_id, vendorId, customerId, vendorToCustomerPolyline,
 
         const rider = riderPolylines[index];
 
-        // Check first for existing rider→vendor polyline
-        const sqlCheckRider = `
-          SELECT id, polyline FROM rider_vendor_polylines
-          WHERE order_id = ? AND rider_id = ? AND vendor_id = ? LIMIT 1
+        const sqlInsertOrUpdateRider = `
+          INSERT INTO rider_vendor_polylines (order_id, rider_id, vendor_id, polyline)
+          VALUES (?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE 
+            polyline = VALUES(polyline),
+            order_id = VALUES(order_id)
         `;
 
-        db.query(sqlCheckRider, [order_id, rider.riderId, vendorId], (err, riderRows) => {
+        db.query(sqlInsertOrUpdateRider, [order_id, rider.riderId, vendorId, rider.polyline], (err) => {
           if (err) {
-            console.error("❌ Error checking rider-vendor polyline:", err);
+            console.error("❌ Error inserting/updating rider-vendor polyline:", err);
             return done(err);
           }
-
-          if (riderRows.length === 0) {
-            // Insert new rider→vendor polyline
-            const sqlInsertRider = `
-              INSERT INTO rider_vendor_polylines (order_id, rider_id, vendor_id, polyline)
-              VALUES (?, ?, ?, ?)
-            `;
-            db.query(sqlInsertRider, [order_id, rider.riderId, vendorId, rider.polyline], (err) => {
-              if (err) {
-                console.error("❌ Error inserting rider-vendor polyline:", err);
-                return done(err);
-              }
-              index++;
-              next();
-            });
-          } else {
-            // Update only if polyline changed
-            const existingPolyline = riderRows[0].polyline;
-            if (existingPolyline !== rider.polyline) {
-              const sqlUpdateRider = `
-                UPDATE rider_vendor_polylines
-                SET polyline = ?
-                WHERE id = ?
-              `;
-              db.query(sqlUpdateRider, [rider.polyline, riderRows[0].id], (err) => {
-                if (err) {
-                  console.error("❌ Error updating rider-vendor polyline:", err);
-                  return done(err);
-                }
-                index++;
-                next();
-              });
-            } else {
-              // Skip update
-              index++;
-              next();
-            }
-          }
+          index++;
+          next();
         });
       }
 
       next();
     }
 
-    // Vendor → Customer
-    if (vendorCustomerRows.length === 0) {
-      // Insert if not found
-      const sqlInsertVendorCustomer = `
-        INSERT INTO vendor_customer_polylines (order_id, vendor_id, customer_id, polyline) 
-        VALUES (?, ?, ?, ?)
-      `;
-      db.query(sqlInsertVendorCustomer, [order_id, vendorId, customerId, vendorToCustomerPolyline], (err) => {
-        if (err) {
-          console.error("❌ Error inserting vendor-customer polyline:", err);
-          return callback(err);
-        }
-        insertRiderPolylines(callback);
-      });
-    } else {
-      // Update only if polyline changed
-      const existingPolyline = vendorCustomerRows[0].polyline;
-      if (existingPolyline !== vendorToCustomerPolyline) {
-        const sqlUpdateVendorCustomer = `
-          UPDATE vendor_customer_polylines 
-          SET polyline = ? 
-          WHERE id = ?
-        `;
-        db.query(sqlUpdateVendorCustomer, [vendorToCustomerPolyline, vendorCustomerRows[0].id], (err) => {
-          if (err) {
-            console.error("❌ Error updating vendor-customer polyline:", err);
-            return callback(err);
-          }
-          insertRiderPolylines(callback);
-        });
-      } else {
-        // Skip update
-        insertRiderPolylines(callback);
-      }
-    }
+    insertRiderPolylines(callback);
   });
 }
 
 module.exports = savePolylines;
+
 
