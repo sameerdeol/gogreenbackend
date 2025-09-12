@@ -178,7 +178,7 @@ const createOrder = async (req, res) => {
 };
 
 const updateOrderStatus = async (req, res) => {
-    const { order_id, vendor_id, order_status, rider_id } = req.body;
+    const { order_id, vendor_id, order_status } = req.body;
 
     if (!order_id || !order_status) {
         return res.status(400).json({ error: "Order ID and Order Status are required" });

@@ -1,7 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const { distanceCustomerVendor, getDistanceMatrix } = require('../utils/distanceService');
-const  savePolylines  = require('../utils/polylineService');
+const  {savePolylines, saveRouteCoordinates}  = require('../utils/routeCordinates');
 
 const updateFields = (data, tableFields) => {
     const fieldsToUpdate = [];
@@ -948,6 +948,105 @@ const User = {
         }
     },
 
+    // getNearbyRidersWithPolylines: (
+    //     order_id,
+    //     vendorId,
+    //     vendorLat,
+    //     vendorLng,
+    //     customerId,
+    //     user_address_id,
+    //     radiusInKm = 3,
+    //     callback
+    // ) => {
+    //     vendorLat = Number(vendorLat);
+    //     vendorLng = Number(vendorLng);
+
+    //     if (isNaN(vendorLat) || isNaN(vendorLng)) {
+    //         console.error("❌ Invalid coordinates:", { vendorLat, vendorLng });
+    //         return callback(new Error("Invalid coordinates"));
+    //     }
+
+    //     const sqlCustomer = `
+    //         SELECT customer_lat, customer_lng
+    //         FROM user_addresses
+    //         WHERE user_id = ? AND id = ?
+    //     `;
+
+    //     db.query(sqlCustomer, [customerId, user_address_id], (err, customerResults) => {
+    //         if (err) {
+    //             console.error("❌ Error fetching customer coordinates:", err);
+    //             return callback(err);
+    //         }
+    //         if (!customerResults.length) {
+    //             console.warn("⚠️ No customer address found:", { customerId, user_address_id });
+    //             return callback(new Error("Address not found"));
+    //         }
+
+    //         const { customer_lat, customer_lng } = customerResults[0];
+
+    //         const latDelta = radiusInKm / 111;
+    //         const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
+    //         const minLat = vendorLat - latDelta;
+    //         const maxLat = vendorLat + latDelta;
+    //         const minLng = vendorLng - lngDelta;
+    //         const maxLng = vendorLng + lngDelta;
+
+    //         const sqlRiders = `
+    //             SELECT user_id AS riderId, rider_lat, rider_lng
+    //             FROM delivery_partners
+    //             WHERE rider_lat BETWEEN ? AND ?
+    //             AND rider_lng BETWEEN ? AND ?
+    //         `;
+
+    //         db.query(sqlRiders, [minLat, maxLat, minLng, maxLng], (err, riders) => {
+    //             if (err) {
+    //                 console.error("❌ Error querying riders:", err);
+    //                 return callback(err);
+    //             }
+    //             if (!riders.length) {
+    //                 console.log("⚠️ No riders found within bounding box");
+    //                 return callback(null, []);
+    //             }
+
+    //             getDistanceMatrix(vendorLat, vendorLng, riders, customer_lat, customer_lng, (err, results) => {
+    //                 if (err) return callback(err);
+
+    //                 // ✅ Fix: ensure distance is always a number string, not null
+    //                 const riderPolylines = results.map(({ rider, riderVendorPolyline, distance_rider_to_vendor }) => {
+    //                     let distanceKm = "0.00"; // default if missing
+    //                     if (distance_rider_to_vendor && !isNaN(distance_rider_to_vendor)) {
+    //                         distanceKm = (distance_rider_to_vendor / 1000).toFixed(2);
+    //                     }
+
+    //                     return {
+    //                         riderId: rider.riderId,
+    //                         polyline: riderVendorPolyline || null,
+    //                         distance_km: distanceKm,
+    //                     };
+    //                 });
+
+    //                 const vendorCustomerPolyline = results[0]?.vendorCustomerPolyline || null;
+    //                 let vendorToCustomerDistance = "0.00";
+    //                 if (results[0]?.vendor_to_customer_distance && !isNaN(results[0].vendor_to_customer_distance)) {
+    //                     vendorToCustomerDistance = (results[0].vendor_to_customer_distance / 1000).toFixed(2);
+    //                 }
+
+    //                 savePolylines(order_id,vendorId, customerId, vendorCustomerPolyline, riderPolylines, (err) => {
+    //                     if (err) return callback(err);
+
+    //                     const result = riderPolylines.map(rp => ({
+    //                         user_id: rp.riderId,
+    //                         distance_km: rp.distance_km,
+    //                         vendor_to_customer_distance_km: vendorToCustomerDistance,
+    //                     }));
+
+    //                     callback(null, result);
+    //                 });
+    //             });
+    //         });
+    //     });
+    // },
+
     getNearbyRidersWithPolylines: (
         order_id,
         vendorId,
@@ -973,14 +1072,8 @@ const User = {
         `;
 
         db.query(sqlCustomer, [customerId, user_address_id], (err, customerResults) => {
-            if (err) {
-                console.error("❌ Error fetching customer coordinates:", err);
-                return callback(err);
-            }
-            if (!customerResults.length) {
-                console.warn("⚠️ No customer address found:", { customerId, user_address_id });
-                return callback(new Error("Address not found"));
-            }
+            if (err) return callback(err);
+            if (!customerResults.length) return callback(new Error("Address not found"));
 
             const { customer_lat, customer_lng } = customerResults[0];
 
@@ -992,56 +1085,60 @@ const User = {
             const maxLng = vendorLng + lngDelta;
 
             const sqlRiders = `
-                SELECT user_id AS riderId, rider_lat, rider_lng
-                FROM delivery_partners
-                WHERE rider_lat BETWEEN ? AND ?
-                AND rider_lng BETWEEN ? AND ?
+                SELECT dp.user_id AS riderId, dp.rider_lat, dp.rider_lng
+                FROM delivery_partners dp
+                JOIN users u on u.id = dp.user_id 
+                WHERE dp.rider_lat BETWEEN ? AND ?
+                AND dp.rider_lng BETWEEN ? AND ? AND u.status = 1
             `;
-
             db.query(sqlRiders, [minLat, maxLat, minLng, maxLng], (err, riders) => {
-                if (err) {
-                    console.error("❌ Error querying riders:", err);
-                    return callback(err);
-                }
-                if (!riders.length) {
-                    console.log("⚠️ No riders found within bounding box");
-                    return callback(null, []);
-                }
+                if (err) return callback(err);
+                if (!riders.length) return callback(null, []);
 
                 getDistanceMatrix(vendorLat, vendorLng, riders, customer_lat, customer_lng, (err, results) => {
                     if (err) return callback(err);
 
-                    // ✅ Fix: ensure distance is always a number string, not null
-                    const riderPolylines = results.map(({ rider, riderVendorPolyline, distance_rider_to_vendor }) => {
-                        let distanceKm = "0.00"; // default if missing
-                        if (distance_rider_to_vendor && !isNaN(distance_rider_to_vendor)) {
-                            distanceKm = (distance_rider_to_vendor / 1000).toFixed(2);
+                    // Build data for DB
+                    const riderCoordinates = results.map(({ rider }) => ({
+                        riderId: rider.riderId,
+                        rider_lat: Number(rider.rider_lat),
+                        rider_lng: Number(rider.rider_lng)
+                    }));
+                    saveRouteCoordinates(
+                        order_id,
+                        vendorId,
+                        vendorLng,
+                        vendorLat,
+                        customerId,
+                        customer_lat,
+                        customer_lng,
+                        riderCoordinates,
+                        (err) => {
+                            if (err) return callback(err);
+
+                            // Build final response for frontend
+                            const vendorToCustomerMeters = results[0]?.vendor_to_customer_distance;
+                            const vendorToCustomerDistanceKm = (vendorToCustomerMeters && !isNaN(vendorToCustomerMeters))
+                                ? (vendorToCustomerMeters / 1000).toFixed(2)
+                                : "0.00";
+                            const final = results.map(({ rider, distance_rider_to_vendor }) => {
+                                let distanceKm = "0.00";
+                                if (distance_rider_to_vendor && !isNaN(distance_rider_to_vendor)) {
+                                    distanceKm = (distance_rider_to_vendor / 1000).toFixed(2);
+                                }
+
+                                return {
+                                    user_id: rider.riderId,
+                                    rider_lat: Number(rider.rider_lat),
+                                    rider_lng: Number(rider.rider_lng),
+                                    distance_km: distanceKm,
+                                    vendor_to_customer_distance_km: vendorToCustomerDistanceKm
+                                };
+                            });
+
+                            callback(null, final);
                         }
-
-                        return {
-                            riderId: rider.riderId,
-                            polyline: riderVendorPolyline || null,
-                            distance_km: distanceKm,
-                        };
-                    });
-
-                    const vendorCustomerPolyline = results[0]?.vendorCustomerPolyline || null;
-                    let vendorToCustomerDistance = "0.00";
-                    if (results[0]?.vendor_to_customer_distance && !isNaN(results[0].vendor_to_customer_distance)) {
-                        vendorToCustomerDistance = (results[0].vendor_to_customer_distance / 1000).toFixed(2);
-                    }
-
-                    savePolylines(order_id,vendorId, customerId, vendorCustomerPolyline, riderPolylines, (err) => {
-                        if (err) return callback(err);
-
-                        const result = riderPolylines.map(rp => ({
-                            user_id: rp.riderId,
-                            distance_km: rp.distance_km,
-                            vendor_to_customer_distance_km: vendorToCustomerDistance,
-                        }));
-
-                        callback(null, result);
-                    });
+                    );
                 });
             });
         });

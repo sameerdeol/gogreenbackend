@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const { verifyToken } = require('../middleware/authroization');
-const {getLatLngByPlaceName, getPolyLines} = require("../controllers/locationController");
+const {getLatLngByPlaceName, getCordinates} = require("../controllers/locationController");
  
 router.get("/get_location", verifyToken, getLatLngByPlaceName);
-router.get("/getpolylines/:order_id", verifyToken, getPolyLines);
+router.get("/getcordinates/:order_id", verifyToken, getCordinates);
  
 module.exports = router;

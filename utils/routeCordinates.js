@@ -166,5 +166,46 @@ function savePolylines(order_id, vendorId, customerId, vendorToCustomerPolyline,
   });
 }
 
-module.exports = savePolylines;
+function saveRouteCoordinates(order_id, vendorId, vendor_lng, vendor_lat, customerId, customerLat, customerLng, riderCoordinates, callback) {
+    const values = riderCoordinates.map(r => [
+        order_id,
+        vendorId,
+        vendor_lng,
+        vendor_lat,
+        customerId,
+        r.riderId,
+        r.rider_lat,
+        r.rider_lng,
+        customerLat,
+        customerLng
+    ]);
+
+    const sql = `
+        INSERT INTO route_coordinates 
+        (order_id, vendor_id, vendor_lat, vendor_lng, customer_id, rider_id, rider_lat, rider_lng, customer_lat, customer_lng)
+        VALUES ?
+        ON DUPLICATE KEY UPDATE
+            vendor_id = VALUES(vendor_id),
+            vendor_lat = VALUES(vendor_lat),
+            vendor_lng = VALUES(vendor_lng),
+            customer_id = VALUES(customer_id),
+            rider_id = VALUES(rider_id),
+            rider_lat = VALUES(rider_lat),
+            rider_lng = VALUES(rider_lng),
+            customer_lat = VALUES(customer_lat),
+            customer_lng = VALUES(customer_lng)
+    `;
+
+    db.query(sql, [values], (err, result) => {
+        if (err) {
+            console.error("❌ Error saving coordinates:", err);
+            return callback(err);
+        }
+        callback(null, result);
+    });
+}
+
+
+
+module.exports = {savePolylines, saveRouteCoordinates};
 
