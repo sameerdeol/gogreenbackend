@@ -1671,8 +1671,12 @@ const User = {
         db.query(sql, params, callback);
     },
     
-    getVendorDashboardAnalytics : (vendor_Id, start_date, end_date, callback) => {
+    getDashboardAnalytics: (vendor_Id, rider_id, role_id, start_date, end_date, callback) => {
         let sql, values;
+
+        // Determine filter column based on role_id
+        const filterColumn = role_id === 3 ? 'vendor_id' : 'rider_id';
+        const filterValue = role_id === 3 ? vendor_Id : rider_id;
 
         if (start_date === end_date) {
             // ✅ Same date → group by HOUR
@@ -1683,12 +1687,12 @@ const User = {
                     COUNT(*) AS total_orders,
                     COUNT(DISTINCT user_id) AS total_customers
                 FROM order_details
-                WHERE vendor_id = ?
+                WHERE ${filterColumn} = ?
                 AND DATE(created_at) = ?
                 GROUP BY order_hour
                 ORDER BY order_hour
             `;
-            values = [vendor_Id, start_date];
+            values = [filterValue, start_date];
         } else {
             // ✅ Different dates → group by DATE
             sql = `
@@ -1698,12 +1702,12 @@ const User = {
                     COUNT(*) AS total_orders,
                     COUNT(DISTINCT user_id) AS total_customers
                 FROM order_details
-                WHERE vendor_id = ?
+                WHERE ${filterColumn} = ?
                 AND created_at BETWEEN ? AND ?
                 GROUP BY order_date
                 ORDER BY order_date
             `;
-            values = [vendor_Id, `${start_date} 00:00:00`, `${end_date} 23:59:59`];
+            values = [filterValue, `${start_date} 00:00:00`, `${end_date} 23:59:59`];
         }
 
         db.query(sql, values, (err, results) => {
@@ -1711,6 +1715,7 @@ const User = {
             callback(null, results);
         });
     }
+
 
 
 

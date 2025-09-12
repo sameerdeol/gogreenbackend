@@ -719,6 +719,77 @@ const riderAnalytics = (req, res) => {
     });
 }
 
+const riderDashboardAnalytics = (req, res) => {
+    const { rider_Id, start_date, end_date, role_id } = req.body;
+
+    if (!rider_Id || !start_date || !end_date) {
+        return res.status(400).json({ success: false, message: "rider_Id, start_date, end_date are required" });
+    }
+
+    const startDate = new Date(start_date);
+    const endDate = new Date(end_date);
+
+    // difference in days (inclusive)
+    const diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+    // previous period = same length before start_date
+    const prevEnd = new Date(startDate);
+    prevEnd.setDate(prevEnd.getDate() - 1);
+
+    const prevStart = new Date(startDate);
+    prevStart.setDate(prevStart.getDate() - diffDays);
+
+    // Fetch current analytics
+    User.getDashboardAnalytics(rider_Id, role_id, start_date, end_date, (err, analytics) => {
+        if (err) {
+            console.error("Analytics Error:", err);
+            return res.status(500).json({ success: false, message: "Internal Server Error" });
+        }
+
+        // Sum totals
+        const totals = analytics.reduce(
+            (acc, row) => {
+                acc.earnings += parseFloat(row.total_earning || 0);
+                acc.orders += parseInt(row.total_orders || 0);
+                acc.customers += parseInt(row.total_customers || 0);
+                return acc;
+            },
+            { earnings: 0, orders: 0, customers: 0 }
+        );
+
+        // Fetch previous period analytics
+        User.getDashboardAnalytics(
+            rider_Id,
+            role_id,
+            prevStart.toISOString().slice(0, 10),
+            prevEnd.toISOString().slice(0, 10),
+            (prevErr, prevAnalytics) => {
+                if (prevErr) {
+                    console.error("Previous Analytics Error:", prevErr);
+                    return res.status(500).json({ success: false, message: "Internal Server Error" });
+                }
+
+                const previousTotals = prevAnalytics.reduce(
+                    (acc, row) => {
+                        acc.earnings += parseFloat(row.total_earning || 0);
+                        acc.orders += parseInt(row.total_orders || 0);
+                        acc.customers += parseInt(row.total_customers || 0);
+                        return acc;
+                    },
+                    { earnings: 0, orders: 0, customers: 0 }
+                );
+
+                return res.json({
+                    success: true,
+                    data: analytics,
+                    totals,
+                    previousTotals
+                });
+            }
+        );
+    });
+};
+
 
 
 
@@ -735,5 +806,6 @@ module.exports = {
     riderPersonalDetails,
     vehicleDetails,
     updateVehicleDetails,
-    riderAnalytics
+    riderAnalytics,
+    riderDashboardAnalytics
 }; 

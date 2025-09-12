@@ -23,5 +23,6 @@ router.put('/updateRider-location', verifyToken, riderController.updateRiderLoca
 router.get('/getallridersforadmin', verifyToken, riderController.allRidersforAdmin);
 router.get('/getallridersforadminbyID/:rider_id', verifyToken, riderController.allRidersforAdminbyRiderID);
 router.post('/rider-analytics', verifyToken, riderController.riderAnalytics);
+router.post('/riderdashboard-analytics', verifyToken, riderController.riderDashboardAnalytics);
 
 module.exports = router; 

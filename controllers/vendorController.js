@@ -957,7 +957,7 @@ const VendorbyID = (req, res) => {
 };
 
 const vendorDashboardAnalytics = (req, res) => {
-    const { vendor_Id, start_date, end_date } = req.body;
+    const { vendor_Id, start_date, end_date, role_id } = req.body;
 
     if (!vendor_Id || !start_date || !end_date) {
         return res.status(400).json({ success: false, message: "vendor_Id, start_date, end_date are required" });
@@ -977,7 +977,7 @@ const vendorDashboardAnalytics = (req, res) => {
     prevStart.setDate(prevStart.getDate() - diffDays);
 
     // Fetch current analytics
-    User.getVendorDashboardAnalytics(vendor_Id, start_date, end_date, (err, analytics) => {
+    User.getDashboardAnalytics(vendor_Id, role_id, start_date, end_date, (err, analytics) => {
         if (err) {
             console.error("Analytics Error:", err);
             return res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -995,8 +995,9 @@ const vendorDashboardAnalytics = (req, res) => {
         );
 
         // Fetch previous period analytics
-        User.getVendorDashboardAnalytics(
+        User.getDashboardAnalytics(
             vendor_Id,
+            role_id,
             prevStart.toISOString().slice(0, 10),
             prevEnd.toISOString().slice(0, 10),
             (prevErr, prevAnalytics) => {
