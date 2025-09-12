@@ -720,7 +720,7 @@ const riderAnalytics = (req, res) => {
 }
 
 const riderDashboardAnalytics = (req, res) => {
-    const { rider_Id, start_date, end_date, role_id } = req.body;
+    const { rider_Id, start_date, end_date, role_id, vendor_Id } = req.body;
 
     if (!rider_Id || !start_date || !end_date) {
         return res.status(400).json({ success: false, message: "rider_Id, start_date, end_date are required" });
@@ -739,56 +739,65 @@ const riderDashboardAnalytics = (req, res) => {
     const prevStart = new Date(startDate);
     prevStart.setDate(prevStart.getDate() - diffDays);
 
-    // Fetch current analytics
-    User.getDashboardAnalytics(rider_Id, role_id, start_date, end_date, (err, analytics) => {
-        if (err) {
-            console.error("Analytics Error:", err);
-            return res.status(500).json({ success: false, message: "Internal Server Error" });
-        }
-
-        // Sum totals
-        const totals = analytics.reduce(
-            (acc, row) => {
-                acc.earnings += parseFloat(row.total_earning || 0);
-                acc.orders += parseInt(row.total_orders || 0);
-                acc.customers += parseInt(row.total_customers || 0);
-                return acc;
-            },
-            { earnings: 0, orders: 0, customers: 0 }
-        );
-
-        // Fetch previous period analytics
-        User.getDashboardAnalytics(
-            rider_Id,
-            role_id,
-            prevStart.toISOString().slice(0, 10),
-            prevEnd.toISOString().slice(0, 10),
-            (prevErr, prevAnalytics) => {
-                if (prevErr) {
-                    console.error("Previous Analytics Error:", prevErr);
-                    return res.status(500).json({ success: false, message: "Internal Server Error" });
-                }
-
-                const previousTotals = prevAnalytics.reduce(
-                    (acc, row) => {
-                        acc.earnings += parseFloat(row.total_earning || 0);
-                        acc.orders += parseInt(row.total_orders || 0);
-                        acc.customers += parseInt(row.total_customers || 0);
-                        return acc;
-                    },
-                    { earnings: 0, orders: 0, customers: 0 }
-                );
-
-                return res.json({
-                    success: true,
-                    data: analytics,
-                    totals,
-                    previousTotals
-                });
+    // ✅ Pass parameters in correct order
+    User.getDashboardAnalytics(
+        vendor_Id || null, // vendor_Id may be null for rider
+        rider_Id,
+        role_id,
+        start_date,
+        end_date,
+        (err, analytics) => {
+            if (err) {
+                console.error("Analytics Error:", err);
+                return res.status(500).json({ success: false, message: "Internal Server Error" });
             }
-        );
-    });
+
+            // Sum totals
+            const totals = analytics.reduce(
+                (acc, row) => {
+                    acc.earnings += parseFloat(row.total_earning || 0);
+                    acc.orders += parseInt(row.total_orders || 0);
+                    acc.customers += parseInt(row.total_customers || 0);
+                    return acc;
+                },
+                { earnings: 0, orders: 0, customers: 0 }
+            );
+
+            // Fetch previous period analytics
+            User.getDashboardAnalytics(
+                vendor_Id || null,
+                rider_Id,
+                role_id,
+                prevStart.toISOString().slice(0, 10),
+                prevEnd.toISOString().slice(0, 10),
+                (prevErr, prevAnalytics) => {
+                    if (prevErr) {
+                        console.error("Previous Analytics Error:", prevErr);
+                        return res.status(500).json({ success: false, message: "Internal Server Error" });
+                    }
+
+                    const previousTotals = prevAnalytics.reduce(
+                        (acc, row) => {
+                            acc.earnings += parseFloat(row.total_earning || 0);
+                            acc.orders += parseInt(row.total_orders || 0);
+                            acc.customers += parseInt(row.total_customers || 0);
+                            return acc;
+                        },
+                        { earnings: 0, orders: 0, customers: 0 }
+                    );
+
+                    return res.json({
+                        success: true,
+                        data: analytics,
+                        totals,
+                        previousTotals
+                    });
+                }
+            );
+        }
+    );
 };
+
 
 
 
