@@ -1143,9 +1143,21 @@ const User = {
 
         db.query(sql, [...values, user_id], (err, result) => {
             if (err) return callback(err);
-            callback(null, result);
+
+            // ✅ After successful vendor update, update verification_applied = TRUE
+            const updateQuery = `
+                UPDATE users 
+                SET verification_applied = TRUE 
+                WHERE id = ?
+            `;
+            db.query(updateQuery, [user_id], (updateErr, updateResult) => {
+                if (updateErr) return callback(updateErr, null);
+                
+                callback(null, { vendorUpdate: result, verificationUpdate: updateResult });
+            });
         });
     },
+
 
     getallVendorsForAdmin: (vendor_id, callback) => {
         let sql = `
@@ -1310,19 +1322,6 @@ const User = {
             if (err) {
                 return callback(err, null);
             }
-
-            // ✅ Update verification_applied = TRUE after successful insert/update
-            const updateQuery = `
-                UPDATE users 
-                SET verification_applied = TRUE 
-                WHERE id = ?
-            `;
-            db.query(updateQuery, [user_id], (updateErr, updateResult) => {
-                if (updateErr) {
-                    return callback(updateErr, null);
-                }
-                callback(null, { bankDetailsResult: result, verificationUpdate: updateResult });
-            });
         });
     },
 
