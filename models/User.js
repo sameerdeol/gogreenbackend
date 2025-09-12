@@ -449,7 +449,7 @@ const User = {
 
             insertQuery = `
                 INSERT INTO vendors 
-                (user_id, store_name, store_address, sin_code, country_status, identity_proof, profile_pic, store_image, business_reg_number, vendor_type_id, vendor_start_time,  vendor_close_time) 
+                (user_id, store_name, store_address, sin_code, country_status, identity_proof, profile_pic, store_image, business_reg_number, vendor_type_id, vendor_start_time, vendor_close_time) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             values = [
@@ -493,19 +493,8 @@ const User = {
             if (err) {
                 return callback(err, null);
             }
-
-            // After successful insert, update verification_applied to TRUE
-            const updateQuery = `
-                UPDATE users 
-                SET verification_applied = TRUE 
-                WHERE id = ?
-            `;
-            db.query(updateQuery, [data.user_id], (updateErr, updateResult) => {
-                if (updateErr) {
-                    return callback(updateErr, null);
-                }
-                callback(null, { insertResult: result, updateResult: updateResult });
-            });
+            // ✅ Removed verification_applied update
+            callback(null, { insertResult: result });
         });
     },
     
@@ -1318,22 +1307,41 @@ const User = {
 
         db.query(query, values, callback);
     },
-    userBankDetails: (user_id,role_id, callback) => {
+    userBankDetails: (user_id, role_id, callback) => {
         const sql = `
-        select 
-            account_holder_name,
-            account_number,
-            institution_number,
-            transit_number,
-            bank_name
-        from users_bank_details where user_id = ? AND role_id = ?`;
+            SELECT 
+                account_holder_name,
+                account_number,
+                institution_number,
+                transit_number,
+                bank_name
+            FROM users_bank_details 
+            WHERE user_id = ? AND role_id = ?
+        `;
 
         db.query(sql, [user_id, role_id], (err, results) => {
             if (err) {
                 console.error("Database error:", err);
                 return callback(err, null);
             }
-            return callback(null, results[0]);
+
+            if (results.length > 0) {
+                // ✅ Update verification_applied here
+                const updateQuery = `
+                    UPDATE users 
+                    SET verification_applied = TRUE 
+                    WHERE id = ?
+                `;
+                db.query(updateQuery, [user_id], (updateErr, updateResult) => {
+                    if (updateErr) {
+                        console.error("Error updating verification_applied:", updateErr);
+                        return callback(updateErr, null);
+                    }
+                    return callback(null, { bankDetails: results[0], verificationUpdate: updateResult });
+                });
+            } else {
+                return callback(null, { bankDetails: null });
+            }
         });
     },
     getVendorAnalytics: (vendorId, callback) => {
