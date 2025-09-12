@@ -1269,7 +1269,7 @@ const User = {
         const sql = 'SELECT * FROM vendor_type where id = ?';
         db.query(sql, [id],callback);
     },
-    addBankDetails:(user_id, data, callback) => {
+    addBankDetails: (user_id, data, callback) => {
         const {
             role_id,
             account_holder_name,
@@ -1291,6 +1291,7 @@ const User = {
                 institution_number = VALUES(institution_number),
                 account_number = VALUES(account_number),
                 void_cheque = VALUES(void_cheque),
+                bank_name = VALUES(bank_name),
                 updated_at = CURRENT_TIMESTAMP
         `;
 
@@ -1305,8 +1306,26 @@ const User = {
             bank_name
         ];
 
-        db.query(query, values, callback);
+        db.query(query, values, (err, result) => {
+            if (err) {
+                return callback(err, null);
+            }
+
+            // ✅ Update verification_applied = TRUE after successful insert/update
+            const updateQuery = `
+                UPDATE users 
+                SET verification_applied = TRUE 
+                WHERE id = ?
+            `;
+            db.query(updateQuery, [user_id], (updateErr, updateResult) => {
+                if (updateErr) {
+                    return callback(updateErr, null);
+                }
+                callback(null, { bankDetailsResult: result, verificationUpdate: updateResult });
+            });
+        });
     },
+
     userBankDetails: (user_id, role_id, callback) => {
         const sql = `
             SELECT 
@@ -1324,24 +1343,7 @@ const User = {
                 console.error("Database error:", err);
                 return callback(err, null);
             }
-
-            if (results.length > 0) {
-                // ✅ Update verification_applied here
-                const updateQuery = `
-                    UPDATE users 
-                    SET verification_applied = TRUE 
-                    WHERE id = ?
-                `;
-                db.query(updateQuery, [user_id], (updateErr, updateResult) => {
-                    if (updateErr) {
-                        console.error("Error updating verification_applied:", updateErr);
-                        return callback(updateErr, null);
-                    }
-                    return callback(null, { bankDetails: results[0], verificationUpdate: updateResult });
-                });
-            } else {
-                return callback(null, { bankDetails: null });
-            }
+            return callback(null, results[0]);
         });
     },
     getVendorAnalytics: (vendorId, callback) => {
