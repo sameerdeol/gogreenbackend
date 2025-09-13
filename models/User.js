@@ -571,10 +571,10 @@ const User = {
                         SUM(order_status = 4) AS completed_orders,
                         SUM(order_status = 5) AS rejected_orders
                     FROM order_details
+                    WHERE DATE(created_at) = CURDATE()  -- ✅ filter by today's date
                     GROUP BY rider_id
-                ) od ON od.rider_id = u.id   -- ✅ fixed join
+                ) od ON od.rider_id = u.id
                 WHERE u.id = ? AND u.role_id = ?;
-                ;
             `;
             queryParams.push(roleId); // Add roleId to parameters
         } else if(roleId ===3) {
@@ -607,18 +607,22 @@ const User = {
                     CAST(IFNULL(od.rejected_orders, 0) AS SIGNED) AS rejected_orders
 
                 FROM users u 
-                LEFT JOIN vendors v ON v.user_id = u.id 
+                LEFT JOIN vendors v 
+                    ON v.user_id = u.id 
                 LEFT JOIN (
                     SELECT 
                         vendor_id,
                         COUNT(*) AS total_orders,
-                        SUM(order_status = 4) AS completed_orders,
-                        SUM(order_status = 5) AS rejected_orders
+                        SUM(order_status = 2) AS completed_orders,
+                        SUM(order_status = 3) AS rejected_orders
                     FROM order_details
-                    WHERE order_status IN (4, 5)
+                    WHERE order_status IN (1, 2, 3)
+                    AND DATE(created_at) = CURDATE()  -- ✅ Filter for today's orders
                     GROUP BY vendor_id
-                ) od ON od.vendor_id = v.user_id
-                WHERE u.id = ? AND u.role_id = ?;
+                ) od 
+                ON od.vendor_id = v.user_id
+                WHERE u.id = ? 
+                AND u.role_id = ?;
             `;
             queryParams.push(roleId); // Add roleId to parameters
         }else {
