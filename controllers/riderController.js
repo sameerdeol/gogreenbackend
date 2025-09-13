@@ -20,7 +20,7 @@ const riderSignup = async (req, res) => {
             phonenumber,
             other_phone_number,
             dob,
-            address,
+            address,    
             prefix,
             googleauthToken,
         } = req.body;

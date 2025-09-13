@@ -499,51 +499,86 @@ const User = {
     },
     
     updateRiderPersonalDetails: (role_id, data, callback) => {
-        const updateDeliveryPartnerQuery = `
-            UPDATE delivery_partners 
-            SET 
-                address = ?, 
-                dob = ?, 
-                other_phone_number = ?, 
-                profile_pic = ?, 
-                identity_proof = ?
-            WHERE user_id = ?
-        `;
 
-        const deliveryPartnerValues = [
-            data.address,
-            data.dob,
-            data.other_phone_number,
-            data.profile_pic,
-            data.identity_proof,
-            data.user_id
-        ];
-
-        db.query(updateDeliveryPartnerQuery, deliveryPartnerValues, (err, result) => {
-            if (err) {
-                return callback(err, null);
+        const checkQuery = `SELECT id FROM delivery_partners WHERE user_id = ?`;
+        db.query(checkQuery, [data.user_id], (checkErr, rows) => {
+            if (checkErr) {
+                console.error("❌ [ERROR] Failed to check delivery_partners:", checkErr);
+                return callback(checkErr, null);
             }
 
-            // If first update successful, run the second update
-            const updateUserQuery = `
-                UPDATE users 
-                SET verification_applied = TRUE 
-                WHERE id = ?
-            `;
+            if (rows.length === 0) {
+                const insertQuery = `
+                    INSERT INTO delivery_partners (user_id, address, dob, other_phone_number, profile_pic, identity_proof)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                `;
+                const insertValues = [
+                    data.user_id,
+                    data.address,
+                    data.dob,
+                    data.other_phone_number,
+                    data.profile_pic,
+                    data.identity_proof
+                ];
 
-            db.query(updateUserQuery, [data.user_id], (updateErr, updateResult) => {
+                db.query(insertQuery, insertValues, (insertErr, insertResult) => {
+                    if (insertErr) {
+                        console.error("❌ [ERROR] Failed to insert into delivery_partners:", insertErr);
+                        return callback(insertErr, null);
+                    }
+
+                    // Update verification_applied after insert
+                    updateVerificationApplied(data.user_id, callback, insertResult);
+                });
+            } else {
+                console.log("✅ [DEBUG] delivery_partner found, updating existing row...");
+
+                const updateDeliveryPartnerQuery = `
+                    UPDATE delivery_partners 
+                    SET 
+                        address = ?, 
+                        dob = ?, 
+                        other_phone_number = ?, 
+                        profile_pic = ?, 
+                        identity_proof = ?
+                    WHERE user_id = ?
+                `;
+
+                const deliveryPartnerValues = [
+                    data.address,
+                    data.dob,
+                    data.other_phone_number,
+                    data.profile_pic,
+                    data.identity_proof,
+                    data.user_id
+                ];
+
+                db.query(updateDeliveryPartnerQuery, deliveryPartnerValues, (err, result) => {
+                    if (err) {
+                        console.error("❌ [ERROR] Failed to update delivery_partners:", err);
+                        return callback(err, null);
+                    }
+                    console.log("✅ [DEBUG] Updated delivery_partner row:", result);
+                    updateVerificationApplied(data.user_id, callback, result);
+                });
+            }
+        });
+
+        function updateVerificationApplied(user_id, callback, deliveryPartnerResult) {
+            const updateUserQuery = `UPDATE users SET verification_applied = TRUE WHERE id = ?`;
+            db.query(updateUserQuery, [user_id], (updateErr, updateResult) => {
                 if (updateErr) {
+                    console.error("❌ [ERROR] Failed to update users:", updateErr);
                     return callback(updateErr, null);
                 }
-
+                console.log("✅ [DEBUG] users update result:", updateResult);
                 callback(null, {
-                    deliveryPartnerUpdate: result,
+                    deliveryPartnerUpdate: deliveryPartnerResult,
                     userVerificationUpdate: updateResult
                 });
             });
-        });
+        }
     },
-
 
 
 
