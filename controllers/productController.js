@@ -234,162 +234,111 @@ const getProducts = (req, res) => {
 
 // Update product by ID
 const updateProductById = async (req, res) => {
-    const { id, vendor_id, existingGalleryImages = [] } = req.body;
+    try {
+        const { id, vendor_id, existingGalleryImages = [] } = req.body;
 
-    if (!id) {
-        return res.status(400).json({ success: false, message: 'Product ID is required.' });
-    }
-
-    // Parse attributes
-    let attributes = req.body.attributes;
-    if (typeof attributes === "string") {
-        try {
-            attributes = JSON.parse(attributes);
-        } catch (error) {
-            return res.status(400).json({ success: false, message: "Invalid attributes format" });
-        }
-    }
-
-    // Parse variants
-    let variants = req.body.variants;
-    if (typeof variants === "string") {
-        try {
-            variants = JSON.parse(variants);
-        } catch (error) {
-            return res.status(400).json({ success: false, message: "Invalid variants format" });
-        }
-    }
-
-    // Parse addons
-    let addons = req.body.addons;
-    if (typeof addons === "string") {
-        try {
-            addons = JSON.parse(addons);
-        } catch (error) {
-            return res.status(400).json({ success: false, message: "Invalid addons format" });
-        }
-    }
-
-    Product.findById(id, vendor_id, async (findErr, existingProduct) => {
-        if (findErr || !existingProduct) {
-            return res.status(404).json({ success: false, message: 'Product not found' });
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Product ID is required.' });
         }
 
-        const updatedData = extractUpdatedData(req.body);
-
-        // Handle featured image update
-        if (req.files['featuredImage']) {
-            const file = req.files['featuredImage'][0];
-            const newFeaturedImage = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
-            updatedData.featured_image = newFeaturedImage;
-            if (existingProduct.featured_image) {
-                await deleteS3Image(existingProduct.featured_image);
-            }
-        }
-
-        // Handle gallery images update
-        let newGalleryImages = [];
-        if (req.files['galleryImages']) {
-            for (const file of req.files['galleryImages']) {
-                const url = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
-                newGalleryImages.push(url);
-            }
-        }
-
-        Product.updateById(id, updatedData, (err) => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Error updating product', error: err });
-            }
-
-            const handleAttributes = (cb) => {
-                if (Array.isArray(attributes)) {
-                    db.query(`DELETE FROM product_attributes WHERE product_id = ?`, [id], (deleteErr) => {
-                        if (deleteErr) return cb(deleteErr);
-                        if (attributes.length > 0) {
-                            Product.addAttributes(id, attributes, cb);
-                        } else {
-                            cb(null); // no need to insert
-                        }
-                    });
-                } else cb(null);
-            };
-
-            const handleVariants = (cb) => {
-                if (Array.isArray(variants)) {
-                    db.query(`DELETE FROM product_variants WHERE product_id = ?`, [id], (deleteErr) => {
-                        if (deleteErr) return cb(deleteErr);
-                        if (variants.length > 0) {
-                            ProductVariant.create(id, variants, cb);
-                        } else {
-                            cb(null); // no new variants to insert
-                        }
-                    });
-                } else cb(null);
-            };
-
-            const handleAddons = (cb) => {
-                if (Array.isArray(addons)) {
-                    db.query(`DELETE FROM product_addons WHERE product_id = ?`, [id], (deleteErr) => {
-                        if (deleteErr) return cb(deleteErr);
-                        if (addons.length > 0) {
-                            ProductAddon.create(id, addons, cb);
-                        } else {
-                            cb(null); // no new addons to insert
-                        }
-                    });
-                } else cb(null);
-            };
-
-            const handleGallery = (cb) => {
-                if (newGalleryImages.length > 0 || existingGalleryImages.length > 0) {
-                    GalleryImage.findByProductId(id, async (galleryErr, existingGallery) => {
-                        if (galleryErr) return cb(galleryErr);
-
-                        const imagesToDelete = existingGallery.filter(img => !existingGalleryImages.includes(img.image_path));
-
-                        for (const img of imagesToDelete) {
-                            await deleteS3Image(img.image_path);
-                        }
-
-                        GalleryImage.deleteByProductId(id, (deleteErr) => {
-                            if (deleteErr) return cb(deleteErr);
-
-                            const finalGallery = [...existingGalleryImages, ...newGalleryImages];
-                            GalleryImage.create(id, finalGallery, cb);
-                        });
-                    });
-                } else cb(null);
-            };
-
-            handleAttributes((attrErr) => {
-                if (attrErr) {
-                    return res.status(500).json({ success: false, message: 'Error updating attributes', error: attrErr });
+        // Parse JSON fields safely
+        const parseJSONField = (field, fieldName) => {
+            if (typeof field === 'string') {
+                try {
+                    return JSON.parse(field);
+                } catch (err) {
+                    throw new Error(`Invalid ${fieldName} format`);
                 }
+            }
+            return field;
+        };
 
-                handleVariants((variantErr) => {
-                    if (variantErr) {
-                        return res.status(500).json({ success: false, message: 'Error updating variants', error: variantErr });
-                    }
+        const attributes = parseJSONField(req.body.attributes, 'attributes') || [];
+        const variants = parseJSONField(req.body.variants, 'variants') || [];
+        const addons = parseJSONField(req.body.addons, 'addons') || [];
 
-                    handleAddons((addonErr) => {
-                        if (addonErr) {
-                            return res.status(500).json({ success: false, message: 'Error updating addons', error: addonErr });
-                        }
+        // Fetch the existing product
+        Product.findById(id, vendor_id, async (findErr, existingProduct) => {
+            if (findErr || !existingProduct) {
+                return res.status(404).json({ success: false, message: 'Product not found' });
+            }
 
-                        handleGallery((galleryErr) => {
-                            if (galleryErr) {
-                                return res.status(500).json({ success: false, message: 'Error updating gallery images', error: galleryErr });
+            const updatedData = extractUpdatedData(req.body);
+
+            // Handle featured image
+            if (req.files?.featuredImage) {
+                const file = req.files.featuredImage[0];
+                const newFeaturedImage = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+                updatedData.featured_image = newFeaturedImage;
+
+                if (existingProduct.featured_image) {
+                    await deleteS3Image(existingProduct.featured_image);
+                }
+            }
+
+            // Handle gallery images
+            let newGalleryImages = [];
+            if (req.files?.galleryImages) {
+                for (const file of req.files.galleryImages) {
+                    const url = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+                    newGalleryImages.push(url);
+                }
+            }
+
+            // Update product data
+            Product.updateById(id, updatedData, (err) => {
+                if (err) return res.status(500).json({ success: false, message: 'Error updating product', error: err });
+
+                // Helper to update related tables
+                const updateRelatedTable = (tableName, dataArray, createFunc, cb) => {
+                    if (!Array.isArray(dataArray)) return cb(null);
+                    db.query(`DELETE FROM ${tableName} WHERE product_id = ?`, [id], (deleteErr) => {
+                        if (deleteErr) return cb(deleteErr);
+                        if (dataArray.length > 0) {
+                            createFunc(id, dataArray, cb);
+                        } else cb(null);
+                    });
+                };
+
+                const handleGallery = async (cb) => {
+                    if (newGalleryImages.length > 0 || existingGalleryImages.length > 0) {
+                        GalleryImage.findByProductId(id, async (galleryErr, existingGallery) => {
+                            if (galleryErr) return cb(galleryErr);
+
+                            // Delete removed images from S3
+                            const imagesToDelete = existingGallery.filter(img => !existingGalleryImages.includes(img.image_path));
+                            for (const img of imagesToDelete) {
+                                await deleteS3Image(img.image_path);
                             }
 
-                            // ✅ Return full updated product
-                            Product.findById(id, vendor_id, (findErr, updatedProduct) => {
-                                if (findErr) {
-                                    return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
-                                }
-                                res.status(200).json({
-                                    success: true,
-                                    message: 'Product updated successfully',
-                                    product: updatedProduct
+                            // Delete all existing gallery rows
+                            GalleryImage.deleteByProductId(id, (deleteErr) => {
+                                if (deleteErr) return cb(deleteErr);
+
+                                const finalGallery = [...existingGalleryImages, ...newGalleryImages];
+                                GalleryImage.create(id, finalGallery, cb);
+                            });
+                        });
+                    } else cb(null);
+                };
+
+                // Run all related updates
+                updateRelatedTable('product_attributes', attributes, Product.addAttributes, (attrErr) => {
+                    if (attrErr) return res.status(500).json({ success: false, message: 'Error updating attributes', error: attrErr });
+
+                    updateRelatedTable('product_variants', variants, ProductVariant.create, (variantErr) => {
+                        if (variantErr) return res.status(500).json({ success: false, message: 'Error updating variants', error: variantErr });
+
+                        updateRelatedTable('product_addons', addons, ProductAddon.create, (addonErr) => {
+                            if (addonErr) return res.status(500).json({ success: false, message: 'Error updating addons', error: addonErr });
+
+                            handleGallery((galleryErr) => {
+                                if (galleryErr) return res.status(500).json({ success: false, message: 'Error updating gallery', error: galleryErr });
+
+                                // Return updated product
+                                Product.findById(id, vendor_id, (findErr, updatedProduct) => {
+                                    if (findErr) return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
+                                    res.status(200).json({ success: true, message: 'Product updated successfully', product: updatedProduct });
                                 });
                             });
                         });
@@ -397,7 +346,9 @@ const updateProductById = async (req, res) => {
                 });
             });
         });
-    });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
 };
 
 
