@@ -521,7 +521,7 @@ const getOrdersByUserId = (req, res) => {
 };
 
 const getAllOrders = async (req, res) => {
-    let { status, search, page, limit, vendor_id, start_date, end_date } = req.body;
+    let { status, search, page, limit, vendor_id, start_date, end_date, ascending } = req.body;
 
     // Pagination setup
     page = parseInt(page) || 1;
@@ -530,11 +530,21 @@ const getAllOrders = async (req, res) => {
 
     // ✅ Default date range: current month 1st -> today
     const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    start_date = start_date ? new Date(start_date) : firstDayOfMonth;
-    end_date = end_date ? new Date(end_date) : todayEnd;
+    // ✅ Normalize start_date and end_date (add 00:00:00 and 23:59:59 automatically)
+    if (start_date) {
+        start_date = new Date(`${start_date}T00:00:00.000Z`);
+    } else {
+        start_date = new Date(firstDayOfMonth.setHours(0, 0, 0, 0));
+    }
+
+    if (end_date) {
+        end_date = new Date(`${end_date}T23:59:59.000Z`);
+    } else {
+        end_date = new Date(today.setHours(23, 59, 59, 999));
+    }
 
     OrderModel.getAllOrders((err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
@@ -568,6 +578,13 @@ const getAllOrders = async (req, res) => {
                 (row.store_name && row.store_name.toLowerCase().includes(searchLower))
             );
         }
+
+        // ✅ Sort orders by created_at
+        filtered.sort((a, b) => {
+            const dateA = new Date(a.created_at);
+            const dateB = new Date(b.created_at);
+            return ascending ? dateA - dateB : dateB - dateA;
+        });
 
         // Grouping orders
         const ordersMap = {};
@@ -620,7 +637,6 @@ const getAllOrders = async (req, res) => {
                 };
             }
 
-            // Find if product already added (to group gallery images)
             const existingProduct = ordersMap[order_id].products.find(p =>
                 p.product_name === row.product_name &&
                 p.product_size === row.product_size &&
@@ -652,12 +668,14 @@ const getAllOrders = async (req, res) => {
             total: groupedOrders.length,
             page,
             limit,
+            ascending: !!ascending,
             start_date: start_date.toISOString(),
             end_date: end_date.toISOString(),
             orders: paginated
         });
     });
 };
+
 
 
 
