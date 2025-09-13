@@ -499,7 +499,7 @@ const User = {
     },
     
     updateRiderPersonalDetails: (role_id, data, callback) => {
-        const updateQuery = `
+        const updateDeliveryPartnerQuery = `
             UPDATE delivery_partners 
             SET 
                 address = ?, 
@@ -510,7 +510,7 @@ const User = {
             WHERE user_id = ?
         `;
 
-        const values = [
+        const deliveryPartnerValues = [
             data.address,
             data.dob,
             data.other_phone_number,
@@ -519,13 +519,31 @@ const User = {
             data.user_id
         ];
 
-        db.query(updateQuery, values, (err, result) => {
+        db.query(updateDeliveryPartnerQuery, deliveryPartnerValues, (err, result) => {
             if (err) {
                 return callback(err, null);
             }
-            callback(null, result);
+
+            // If first update successful, run the second update
+            const updateUserQuery = `
+                UPDATE users 
+                SET verification_applied = TRUE 
+                WHERE id = ?
+            `;
+
+            db.query(updateUserQuery, [data.user_id], (updateErr, updateResult) => {
+                if (updateErr) {
+                    return callback(updateErr, null);
+                }
+
+                callback(null, {
+                    deliveryPartnerUpdate: result,
+                    userVerificationUpdate: updateResult
+                });
+            });
         });
     },
+
 
 
 
