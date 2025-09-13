@@ -443,6 +443,16 @@ const allVendors = (req, res) => {
             .filter(id => !isNaN(id));
     }
 
+    // Helper function to convert 24-hour time to 12-hour with AM/PM
+    const formatTo12Hour = (timeString) => {
+        if (!timeString) return null;
+        const [hour, minute] = timeString.split(':').map(Number);
+
+        let period = hour >= 12 ? 'PM' : 'AM';
+        let formattedHour = hour % 12 || 12; // converts 0 -> 12 for midnight
+        return `${formattedHour}:${minute.toString().padStart(2, '0')} ${period}`;
+    };
+
     User.allVendors(user_id, filterIds, (err, users) => {
         if (err) {
             console.error("Database error:", err);
@@ -482,6 +492,8 @@ const allVendors = (req, res) => {
 
             return {
                 ...user,
+                vendor_start_time: formatTo12Hour(user.vendor_start_time),
+                vendor_close_time: formatTo12Hour(user.vendor_close_time),
                 featured_images: user.featured_images ? user.featured_images.split(',') : [],
                 is_vendor_opened
             };
@@ -494,6 +506,7 @@ const allVendors = (req, res) => {
         });
     });
 };
+
 
 
 
