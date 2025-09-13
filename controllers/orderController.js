@@ -521,10 +521,20 @@ const getOrdersByUserId = (req, res) => {
 };
 
 const getAllOrders = async (req, res) => {
-    let { status, search, page, limit, vendor_id } = req.body;
+    let { status, search, page, limit, vendor_id, start_date, end_date } = req.body;
+
+    // Pagination setup
     page = parseInt(page) || 1;
     limit = parseInt(limit) || 10;
     const offset = (page - 1) * limit;
+
+    // ✅ Default date range: current month 1st -> today
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    start_date = start_date ? new Date(start_date) : firstDayOfMonth;
+    end_date = end_date ? new Date(end_date) : todayEnd;
 
     OrderModel.getAllOrders((err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
@@ -535,6 +545,13 @@ const getAllOrders = async (req, res) => {
 
         // Filtering
         let filtered = results;
+
+        // ✅ Filter by date range
+        filtered = filtered.filter(row => {
+            const createdAt = new Date(row.created_at);
+            return createdAt >= start_date && createdAt <= end_date;
+        });
+
         if (status) {
             filtered = filtered.filter(row => String(row.order_status) === String(status));
         }
@@ -554,7 +571,6 @@ const getAllOrders = async (req, res) => {
 
         // Grouping orders
         const ordersMap = {};
-
         filtered.forEach(row => {
             const order_id = row.order_id;
             if (!ordersMap[order_id]) {
@@ -636,10 +652,13 @@ const getAllOrders = async (req, res) => {
             total: groupedOrders.length,
             page,
             limit,
+            start_date: start_date.toISOString(),
+            end_date: end_date.toISOString(),
             orders: paginated
         });
     });
 };
+
 
 
 const getOrderDetails = (req, res) => {
