@@ -452,7 +452,7 @@ const Order = {
                 OI.single_item_price,
 
                 -- Product details
-                p.id AS product_id,
+                P.id AS product_id,
                 P.name AS product_name,
                 P.size AS product_size,
                 P.featured_image,
