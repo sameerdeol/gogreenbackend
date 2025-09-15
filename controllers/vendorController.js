@@ -937,6 +937,16 @@ const allVendorsforAdminbySubcatID = (req, res) => {
 const VendorbyID = (req, res) => {
     const { user_id, vendor_id } = req.body;
 
+    // Helper function to convert 24-hour time to 12-hour with AM/PM
+    const formatTo12Hour = (timeString) => {
+        if (!timeString) return null;
+        const [hour, minute] = timeString.split(':').map(Number);
+
+        let period = hour >= 12 ? 'PM' : 'AM';
+        let formattedHour = hour % 12 || 12; // converts 0 -> 12 for midnight
+        return `${formattedHour}:${minute.toString().padStart(2, '0')} ${period}`;
+    };
+
     User.VendorbyID(user_id, vendor_id, (err, users) => {
         if (err) {
             console.error("Database error:", err);
@@ -954,12 +964,36 @@ const VendorbyID = (req, res) => {
             });
         }
 
-        const vendors = users.map(user => ({
-            ...user,
-            featured_images: user.featured_images
-                ? user.featured_images.split(',')
-                : []
-        }));
+        // Current time in India
+        const now = new Date();
+        const indiaTime = new Date(
+            now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+        );
+        const nowMinutes = indiaTime.getHours() * 60 + indiaTime.getMinutes();
+
+        const vendors = users.map(user => {
+            let is_vendor_opened = false;
+
+            if (user.vendor_start_time && user.vendor_close_time) {
+                const [startHour, startMinute] = user.vendor_start_time.split(':').map(Number);
+                const [closeHour, closeMinute] = user.vendor_close_time.split(':').map(Number);
+
+                const startMinutes = startHour * 60 + startMinute;
+                const closeMinutes = closeHour * 60 + closeMinute;
+
+                is_vendor_opened = nowMinutes >= startMinutes && nowMinutes < closeMinutes;
+            }
+
+            return {
+                ...user,
+                vendor_start_time: formatTo12Hour(user.vendor_start_time),
+                vendor_close_time: formatTo12Hour(user.vendor_close_time),
+                featured_images: user.featured_images
+                    ? user.featured_images.split(',')
+                    : [],
+                is_vendor_opened
+            };
+        });
 
         return res.status(200).json({
             success: true,
@@ -968,6 +1002,7 @@ const VendorbyID = (req, res) => {
         });
     });
 };
+
 
 const vendorDashboardAnalytics = (req, res) => {
     const { vendor_Id, start_date, end_date, role_id } = req.body;
