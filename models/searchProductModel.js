@@ -2,144 +2,144 @@ const db = require('../config/db');
 
 const searchProduct = {
   search: (searchTerm, user_id, callback) => {
-    if (!user_id) {
-      return callback(new Error("user_id is required for this search"), null);
-    }
-  
-    const likeSearchTerm = `%${searchTerm}%`;
-  
-  const query = `
-    SELECT 'product' AS type, p.id AS product_id, 
-          p.name COLLATE utf8mb4_general_ci AS name, 
-          p.description COLLATE utf8mb4_general_ci AS description,
-          p.featured_image COLLATE utf8mb4_general_ci AS image, 
-          NULL AS extra, 
-          NULL AS is_favourite,
-          CASE 
-              WHEN p.name LIKE ? THEN 3
-              WHEN c.name LIKE ? THEN 2
-              ELSE 1
-          END AS relevance
-    FROM products p
-    JOIN product_categories c ON p.category_id = c.id
-    WHERE p.name LIKE ? COLLATE utf8mb4_general_ci 
-      OR c.name LIKE ? COLLATE utf8mb4_general_ci
+      if (!user_id) {
+        return callback(new Error("user_id is required for this search"), null);
+      }
 
-    UNION ALL
+      const likeSearchTerm = `%${searchTerm}%`;
 
-    SELECT 'category' AS type, id AS category_id, 
-          name COLLATE utf8mb4_general_ci AS name, 
-          description COLLATE utf8mb4_general_ci AS description,
-          category_logo COLLATE utf8mb4_general_ci AS image,  
-          NULL AS extra, 
-          NULL AS is_favourite,
-          CASE 
-              WHEN name LIKE ? THEN 3 
-              ELSE 1 
-          END AS relevance
-    FROM product_categories
-    WHERE name LIKE ? COLLATE utf8mb4_general_ci
+      const query = `
+        SELECT 'product' AS type, p.id AS product_id, 
+              p.name COLLATE utf8mb4_general_ci AS name, 
+              p.description COLLATE utf8mb4_general_ci AS description,
+              p.featured_image COLLATE utf8mb4_general_ci AS image, 
+              NULL AS extra, 
+              NULL AS is_favourite,
+              CASE 
+                  WHEN p.name LIKE ? THEN 3
+                  WHEN c.name LIKE ? THEN 2
+                  ELSE 1
+              END AS relevance
+        FROM products p
+        JOIN product_categories c ON p.category_id = c.id
+        WHERE p.name LIKE ? COLLATE utf8mb4_general_ci 
+          OR c.name LIKE ? COLLATE utf8mb4_general_ci
 
-    UNION ALL
+        UNION ALL
 
-    SELECT 'subcategory' AS type, id AS subcategory_id, 
-          name COLLATE utf8mb4_general_ci AS name, 
-          description COLLATE utf8mb4_general_ci AS description, 
-          subcategory_logo COLLATE utf8mb4_general_ci AS image,
-          category_id AS extra, 
-          NULL AS is_favourite,
-          CASE 
-              WHEN name LIKE ? THEN 3 
-              ELSE 1 
-          END AS relevance
-    FROM product_subcategories
-    WHERE name LIKE ? COLLATE utf8mb4_general_ci
+        SELECT 'category' AS type, id AS category_id, 
+              name COLLATE utf8mb4_general_ci AS name, 
+              description COLLATE utf8mb4_general_ci AS description,
+              category_logo COLLATE utf8mb4_general_ci AS image,  
+              NULL AS extra, 
+              NULL AS is_favourite,
+              CASE 
+                  WHEN name LIKE ? THEN 3 
+                  ELSE 1 
+              END AS relevance
+        FROM product_categories
+        WHERE name LIKE ? COLLATE utf8mb4_general_ci
 
-    UNION ALL
+        UNION ALL
 
-    SELECT 'vendor_by_name' AS type, 
-          u.id AS vendor_id, 
-          v.store_name COLLATE utf8mb4_general_ci AS name, 
-          v.store_address COLLATE utf8mb4_general_ci AS description,
-          v.store_image COLLATE utf8mb4_general_ci AS image,
-          JSON_OBJECT(
-            'firstname', u.firstname,
-            'lastname', u.lastname,
-            'email', u.email,
-            'prefix', u.prefix,
-            'phonenumber', u.phonenumber,
-            'vendor_start_time', v.vendor_start_time,
-            'vendor_close_time', v.vendor_close_time,
-            'sin_code', v.sin_code
-          ) AS extra,
-          IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
-          CASE 
-              WHEN v.store_name LIKE ? THEN 3 
-              ELSE 1 
-          END AS relevance
-    FROM users u 
-    JOIN vendors v ON v.user_id = u.id 
-    LEFT JOIN favourite_vendors fv 
-          ON fv.vendor_id = v.user_id AND fv.user_id = ?
-    WHERE v.store_name LIKE ? COLLATE utf8mb4_general_ci
+        SELECT 'subcategory' AS type, id AS subcategory_id, 
+              name COLLATE utf8mb4_general_ci AS name, 
+              description COLLATE utf8mb4_general_ci AS description, 
+              subcategory_logo COLLATE utf8mb4_general_ci AS image,
+              JSON_OBJECT('category_id', category_id) AS extra, 
+              NULL AS is_favourite,
+              CASE 
+                  WHEN name LIKE ? THEN 3 
+                  ELSE 1 
+              END AS relevance
+        FROM product_subcategories
+        WHERE name LIKE ? COLLATE utf8mb4_general_ci
 
-    UNION ALL
+        UNION ALL
 
-    SELECT DISTINCT 
-        'vendor_by_product' AS type, 
-        u.id AS vendor_id, 
-        v.store_name COLLATE utf8mb4_general_ci AS name, 
-        v.store_address COLLATE utf8mb4_general_ci AS description,
-        v.profile_pic COLLATE utf8mb4_general_ci AS image,
-        NULL AS extra, 
-        IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
-        CASE 
-            WHEN p.name LIKE ? COLLATE utf8mb4_general_ci THEN 3 
-            ELSE 1 
-        END AS relevance
-    FROM products p
-    JOIN vendors v ON p.vendor_id = v.user_id
-    JOIN users u ON v.user_id = u.id
-    LEFT JOIN favourite_vendors fv 
-        ON fv.vendor_id = v.user_id 
-      AND fv.user_id = ?
-    WHERE p.name LIKE ? COLLATE utf8mb4_general_ci
-      AND u.status = 1
-    ORDER BY relevance DESC;
-  `;
+        SELECT 'vendor_by_name' AS type, 
+              u.id AS vendor_id, 
+              v.store_name COLLATE utf8mb4_general_ci AS name, 
+              v.store_address COLLATE utf8mb4_general_ci AS description,
+              v.store_image COLLATE utf8mb4_general_ci AS image,
+              JSON_OBJECT(
+                'firstname', u.firstname,
+                'lastname', u.lastname,
+                'email', u.email,
+                'prefix', u.prefix,
+                'phonenumber', u.phonenumber,
+                'vendor_start_time', v.vendor_start_time,
+                'vendor_close_time', v.vendor_close_time,
+                'sin_code', v.sin_code
+              ) AS extra,
+              IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
+              CASE 
+                  WHEN v.store_name LIKE ? THEN 3 
+                  ELSE 1 
+              END AS relevance
+        FROM users u 
+        JOIN vendors v ON v.user_id = u.id 
+        LEFT JOIN favourite_vendors fv 
+              ON fv.vendor_id = v.user_id AND fv.user_id = ?
+        WHERE v.store_name LIKE ? COLLATE utf8mb4_general_ci
 
-  
-    const values = [
-      // product CASE and WHERE
-      likeSearchTerm, likeSearchTerm, likeSearchTerm, likeSearchTerm,
-  
-      // category CASE and WHERE
-      likeSearchTerm, likeSearchTerm,
-  
-      // subcategory CASE and WHERE
-      likeSearchTerm, likeSearchTerm,
-  
-      // vendor_by_name CASE, user_id, WHERE
-      likeSearchTerm, user_id, likeSearchTerm,
-  
-      // vendor_by_product CASE, user_id, WHERE
-      likeSearchTerm, user_id, likeSearchTerm
-    ];
-  
-    db.query(query, values, (err, results) => {
-      if (err) return callback(err, null);
-  
-      const groupedResults = results.reduce((acc, item) => {
-        if (!acc[item.type]) {
-          acc[item.type] = [];
-        }
-        acc[item.type].push(item);
-        return acc;
-      }, {});
-  
-      return callback(null, groupedResults);
-    });
-  },  
+        UNION ALL
+
+        SELECT DISTINCT 
+            'vendor_by_product' AS type, 
+            u.id AS vendor_id, 
+            v.store_name COLLATE utf8mb4_general_ci AS name, 
+            v.store_address COLLATE utf8mb4_general_ci AS description,
+            v.profile_pic COLLATE utf8mb4_general_ci AS image,
+            NULL AS extra, 
+            IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
+            CASE 
+                WHEN p.name LIKE ? COLLATE utf8mb4_general_ci THEN 3 
+                ELSE 1 
+            END AS relevance
+        FROM products p
+        JOIN vendors v ON p.vendor_id = v.user_id
+        JOIN users u ON v.user_id = u.id
+        LEFT JOIN favourite_vendors fv 
+            ON fv.vendor_id = v.user_id 
+          AND fv.user_id = ?
+        WHERE p.name LIKE ? COLLATE utf8mb4_general_ci
+          AND u.status = 1
+        ORDER BY relevance DESC;
+      `;
+
+      const values = [
+        // product CASE and WHERE
+        likeSearchTerm, likeSearchTerm, likeSearchTerm, likeSearchTerm,
+
+        // category CASE and WHERE
+        likeSearchTerm, likeSearchTerm,
+
+        // subcategory CASE and WHERE
+        likeSearchTerm, likeSearchTerm,
+
+        // vendor_by_name CASE, user_id, WHERE
+        likeSearchTerm, user_id, likeSearchTerm,
+
+        // vendor_by_product CASE, user_id, WHERE
+        likeSearchTerm, user_id, likeSearchTerm
+      ];
+
+      db.query(query, values, (err, results) => {
+        if (err) return callback(err, null);
+
+        // Group results by type (product/category/subcategory/vendor)
+        const groupedResults = results.reduce((acc, item) => {
+          if (!acc[item.type]) {
+            acc[item.type] = [];
+          }
+          acc[item.type].push(item);
+          return acc;
+        }, {});
+
+        return callback(null, groupedResults);
+      });
+  },
   searchitem: (searchTerm, searchtype, user_id, callback) => {
     const likeSearchTerm = `%${searchTerm}%`;
     const queries = [];
