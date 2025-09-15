@@ -57,11 +57,13 @@ const searchProduct = {
 
       UNION ALL
 
-      SELECT 'vendor_by_name' AS type, u.id AS vendor_id, 
-            v.store_name COLLATE utf8mb4_general_ci AS name, 
-            v.store_address COLLATE utf8mb4_general_ci AS description,
-            v.store_image COLLATE utf8mb4_general_ci AS image,
-            JSON_OBJECT(
+      SELECT 
+          'vendor_by_name' AS type, 
+          u.id AS vendor_id, 
+          v.store_name COLLATE utf8mb4_general_ci AS name, 
+          v.store_address COLLATE utf8mb4_general_ci AS description,
+          v.store_image COLLATE utf8mb4_general_ci AS image,
+          JSON_OBJECT(
               'firstname', u.firstname,
               'lastname', u.lastname,
               'email', u.email,
@@ -70,16 +72,17 @@ const searchProduct = {
               'vendor_start_time', v.vendor_start_time,
               'vendor_close_time', v.vendor_close_time,
               'sin_code', v.sin_code
-            ) AS extra,
-            IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
-            CASE 
-                WHEN v.store_name LIKE ? THEN 3 
-                ELSE 1 
-            END AS relevance
+          ) AS extra,
+          IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
+          CASE 
+              WHEN v.store_name LIKE ? THEN 3 
+              ELSE 1 
+          END AS relevance
       FROM users u 
       JOIN vendors v ON v.user_id = u.id 
       LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
-      WHERE v.store_name LIKE ? COLLATE utf8mb4_general_ci
+      WHERE v.store_name LIKE ? COLLATE utf8mb4_general_ci;
+
 
       UNION ALL
 
