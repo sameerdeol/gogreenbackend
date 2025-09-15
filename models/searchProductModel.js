@@ -57,7 +57,7 @@ const searchProduct = {
 
       UNION ALL
 
-      SELECT 'vendor_by_name' AS type, u.id, 
+      SELECT 'vendor_by_name' AS type, u.id AS vendor_id, 
             v.store_name COLLATE utf8mb4_general_ci AS name, 
             v.store_address COLLATE utf8mb4_general_ci AS description,
             v.store_image COLLATE utf8mb4_general_ci AS image,
