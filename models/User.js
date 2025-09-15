@@ -1190,6 +1190,65 @@ const User = {
         });
     },
 
+    getNearbyRidersWithPolylinesForParcel: (
+        parcelId,
+        pickupLat,
+        pickupLng,
+        radiusInKm = 3,
+        callback
+    ) => {
+        pickupLat = Number(pickupLat);
+        pickupLng = Number(pickupLng);
+
+        if (isNaN(pickupLat) || isNaN(pickupLng)) {
+            console.error("❌ Invalid pickup coordinates:", { pickupLat, pickupLng });
+            return callback(new Error("Invalid coordinates"));
+        }
+
+        const latDelta = radiusInKm / 111;
+        const lngDelta = radiusInKm / (111 * Math.cos(pickupLat * Math.PI / 180));
+
+        const minLat = pickupLat - latDelta;
+        const maxLat = pickupLat + latDelta;
+        const minLng = pickupLng - lngDelta;
+        const maxLng = pickupLng + lngDelta;
+
+        const sqlRiders = `
+            SELECT dp.user_id AS riderId, dp.rider_lat, dp.rider_lng
+            FROM delivery_partners dp
+            JOIN users u on u.id = dp.user_id 
+            WHERE dp.rider_lat BETWEEN ? AND ?
+            AND dp.rider_lng BETWEEN ? AND ? AND u.status = 1
+        `;
+
+        db.query(sqlRiders, [minLat, maxLat, minLng, maxLng], (err, riders) => {
+            if (err) return callback(err);
+            if (!riders.length) return callback(null, []);
+
+            // 🚚 Calculate distances from rider to pickup (skip vendor/customer logic)
+            getDistanceMatrix(pickupLat, pickupLng, riders, null, null, (err, results) => {
+                if (err) return callback(err);
+
+                const final = results.map(({ rider, distance_rider_to_vendor }) => {
+                    let distanceKm = "0.00";
+                    if (distance_rider_to_vendor && !isNaN(distance_rider_to_vendor)) {
+                        distanceKm = (distance_rider_to_vendor / 1000).toFixed(2);
+                    }
+
+                    return {
+                        user_id: rider.riderId,
+                        rider_lat: Number(rider.rider_lat),
+                        rider_lng: Number(rider.rider_lng),
+                        distance_km: distanceKm
+                    };
+                });
+
+                callback(null, final);
+            });
+        });
+    },
+
+
 
     updateStoreDetails: (user_id, data, callback) => {
         const keys = Object.keys(data);

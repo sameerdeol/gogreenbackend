@@ -1040,6 +1040,7 @@ const orderHistory = async (req, res) => {
             }
 
             const existingProduct = ordersMap[order_id].products.find(p =>
+                p.product_id === row.product_id &&
                 p.product_name === row.product_name &&
                 p.product_size === row.product_size &&
                 p.product_quantity === row.product_quantity &&
@@ -1052,6 +1053,7 @@ const orderHistory = async (req, res) => {
                 }
             } else {
                 ordersMap[order_id].products.push({
+                    product_id: row.product_id,
                     product_name: row.product_name,
                     product_size: row.product_size,
                     product_quantity: row.product_quantity,
