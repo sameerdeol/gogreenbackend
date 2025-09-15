@@ -700,10 +700,10 @@ const getOrderDetails = (req, res) => {
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
                 address, type, floor, landmark,
-                firstname, lastname, phonenumber, prefix, is_fast_delivery,  store_name, store_address, vendor_phonenumber, vendor_prefix
+                firstname, lastname, phonenumber, prefix, is_fast_delivery,
+                store_name, store_address, vendor_phonenumber, vendor_prefix
             } = row;
 
-            // If this order doesn't exist in map, initialize it
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
                     order_id,
@@ -733,24 +733,36 @@ const getOrderDetails = (req, res) => {
                 };
             }
 
-            // Create item entry (each DB row = 1 item)
-            const newItem = {
-                order_item_id,
-                product_id,
-                product_name,
-                product_description,
-                product_price,
-                product_quantity,
-                food_type,
-                total_item_price,
-                variant_id,
-                variant_type,
-                variant_value,
-                variant_price,
-                addons: addon_id ? [{ addon_id, addon_name, addon_price }] : []
-            };
+            // Check if this product already exists in items
+            let existingItem = ordersMap[order_id].items.find(item =>
+                item.order_item_id === order_item_id &&
+                item.variant_id === variant_id
+            );
 
-            ordersMap[order_id].items.push(newItem);
+            if (existingItem) {
+                // Add new addon if exists
+                if (addon_id) {
+                    existingItem.addons.push({ addon_id, addon_name, addon_price });
+                }
+            } else {
+                // Create new item
+                const newItem = {
+                    order_item_id,
+                    product_id,
+                    product_name,
+                    product_description,
+                    product_price,
+                    product_quantity,
+                    food_type,
+                    total_item_price,
+                    variant_id,
+                    variant_type,
+                    variant_value,
+                    variant_price,
+                    addons: addon_id ? [{ addon_id, addon_name, addon_price }] : []
+                };
+                ordersMap[order_id].items.push(newItem);
+            }
         });
 
         const groupedOrders = Object.values(ordersMap);
