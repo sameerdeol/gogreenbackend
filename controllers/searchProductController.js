@@ -81,6 +81,23 @@ const searchVendorbyName = (req, res) => {
         return res.status(400).json({ success: false, message: 'User ID is required.' });
     }
 
+    // Helper function to convert 24-hour time to 12-hour with AM/PM
+    const formatTo12Hour = (timeString) => {
+        if (!timeString) return null;
+        const [hour, minute] = timeString.split(':').map(Number);
+
+        let period = hour >= 12 ? 'PM' : 'AM';
+        let formattedHour = hour % 12 || 12; // converts 0 -> 12 for midnight
+        return `${formattedHour}:${minute.toString().padStart(2, '0')} ${period}`;
+    };
+
+    // Get current time in India
+    const now = new Date();
+    const indiaTime = new Date(
+        now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+    );
+    const nowMinutes = indiaTime.getHours() * 60 + indiaTime.getMinutes();
+
     searchProductModel.searchVendorbyProduct(search_name, user_id, (err, result) => {
         if (err) {
             console.error("Search Error:", err);
@@ -95,13 +112,28 @@ const searchVendorbyName = (req, res) => {
             });
         }
 
-        // Convert featured_images string into array
+        // Add featured_images array + is_vendor_opened + 12-hour format
         const formattedResult = result.map(vendor => {
+            let is_vendor_opened = false;
+
+            if (vendor.vendor_start_time && vendor.vendor_close_time) {
+                const [startHour, startMinute] = vendor.vendor_start_time.split(':').map(Number);
+                const [closeHour, closeMinute] = vendor.vendor_close_time.split(':').map(Number);
+
+                const startMinutes = startHour * 60 + startMinute;
+                const closeMinutes = closeHour * 60 + closeMinute;
+
+                is_vendor_opened = nowMinutes >= startMinutes && nowMinutes < closeMinutes;
+            }
+
             return {
                 ...vendor,
+                vendor_start_time: formatTo12Hour(vendor.vendor_start_time),
+                vendor_close_time: formatTo12Hour(vendor.vendor_close_time),
                 featured_images: vendor.featured_images
-                    ? vendor.featured_images.split(',') // split into array
-                    : []
+                    ? vendor.featured_images.split(',')
+                    : [],
+                is_vendor_opened
             };
         });
 
@@ -112,6 +144,7 @@ const searchVendorbyName = (req, res) => {
         });
     });
 };
+
 
 
 
