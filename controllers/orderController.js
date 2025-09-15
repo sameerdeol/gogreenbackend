@@ -704,6 +704,7 @@ const getOrderDetails = (req, res) => {
                 store_name, store_address, vendor_phonenumber, vendor_prefix
             } = row;
 
+            // Initialize order if it doesn't exist
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
                     order_id,
@@ -733,24 +734,29 @@ const getOrderDetails = (req, res) => {
                 };
             }
 
-            // Check if this product already exists in items
+            // Check if this product with same variant already exists
             let existingItem = ordersMap[order_id].items.find(item =>
                 item.order_item_id === order_item_id &&
                 item.variant_id === variant_id
             );
 
             if (existingItem) {
-                // Add new addon if exists
+                // Add addon to existing item
                 if (addon_id) {
-                    existingItem.addons.push({ addon_id, addon_name, addon_price });
-                    existingItem.total_item_price += addon_price; // Add addon price to total
+                    existingItem.addons.push({
+                        addon_id,
+                        addon_name,
+                        addon_price
+                    });
+                    // Sum addon price as number
+                    existingItem.total_item_price += parseFloat(addon_price ?? 0);
                 }
             } else {
-                // Base price = variant price if exists else product price
-                const basePrice = variant_price ?? product_price;
-                const totalItemPrice = basePrice + (addon_price ?? 0);
+                // Calculate base price (variant price if exists, else product price)
+                const basePrice = parseFloat(variant_price ?? product_price ?? 0);
+                const totalItemPrice = basePrice + (addon_id ? parseFloat(addon_price ?? 0) : 0);
 
-                // Create new item
+                // Create new order item
                 const newItem = {
                     order_item_id,
                     product_id,
@@ -764,19 +770,22 @@ const getOrderDetails = (req, res) => {
                     variant_value,
                     variant_price,
                     total_item_price: totalItemPrice,
-                    addons: addon_id ? [{ addon_id, addon_name, addon_price }] : []
+                    addons: addon_id ? [{
+                        addon_id,
+                        addon_name,
+                        addon_price
+                    }] : []
                 };
+
                 ordersMap[order_id].items.push(newItem);
             }
         });
 
+        // Return single order object (first order)
         const groupedOrders = Object.values(ordersMap);
         res.status(200).json(groupedOrders[0]);
     });
 };
-
-
-
 
 
 const updateOrderTiming = (req, res) => {
