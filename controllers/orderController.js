@@ -696,7 +696,7 @@ const getOrderDetails = (req, res) => {
                 order_id, preparing_time, order_uid, user_id, total_quantity, total_price,
                 payment_method, order_status, rider_status, order_created_at,
                 order_item_id, product_id, product_name, product_description,
-                product_price, product_quantity, food_type, total_item_price,
+                product_price, product_quantity, food_type,
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
                 address, type, floor, landmark,
@@ -743,8 +743,13 @@ const getOrderDetails = (req, res) => {
                 // Add new addon if exists
                 if (addon_id) {
                     existingItem.addons.push({ addon_id, addon_name, addon_price });
+                    existingItem.total_item_price += addon_price; // Add addon price to total
                 }
             } else {
+                // Base price = variant price if exists else product price
+                const basePrice = variant_price ?? product_price;
+                const totalItemPrice = basePrice + (addon_price ?? 0);
+
                 // Create new item
                 const newItem = {
                     order_item_id,
@@ -754,11 +759,11 @@ const getOrderDetails = (req, res) => {
                     product_price,
                     product_quantity,
                     food_type,
-                    total_item_price,
                     variant_id,
                     variant_type,
                     variant_value,
                     variant_price,
+                    total_item_price: totalItemPrice,
                     addons: addon_id ? [{ addon_id, addon_name, addon_price }] : []
                 };
                 ordersMap[order_id].items.push(newItem);
@@ -769,6 +774,7 @@ const getOrderDetails = (req, res) => {
         res.status(200).json(groupedOrders[0]);
     });
 };
+
 
 
 
