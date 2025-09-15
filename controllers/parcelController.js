@@ -90,13 +90,10 @@ const createParcel = async (req, res) => {
                                             data: {
                                                 type: "new_parcel",
                                                 parcel_id: parcel_id.toString(),
-                                                parcel_uid: parcel_uid.toString(),
                                                 customer: username.toString(),
                                                 pickup: pickup.address,
                                                 drop: drop.address,
                                                 deliveryDate: deliveryDate,
-                                                parcelComment: parcelComment || "",
-                                                scheduledComments: scheduledComments || "",
                                                 rider_to_pickup_distance_km: String(rider.distance_km ?? "0.00")
                                             }
                                         });
