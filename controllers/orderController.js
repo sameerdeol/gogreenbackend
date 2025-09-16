@@ -903,7 +903,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
             return res.status(200).json({ message: "No order found for this user." });
         }
 
-        // ✅ Filter orders for today if filter = "today"
+        // Filter orders for today if filter = "today"
         let filteredResults = results;
         if (filter && filter.toLowerCase() === "today") {
             const today = new Date().toISOString().split("T")[0];
@@ -933,10 +933,11 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                 addon_id, addon_name, addon_price,
                 address, type, floor, landmark,
                 firstname, lastname, phonenumber, is_fast_delivery, rider_unique_id,
-                vendor_prefix, vendor_phonenumber, store_address, store_name, store_image
+                vendor_prefix, vendor_phonenumber, store_address, store_name, store_image,
+                featured_image, gallery_image
             } = row;
 
-            // ✅ Create order object if not exists
+            // Create order object if not exists
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
                     order_id,
@@ -969,7 +970,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
 
             const order = ordersMap[order_id];
 
-            // ✅ Create item if not exists
+            // Create item if not exists
             if (!order.items[order_item_id]) {
                 order.items[order_item_id] = {
                     order_item_id,
@@ -984,19 +985,26 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                     variant_value,
                     variant_price,
                     addons: [],
-                    total_item_price: 0 // ✅ initialize for summation
+                    total_item_price: 0, // initialize for summation
+                    featured_image: featured_image || null,
+                    gallery_images: gallery_image ? [gallery_image] : []
                 };
             }
 
             const item = order.items[order_item_id];
 
-            // ✅ Add base product price only once
+            // Add gallery image if not already included
+            if (gallery_image && !item.gallery_images.includes(gallery_image)) {
+                item.gallery_images.push(gallery_image);
+            }
+
+            // Add base product price only once
             if (item.total_item_price === 0) {
                 const basePrice = parseFloat(variant_id ? variant_price : product_price) || 0;
                 item.total_item_price += basePrice;
             }
 
-            // ✅ Add addon if exists & update total price
+            // Add addon if exists & update total price
             if (addon_id && !item.addons.some(a => a.addon_id === addon_id)) {
                 item.addons.push({
                     addon_id,
@@ -1004,12 +1012,11 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                     addon_price
                 });
 
-                // ✅ Convert addon_price to number before adding
                 item.total_item_price += parseFloat(addon_price || 0);
             }
         });
 
-        // ✅ Convert items map → array before sending
+        // Convert items map → array before sending
         const finalOrders = Object.values(ordersMap).map(order => ({
             ...order,
             items: Object.values(order.items)
@@ -1020,6 +1027,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
         res.status(200).json(finalOrders);
     });
 };
+
 
 
 

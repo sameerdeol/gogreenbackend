@@ -52,6 +52,7 @@ const Order = {
                 P.description AS product_description,
                 P.price AS product_price,
                 P.food_type,
+                P.featured_image,
 
                 UA.address,
                 UA.type,
@@ -64,11 +65,13 @@ const Order = {
 
                 R.custom_id AS rider_unique_id,
 
+                -- Selected variant
                 PV.id AS variant_id,
                 PV.type AS variant_type,
                 PV.value AS variant_value,
                 PV.price AS variant_price,
 
+                -- Selected addons
                 PA.id AS addon_id,
                 PA.name AS addon_name,
                 PA.price AS addon_price,
@@ -85,14 +88,21 @@ const Order = {
             LEFT JOIN products P ON OI.product_id = P.id
             LEFT JOIN users U ON OD.user_id = U.id
             LEFT JOIN user_addresses UA ON OD.user_address_id = UA.id
+
+            -- Selected variant
             LEFT JOIN product_variants PV ON OI.variant_id = PV.id
+
+            -- Selected addons
             LEFT JOIN order_item_addons OIA ON OIA.order_item_id = OI.id
             LEFT JOIN product_addons PA ON OIA.addon_id = PA.id
+
             LEFT JOIN users R ON OD.rider_id = R.id
             LEFT JOIN users SU ON OD.vendor_id = SU.id
             LEFT JOIN vendors SV ON OD.vendor_id = SV.user_id
+
             WHERE 
                 ${role_id === 3 ? 'OD.vendor_id = ?' : 'OD.rider_id = ?'}
+
             ORDER BY OD.created_at DESC;
         `;
 
