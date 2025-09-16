@@ -612,6 +612,7 @@ const storeBusinessDetails = async (req, res) => {
             bussiness_license_number,
             gst_number,
             profile_pic: await fileUpload('profile_pic'),
+            other_doc: await fileUpload('other_doc'),
             bussiness_license_number_pic: await fileUpload('bussiness_license_number_pic'),
             gst_number_pic: await fileUpload('gst_number_pic')
         };

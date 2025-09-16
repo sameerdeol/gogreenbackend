@@ -23,7 +23,8 @@ const uploadFields = upload.fields([
     { name: 'vendor_type_image', maxCount: 1 },
     { name: 'void_cheque', maxCount: 1 },
     { name: 'registration_doc', maxCount: 1 },
-    { name: 'rider_license_image', maxCount: 1 }
+    { name: 'rider_license_image', maxCount: 1 },
+    { name: 'other_doc', maxCount: 1 }
 ]);
 
 module.exports = uploadFields;
