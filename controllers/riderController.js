@@ -6,6 +6,7 @@ const generateCustomId = require('../utils/generateCustomId');
 const path = require('path');
 const deleteS3Image = require('../utils/deleteS3Image');
 const uploadToS3 = require('../utils/s3Upload');
+const { emitRiderLocation } = require('../sockets/locationSocket');
 require('dotenv').config();
 
 const riderSignup = async (req, res) => {
@@ -580,20 +581,26 @@ const riderStatus = (req, res) => {
 
 
 const updateRiderLocation = (req, res) => {
-    const { user_id, rider_lat, rider_lng } = req.body;
-    User.updateRiderLocation(user_id, rider_lat, rider_lng, (err, user) => {
-        if (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({ success: false, message: 'Database error', error: err });
-        }
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'rider not found' });
-        }
-        return res.status(200).json({
-            success: true,
-            message: "rider location updated successfully",
-        });
+  const { user_id, rider_lat, rider_lng, customer_ids = [] } = req.body;
+
+  User.updateRiderLocation(user_id, rider_lat, rider_lng, (err, user) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: 'Database error', error: err });
+    }
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Rider not found' });
+    }
+
+    // Emit rider location to all customers tracking this rider
+    if (customer_ids.length) {
+      emitRiderLocation(user_id, customer_ids, { lat: rider_lat, lng: rider_lng });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Rider location updated successfully",
     });
+  });
 };
 
 const allRidersforAdmin = (req, res) => {
