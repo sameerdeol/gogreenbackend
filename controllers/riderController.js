@@ -581,7 +581,7 @@ const riderStatus = (req, res) => {
 
 
 const updateRiderLocation = (req, res) => {
-  const { user_id, rider_lat, rider_lng, customer_ids = [] } = req.body;
+  const { user_id, rider_lat, rider_lng, customer_ids} = req.body;
 
   User.updateRiderLocation(user_id, rider_lat, rider_lng, (err, user) => {
     if (err) {
@@ -592,9 +592,7 @@ const updateRiderLocation = (req, res) => {
     }
 
     // Emit rider location to all customers tracking this rider
-    if (customer_ids.length) {
       emitRiderLocation(user_id, customer_ids, { lat: rider_lat, lng: rider_lng });
-    }
 
     return res.status(200).json({
       success: true,

@@ -21,12 +21,11 @@ module.exports = (io) => {
 };
 
 // Helper to emit rider location
-module.exports.emitRiderLocation = (riderId, customerIds = [], location) => {
+module.exports.emitRiderLocationToCustomer = (riderId, customerId, location) => {
   if (!ioInstance) return;
-  customerIds.forEach(customer_id => {
-    ioInstance.to(`customer_${customer_id}`).emit('riderLocationUpdate', {
-      rider_id: riderId,
-      ...location
-    });
+
+  ioInstance.to(`customer_${customerId}`).emit('riderLocationUpdate', {
+    rider_id: riderId,
+    ...location
   });
 };
