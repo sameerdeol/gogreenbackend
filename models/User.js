@@ -867,7 +867,7 @@ const User = {
             JOIN vendors v ON v.user_id = u.id
             LEFT JOIN favourite_vendors fv 
                 ON fv.vendor_id = v.user_id 
-                AND fv.user_id = 3
+                AND fv.user_id = ?
 
             -- ✅ LEFT JOIN to get vendor ratings
             LEFT JOIN (
@@ -887,21 +887,23 @@ const User = {
                 FROM products p2 
                 WHERE p2.vendor_id = v.user_id
             )
-            LIMIT 0, 1000;
         `;
 
         const params = [user_id];
 
+        // ✅ Add vendor_type_ids filter dynamically (if any)
         if (vendor_type_ids.length > 0) {
             const findSetConditions = vendor_type_ids.map(() => `FIND_IN_SET(?, v.vendor_type_id)`).join(' OR ');
             sql += ` AND (${findSetConditions})`;
             params.push(...vendor_type_ids);
         }
 
+        // ✅ Finally append LIMIT (only once)
         sql += ` LIMIT 0, 1000`;
 
         db.query(sql, params, callback);
     },
+
 
 
     
