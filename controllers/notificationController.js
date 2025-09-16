@@ -1,4 +1,5 @@
 const UserFcmToken = require('../models/fcmTokenModel');
+const Notification = require('../models/notificationModel');
 const { getFirebaseApp } = require('../firebaseKeys/firebaseInit');
 
 // Save FCM token
@@ -53,8 +54,61 @@ const removeFcmToken = (req, res) => {
     });
 };
 
+const allNotificationsOfUser = async (req, res) => {
+    const { user_id } = req.params;
+    const onlyUnread = req.query.onlyUnread === 'true'; // optional query param
+
+    if (!user_id) {
+        return res.status(400).json({ success: false, message: 'user_id is required.' });
+    }
+
+    try {
+        // Fetch notifications based on onlyUnread flag
+        const notifications = await Notification.getAllByUser(user_id, onlyUnread);
+
+        res.status(200).json({
+            success: true,
+            message: 'Notifications fetched successfully',
+            data: notifications
+        });
+    } catch (err) {
+        console.error('Error fetching notifications:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching notifications',
+            error: err.message
+        });
+    }
+};
+
+const markNotificationAsRead = async (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ success: false, message: 'Notification ID is required.' });
+    }
+
+    try {
+        await Notification.markAsRead(id);
+        res.status(200).json({
+            success: true,
+            message: 'Notification marked as read successfully'
+        });
+    } catch (err) {
+        console.error('Error marking notification as read:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Error marking notification as read',
+            error: err.message
+        });
+    }
+};
+
+
 module.exports = {
     saveFcmToken,
     sendNotification,
-    removeFcmToken
+    removeFcmToken,
+    allNotificationsOfUser,
+    markNotificationAsRead
 };
