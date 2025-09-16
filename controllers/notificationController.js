@@ -55,8 +55,7 @@ const removeFcmToken = (req, res) => {
 };
 
 const allNotificationsOfUser = async (req, res) => {
-    const { user_id } = req.params;
-    const onlyUnread = req.query.onlyUnread === 'true'; // optional query param
+    const { user_id, onlyUnread } = req.params;
 
     if (!user_id) {
         return res.status(400).json({ success: false, message: 'user_id is required.' });

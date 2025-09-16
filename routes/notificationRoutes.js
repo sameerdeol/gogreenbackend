@@ -17,7 +17,7 @@ router.post('/send-notification', sendNotification);
 
 router.delete('/remove-fcmtoken', removeFcmToken);
 
-router.get('/all-notifications/:user_id', allNotificationsOfUser);
+router.get('/all-notifications/:user_id/:onlyUnread', allNotificationsOfUser);
 
 router.get('/mark-asread', markNotificationAsRead);
 

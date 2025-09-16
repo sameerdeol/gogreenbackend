@@ -19,7 +19,7 @@ const Notification = {
         });
     },
 
-    getAllByUser: async (user_id, onlyUnread = false) => {
+    getAllByUser: async (user_id, onlyUnread = 0) => {
         return new Promise((resolve, reject) => {
             let sql = `
                 SELECT id, title, message, type, reference_id, data, is_read, created_at
