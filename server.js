@@ -55,6 +55,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const parcelRoutes = require('./routes/parcelRoutes');
+const ratingsRoutes = require('./routes/ratingRoutes');
 
 // Routes
 app.use('/webhook', webhookHandler);
@@ -76,6 +77,7 @@ app.use('/productdiscount', productDiscount);
 app.use('/banners', appBanners);
 app.use('/dynamiccat', dynamicCategory);
 app.use('/parcels', parcelRoutes);
+app.use('/ratings', ratingsRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 3000;
