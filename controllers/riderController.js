@@ -6,7 +6,7 @@ const generateCustomId = require('../utils/generateCustomId');
 const path = require('path');
 const deleteS3Image = require('../utils/deleteS3Image');
 const uploadToS3 = require('../utils/s3Upload');
-const { emitRiderLocation } = require('../sockets/locationSocket');
+const { emitRiderLocationToCustomer } = require('../sockets/locationSocket');
 require('dotenv').config();
 
 const riderSignup = async (req, res) => {
