@@ -454,6 +454,8 @@ const Order = {
                 OI.single_item_price,
                 OI.variant_id,
 
+                P.featured_image,
+
                 -- Selected variant
                 PV.id AS variant_id,
                 PV.type AS variant_type,
@@ -490,6 +492,7 @@ const Order = {
 
             -- Selected variant
             LEFT JOIN product_variants PV ON PV.id = OI.variant_id
+            LEFT JOIN products P ON P.id = OI.product_id
 
             -- Selected addons
             LEFT JOIN order_item_addons OIA ON OIA.order_item_id = OI.id
