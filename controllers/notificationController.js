@@ -55,15 +55,16 @@ const removeFcmToken = (req, res) => {
 };
 
 const allNotificationsOfUser = async (req, res) => {
-    const { user_id, onlyUnread } = req.params;
-    const onlyUnreadFlag = onlyUnread === 'true';
+    const { user_id } = req.params;
+    // optional query param: ?onlyUnread=true
+    const onlyUnread = req.query.onlyUnread === 'true';
 
     if (!user_id) {
         return res.status(400).json({ success: false, message: 'user_id is required.' });
     }
 
     try {
-        const notifications = await Notification.getAllByUser(user_id, onlyUnreadFlag);
+        const notifications = await Notification.getAllByUser(user_id, onlyUnread);
 
         res.status(200).json({
             success: true,
@@ -79,6 +80,7 @@ const allNotificationsOfUser = async (req, res) => {
         });
     }
 };
+
 
 
 const markNotificationAsRead = async (req, res) => {
