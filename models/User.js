@@ -852,18 +852,42 @@ const User = {
                 v.vendor_start_time,
                 v.vendor_close_time,
                 IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
+
+                -- ✅ Vendor rating columns
+                IFNULL(r.avg_rating, 0) AS vendor_rating,
+                IFNULL(r.total_ratings, 0) AS total_vendor_ratings,
+
                 (
                     SELECT GROUP_CONCAT(DISTINCT p.featured_image)
                     FROM products p
                     WHERE p.vendor_id = v.user_id
                 ) AS featured_images
+
             FROM users u
             JOIN vendors v ON v.user_id = u.id
-            LEFT JOIN favourite_vendors fv ON fv.vendor_id = v.user_id AND fv.user_id = ?
-            WHERE u.is_verified = 1 AND u.status = 1
+            LEFT JOIN favourite_vendors fv 
+                ON fv.vendor_id = v.user_id 
+                AND fv.user_id = ?
+
+            -- ✅ LEFT JOIN to get vendor ratings
+            LEFT JOIN (
+                SELECT 
+                    rateable_id,
+                    AVG(rating) AS avg_rating,
+                    COUNT(*) AS total_ratings
+                FROM ratings
+                WHERE rateable_type = 2  -- ✅ 2 = Vendor
+                GROUP BY rateable_id
+            ) r ON r.rateable_id = v.user_id
+
+            WHERE u.is_verified = 1 
+            AND u.status = 1
             AND EXISTS (
-                SELECT 1 FROM products p2 WHERE p2.vendor_id = v.user_id
-            )
+                SELECT 1 
+                FROM products p2 
+                WHERE p2.vendor_id = v.user_id
+            );
+
         `;
 
         const params = [user_id];
@@ -1771,16 +1795,34 @@ const User = {
                 v.vendor_start_time,
                 v.vendor_close_time,
                 IF(fv.user_id IS NOT NULL, TRUE, FALSE) AS is_favourite,
+
+                -- ✅ Vendor rating (average + total count)
+                IFNULL(r.avg_rating, 0) AS vendor_rating,
+                IFNULL(r.total_ratings, 0) AS total_vendor_ratings,
+
                 (
                     SELECT GROUP_CONCAT(DISTINCT p.featured_image)
                     FROM products p
                     WHERE p.vendor_id = v.user_id
                 ) AS featured_images
+
             FROM users u
             JOIN vendors v ON v.user_id = u.id
             LEFT JOIN favourite_vendors fv 
                 ON fv.vendor_id = v.user_id 
                 AND fv.user_id = ?
+
+            -- ✅ LEFT JOIN subquery to get vendor ratings
+            LEFT JOIN (
+                SELECT 
+                    rateable_id,
+                    AVG(rating) AS avg_rating,
+                    COUNT(*) AS total_ratings
+                FROM ratings
+                WHERE rateable_type = 2   -- 2 = Vendor
+                GROUP BY rateable_id
+            ) r ON r.rateable_id = v.user_id
+
             WHERE u.is_verified = 1 
             AND u.status = 1
             AND v.user_id = ? 
@@ -1788,8 +1830,7 @@ const User = {
                 SELECT 1 FROM products p2 
                 WHERE p2.vendor_id = v.user_id
             )
-            LIMIT 0, 1000
-        `;
+            LIMIT 0, 1000; `;
 
         const params = [user_id, vendor_id];
 

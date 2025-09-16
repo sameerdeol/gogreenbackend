@@ -427,6 +427,9 @@ const Product = {
                 IFNULL(d.discount_percent, 0) AS discount_percent,
                 ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
                 d.updated_at AS discount_updated_at,
+                -- ✅ Average rating for product (only where rateable_type = 1)
+                IFNULL(r.avg_rating, 0) AS average_rating,
+                IFNULL(r.total_ratings, 0) AS total_ratings,
                 CASE 
                     WHEN ? IS NOT NULL AND p.name LIKE CONCAT('%', ?, '%') THEN 1 
                     ELSE 0 
@@ -438,6 +441,16 @@ const Product = {
             LEFT JOIN product_discounts d ON p.id = d.product_id
             LEFT JOIN favourite_products f 
                 ON f.product_id = p.id AND f.user_id = ?   -- ✅ match favourite for given user
+            -- ✅ LEFT JOIN subquery to get ratings for products
+            LEFT JOIN (
+                SELECT 
+                    rateable_id,
+                    AVG(rating) AS avg_rating,
+                    COUNT(*) AS total_ratings
+                FROM ratings
+                WHERE rateable_type = 1   -- only products
+                GROUP BY rateable_id
+            ) r ON r.rateable_id = p.id
             WHERE p.vendor_id = ?
             ORDER BY match_priority DESC, p.id DESC;
         `;
