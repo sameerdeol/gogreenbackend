@@ -1084,22 +1084,26 @@ const orderHistory = async (req, res) => {
                 };
             }
 
-            // Push product with all details (from model)
-            ordersMap[order_id].products.push({
-                product_id: row.product.id,
-                product_name: row.product.name,
-                product_size: row.product.size,
-                product_quantity: row.product_quantity,
-                total_item_price: row.total_item_price,
-                single_item_price: row.single_item_price,
-                featured_image: row.product.featured_image || null,
+            // Check if the product (order_item) already exists in this order
+            let existingProduct = ordersMap[order_id].products.find(p => p.order_item_id === row.order_item_id);
 
-                // ✅ Include details like vendor query
-                gallery_images: row.product.gallery_images || [],
-                attributes: row.product.attributes || [],
-                variants: row.product.variants || [],
-                addons: row.product.addons || []
-            });
+            if (!existingProduct) {
+                existingProduct = {
+                    order_item_id: row.order_item_id,
+                    product_id: row.product_id,
+                    product_name: row.product_name,
+                    product_size: row.product_size,
+                    product_quantity: row.product_quantity,
+                    total_item_price: row.total_item_price,
+                    single_item_price: row.single_item_price,
+                    featured_image: row.featured_image || null,
+                    gallery_images: row.gallery_images || [],
+                    attributes: row.attributes || [],
+                    variants: row.variants || [],
+                    addons: row.addons || []
+                };
+                ordersMap[order_id].products.push(existingProduct);
+            }
         });
 
         // Sort grouped orders by created_at DESC
