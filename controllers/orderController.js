@@ -1033,17 +1033,16 @@ const orderHistory = async (req, res) => {
 
     OrderModel.orderHistorybyUserID(user_id, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
-
         if (!results || results.length === 0) {
             return res.status(200).json({ message: "No order found." });
         }
 
-        // Group orders by order_id
         const ordersMap = {};
 
         results.forEach(row => {
             const order_id = row.order_id;
 
+            // Initialize order
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
                     order_id: row.order_id,
@@ -1080,35 +1079,70 @@ const orderHistory = async (req, res) => {
                         landmark: row.address_landmark
                     },
 
-                    products: []
+                    products: {}
                 };
             }
 
-            // Check if the product (order_item) already exists in this order
-            let existingProduct = ordersMap[order_id].products.find(p => p.order_item_id === row.order_item_id);
+            const order = ordersMap[order_id];
 
-            if (!existingProduct) {
-                existingProduct = {
-                    order_item_id: row.order_item_id,
+            // Initialize product
+            if (!order.products[row.product_id]) {
+                order.products[row.product_id] = {
                     product_id: row.product_id,
-                    product_name: row.product_name,
-                    product_size: row.product_size,
                     product_quantity: row.product_quantity,
                     total_item_price: row.total_item_price,
                     single_item_price: row.single_item_price,
                     featured_image: row.featured_image || null,
-                    gallery_images: row.gallery_images || [],
-                    attributes: row.attributes || [],
-                    variants: row.variants || [],
-                    addons: row.addons || []
+                    gallery_images: [],
+                    attributes: [],
+                    variants: [],
+                    addons: []
                 };
-                ordersMap[order_id].products.push(existingProduct);
+            }
+
+            const product = order.products[row.product_id];
+
+            // Add gallery image if not already added
+            if (row.gallery_image && !product.gallery_images.includes(row.gallery_image)) {
+                product.gallery_images.push(row.gallery_image);
+            }
+
+            // Add attribute if not already added
+            if (row.attribute_key && row.attribute_value) {
+                const exists = product.attributes.find(a => a.attribute_key === row.attribute_key && a.attribute_value === row.attribute_value);
+                if (!exists) {
+                    product.attributes.push({ attribute_key: row.attribute_key, attribute_value: row.attribute_value });
+                }
+            }
+
+            // Add selected variant (only once)
+            if (row.variant_id && !product.variants.find(v => v.variant_id === row.variant_id)) {
+                product.variants.push({
+                    variant_id: row.variant_id,
+                    variant_type: row.variant_type,
+                    variant_value: row.variant_value,
+                    variant_price: row.variant_price
+                });
+            }
+
+            // Add selected addon
+            if (row.addon_id && !product.addons.find(a => a.addon_id === row.addon_id)) {
+                product.addons.push({
+                    addon_id: row.addon_id,
+                    addon_name: row.addon_name,
+                    addon_price: row.addon_price
+                });
             }
         });
 
+        // Convert products from object to array
+        const groupedOrders = Object.values(ordersMap).map(order => {
+            order.products = Object.values(order.products);
+            return order;
+        });
+
         // Sort grouped orders by created_at DESC
-        const groupedOrders = Object.values(ordersMap)
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        groupedOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         res.status(200).json({
             total: groupedOrders.length,
@@ -1116,6 +1150,7 @@ const orderHistory = async (req, res) => {
         });
     });
 };
+
 
 
 const handleOrderByRider = async (req, res, io) => {

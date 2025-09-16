@@ -463,7 +463,14 @@ const Order = {
                 -- Selected addons
                 OIA.addon_id,
                 A.name AS addon_name,
-                A.price AS addon_price
+                A.price AS addon_price,
+
+                -- Product gallery images
+                GI.image_path AS gallery_image,
+
+                -- Product attributes
+                PA.attribute_key,
+                PA.attribute_value
 
             FROM 
                 order_details OD
@@ -488,12 +495,19 @@ const Order = {
             LEFT JOIN order_item_addons OIA ON OIA.order_item_id = OI.id
             LEFT JOIN product_addons A ON A.id = OIA.addon_id
 
+            -- Product gallery images
+            LEFT JOIN gallery_images GI ON GI.product_id = OI.product_id
+
+            -- Product attributes
+            LEFT JOIN product_attributes PA ON PA.product_id = OI.product_id
+
             WHERE OD.user_id = ?
             ORDER BY OD.created_at DESC
         `;
 
         db.query(query, [user_id], callback);
     },
+
 
     
     handleOrder: (orderId, riderId, riderStatus) => {
