@@ -565,7 +565,7 @@ const Product = {
             LEFT JOIN (
                 SELECT 
                     rateable_id,
-                    AVG(rating) AS avg_rating,
+                    ROUND(AVG(rating), 1) AS avg_rating,
                     COUNT(*) AS total_ratings
                 FROM ratings
                 WHERE rateable_type = 1   -- only products
