@@ -992,7 +992,8 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
 
             // ✅ Add base product price only once
             if (item.total_item_price === 0) {
-                item.total_item_price += (variant_id ? variant_price : product_price);
+                const basePrice = parseFloat(variant_id ? variant_price : product_price) || 0;
+                item.total_item_price += basePrice;
             }
 
             // ✅ Add addon if exists & update total price
@@ -1003,7 +1004,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                     addon_price
                 });
 
-                // Safely add addon price to total
+                // ✅ Convert addon_price to number before adding
                 item.total_item_price += parseFloat(addon_price || 0);
             }
         });
