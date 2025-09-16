@@ -581,7 +581,14 @@ const riderStatus = (req, res) => {
 
 
 const updateRiderLocation = (req, res) => {
-  const { user_id, rider_lat, rider_lng, customer_ids} = req.body;
+  const { user_id, rider_lat, rider_lng, customer_id } = req.body;
+
+  if (!user_id || !rider_lat || !rider_lng || !customer_id) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "user_id, rider_lat, rider_lng, and customer_id are required" 
+    });
+  }
 
   User.updateRiderLocation(user_id, rider_lat, rider_lng, (err, user) => {
     if (err) {
@@ -591,12 +598,15 @@ const updateRiderLocation = (req, res) => {
       return res.status(404).json({ success: false, message: 'Rider not found' });
     }
 
-    // Emit rider location to all customers tracking this rider
-      emitRiderLocation(user_id, customer_ids, { lat: rider_lat, lng: rider_lng });
+    // Emit rider location to a single customer
+    emitRiderLocationToCustomer(customer_id, user_id, {
+      lat: rider_lat,
+      lng: rider_lng
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Rider location updated successfully",
+      message: "Rider location updated and emitted to customer",
     });
   });
 };

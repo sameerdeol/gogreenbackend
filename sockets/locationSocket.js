@@ -21,9 +21,8 @@ module.exports = (io) => {
 };
 
 // Helper to emit rider location
-module.exports.emitRiderLocationToCustomer = (riderId, customerId, location) => {
+module.exports.emitRiderLocationToCustomer = (customerId, riderId, location) => {
   if (!ioInstance) return;
-
   ioInstance.to(`customer_${customerId}`).emit('riderLocationUpdate', {
     rider_id: riderId,
     ...location
