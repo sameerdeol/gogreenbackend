@@ -19,7 +19,7 @@ router.delete('/remove-fcmtoken', removeFcmToken);
 
 router.get('/all-notifications/:user_id', allNotificationsOfUser);
 
-router.get('/mark-asread', markNotificationAsRead);
+router.put('/mark-asread/:id', markNotificationAsRead);
 
 
 module.exports = router;
