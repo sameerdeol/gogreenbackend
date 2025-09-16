@@ -896,7 +896,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
     const { user_id, role_id } = req.body;
     const { filter } = req.params; // "today" or "all"
 
-    OrderModel.getOrdersByUserId(user_id,role_id, (err, results) => {
+    OrderModel.getOrdersByUserId(user_id, role_id, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
 
         if (!results || results.length === 0) {
@@ -932,7 +932,8 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
                 address, type, floor, landmark,
-                firstname, lastname, phonenumber, is_fast_delivery, rider_unique_id, vendor_prefix, vendor_phonenumber, store_address, store_name, store_image
+                firstname, lastname, phonenumber, is_fast_delivery, rider_unique_id,
+                vendor_prefix, vendor_phonenumber, store_address, store_name, store_image
             } = row;
 
             // ✅ Create order object if not exists
@@ -968,7 +969,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
 
             const order = ordersMap[order_id];
 
-            // ✅ Use order_item_id as unique key
+            // ✅ Create item if not exists
             if (!order.items[order_item_id]) {
                 order.items[order_item_id] = {
                     order_item_id,
@@ -978,22 +979,32 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                     product_price,
                     product_quantity,
                     food_type,
-                    total_item_price,
                     variant_id,
                     variant_type,
                     variant_value,
                     variant_price,
-                    addons: []
+                    addons: [],
+                    total_item_price: 0 // ✅ initialize for summation
                 };
             }
 
-            // ✅ Add addon if exists (avoid duplicates)
-            if (addon_id && !order.items[order_item_id].addons.some(a => a.addon_id === addon_id)) {
-                order.items[order_item_id].addons.push({
+            const item = order.items[order_item_id];
+
+            // ✅ Add base product price only once
+            if (item.total_item_price === 0) {
+                item.total_item_price += (variant_id ? variant_price : product_price);
+            }
+
+            // ✅ Add addon if exists & update total price
+            if (addon_id && !item.addons.some(a => a.addon_id === addon_id)) {
+                item.addons.push({
                     addon_id,
                     addon_name,
                     addon_price
                 });
+
+                // Safely add addon price to total
+                item.total_item_price += parseFloat(addon_price || 0);
             }
         });
 
@@ -1002,8 +1013,9 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
             ...order,
             items: Object.values(order.items)
         }));
+
         finalOrders.sort((a, b) => new Date(b.order_created_at) - new Date(a.order_created_at));
-        
+
         res.status(200).json(finalOrders);
     });
 };
