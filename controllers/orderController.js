@@ -1043,6 +1043,7 @@ const orderHistory = async (req, res) => {
 
         results.forEach(row => {
             const order_id = row.order_id;
+
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
                     order_id: row.order_id,
@@ -1083,30 +1084,22 @@ const orderHistory = async (req, res) => {
                 };
             }
 
-            const existingProduct = ordersMap[order_id].products.find(p =>
-                p.product_id === row.product_id &&
-                p.product_name === row.product_name &&
-                p.product_size === row.product_size &&
-                p.product_quantity === row.product_quantity &&
-                p.single_item_price === row.single_item_price
-            );
+            // Push product with all details (from model)
+            ordersMap[order_id].products.push({
+                product_id: row.product.id,
+                product_name: row.product.name,
+                product_size: row.product.size,
+                product_quantity: row.product_quantity,
+                total_item_price: row.total_item_price,
+                single_item_price: row.single_item_price,
+                featured_image: row.product.featured_image || null,
 
-            if (existingProduct) {
-                if (row.product_gallery_image && !existingProduct.gallery_images.includes(row.product_gallery_image)) {
-                    existingProduct.gallery_images.push(row.product_gallery_image);
-                }
-            } else {
-                ordersMap[order_id].products.push({
-                    product_id: row.product_id,
-                    product_name: row.product_name,
-                    product_size: row.product_size,
-                    product_quantity: row.product_quantity,
-                    total_item_price: row.total_item_price,
-                    single_item_price: row.single_item_price,
-                    featured_image: row.featured_image || null,
-                    gallery_images: row.product_gallery_image ? [row.product_gallery_image] : []
-                });
-            }
+                // ✅ Include details like vendor query
+                gallery_images: row.product.gallery_images || [],
+                attributes: row.product.attributes || [],
+                variants: row.product.variants || [],
+                addons: row.product.addons || []
+            });
         });
 
         // Sort grouped orders by created_at DESC
@@ -1119,6 +1112,7 @@ const orderHistory = async (req, res) => {
         });
     });
 };
+
 
 const handleOrderByRider = async (req, res, io) => {
   const { orderId, riderId, status } = req.body;

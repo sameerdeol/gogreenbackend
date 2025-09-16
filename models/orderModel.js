@@ -447,18 +447,11 @@ const Order = {
                 VU.custom_id AS vendor_custom_id,
 
                 -- Order item details
+                OI.id AS order_item_id,
+                OI.product_id,
                 OI.product_quantity,
                 OI.total_item_price,
-                OI.single_item_price,
-
-                -- Product details
-                P.id AS product_id,
-                P.name AS product_name,
-                P.size AS product_size,
-                P.featured_image,
-
-                -- One gallery image per product
-                GI.image_path AS product_gallery_image
+                OI.single_item_price
 
             FROM 
                 order_details OD
@@ -473,27 +466,83 @@ const Order = {
             -- Address
             JOIN user_addresses UA ON UA.id = OD.user_address_id
 
-            -- Order items and products
+            -- Order items
             JOIN order_items OI ON OI.order_id = OD.id
-            JOIN products P ON P.id = OI.product_id
 
-            -- Subquery to get one gallery image per product
-            LEFT JOIN (
-                SELECT 
-                    product_id,
-                    MIN(image_path) AS image_path
-                FROM 
-                    gallery_images
-                GROUP BY 
-                    product_id
-            ) GI ON GI.product_id = OI.product_id
-
-              WHERE OD.user_id = ?
+            WHERE OD.user_id = ?
 
             ORDER BY OD.created_at DESC
         `;
 
-        db.query(query, [user_id], callback);
+        db.query(query, [user_id], (err, orders) => {
+            if (err) return callback(err, null);
+            if (!orders.length) return callback(null, []);
+
+            // For each order item, fetch product details with gallery, attributes, variants, addons
+            const orderPromises = orders.map((orderItem) => {
+                return new Promise((resolve, reject) => {
+                    const productQuery = "SELECT id, name, size, featured_image FROM products WHERE id = ?";
+                    const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
+                    const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
+                    const variantsQuery = "SELECT id, type, value, price FROM product_variants WHERE product_id = ?";
+                    const addonsQuery = "SELECT id, name, price FROM product_addons WHERE product_id = ?";
+
+                    let product = {};
+
+                    Promise.all([
+                        // Product
+                        new Promise((res, rej) => {
+                            db.query(productQuery, [orderItem.product_id], (e, r) => {
+                                if (e) return rej(e);
+                                product = r[0] || {};
+                                res();
+                            });
+                        }),
+                        // Gallery
+                        new Promise((res, rej) => {
+                            db.query(galleryQuery, [orderItem.product_id], (e, r) => {
+                                if (e) return rej(e);
+                                product.gallery_images = r || [];
+                                res();
+                            });
+                        }),
+                        // Attributes
+                        new Promise((res, rej) => {
+                            db.query(attributesQuery, [orderItem.product_id], (e, r) => {
+                                if (e) return rej(e);
+                                product.attributes = r || [];
+                                res();
+                            });
+                        }),
+                        // Variants
+                        new Promise((res, rej) => {
+                            db.query(variantsQuery, [orderItem.product_id], (e, r) => {
+                                if (e) return rej(e);
+                                product.variants = r || [];
+                                res();
+                            });
+                        }),
+                        // Addons
+                        new Promise((res, rej) => {
+                            db.query(addonsQuery, [orderItem.product_id], (e, r) => {
+                                if (e) return rej(e);
+                                product.addons = r || [];
+                                res();
+                            });
+                        })
+                    ])
+                        .then(() => {
+                            orderItem.product = product;
+                            resolve(orderItem);
+                        })
+                        .catch((error) => reject(error));
+                });
+            });
+
+            Promise.all(orderPromises)
+                .then((ordersWithProducts) => callback(null, ordersWithProducts))
+                .catch((error) => callback(error, null));
+        });
     },
     handleOrder: (orderId, riderId, riderStatus) => {
     return new Promise((resolve, reject) => {
