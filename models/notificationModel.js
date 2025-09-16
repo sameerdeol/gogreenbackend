@@ -19,7 +19,7 @@ const Notification = {
         });
     },
 
-    getAllByUser: async (user_id, onlyUnread = 0) => {
+    getAllByUser: async (user_id, onlyUnread = false) => {
         return new Promise((resolve, reject) => {
             let sql = `
                 SELECT id, title, message, type, reference_id, data, is_read, created_at
@@ -34,16 +34,23 @@ const Notification = {
             db.query(sql, [user_id], (err, results) => {
                 if (err) return reject(err);
 
-                // Parse JSON data column
-                const notifications = results.map(n => ({
-                    ...n,
-                    data: n.data ? JSON.parse(n.data) : {}
-                }));
+                const notifications = results.map(n => {
+                    let parsedData = {};
+                    if (n.data) {
+                        try {
+                            parsedData = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
+                        } catch (err) {
+                            parsedData = n.data;
+                        }
+                    }
+                    return { ...n, data: parsedData };
+                });
 
                 resolve(notifications);
             });
         });
     },
+
     markAsRead: async (notificationId) => {
         return new Promise((resolve, reject) => {
             const sql = `UPDATE notifications SET is_read = 1 WHERE id = ?`;
