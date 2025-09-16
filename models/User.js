@@ -867,7 +867,7 @@ const User = {
             JOIN vendors v ON v.user_id = u.id
             LEFT JOIN favourite_vendors fv 
                 ON fv.vendor_id = v.user_id 
-                AND fv.user_id = ?
+                AND fv.user_id = 3
 
             -- ✅ LEFT JOIN to get vendor ratings
             LEFT JOIN (
@@ -886,8 +886,8 @@ const User = {
                 SELECT 1 
                 FROM products p2 
                 WHERE p2.vendor_id = v.user_id
-            );
-
+            )
+            LIMIT 0, 1000;
         `;
 
         const params = [user_id];
