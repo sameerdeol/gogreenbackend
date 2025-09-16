@@ -7,7 +7,7 @@ const {
     getAverageRating
 } = require('../controllers/ratingController');
 
-router.post('/add', giveRating);
+router.post('/add',verifyToken, giveRating);
 router.get('/average', getAverageRating);  
 
 module.exports = router;

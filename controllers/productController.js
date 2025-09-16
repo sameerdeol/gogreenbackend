@@ -230,6 +230,49 @@ const getProducts = (req, res) => {
     });
 };
 
+const getProductwithFilter = (req, res) => {
+    try {
+        const { filters } = req.body;
+
+        const limit = parseInt(filters?.limit) || 10;
+        const page = parseInt(filters?.page) || 1;
+        const offset = (page - 1) * limit;
+
+        Product.findWithFilters(filters, limit, offset, (err, result) => {
+            if (err) {
+                console.error("DB Error:", err);
+                return res.status(500).json({ success: false, message: 'Server error while fetching products' });
+            }
+
+            const { products, total } = result;
+
+            if (!products || products.length === 0) {
+                return res.status(200).json({
+                    success: true,
+                    message: "No products found",
+                    meta: { total: 0, page, limit, total_pages: 0 },
+                    products: []
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                meta: {
+                    total,
+                    page,
+                    limit,
+                    total_pages: Math.ceil(total / limit)
+                },
+                products
+            });
+        });
+    } catch (error) {
+        console.error("Controller Error:", error);
+        res.status(500).json({ success: false, message: 'Unexpected server error' });
+    }
+};
+
+
 
 
 // Update product by ID
@@ -568,5 +611,6 @@ module.exports = {
     getproductbycatvenID,
     getproductbybrandID,
     bestSellProducts,
-    getFilteredProducts
+    getFilteredProducts,
+    getProductwithFilter
 };

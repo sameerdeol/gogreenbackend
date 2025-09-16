@@ -220,6 +220,126 @@ const Product = {
         });
     },
 
+    findWithFilters: (filters, limit, offset, callback) => {
+        const { vendor_id, category_id, search_string, user_id } = filters || {};
+
+        let whereClauses = [];
+        let params = [];
+
+        if (vendor_id) {
+            whereClauses.push("p.vendor_id = ?");
+            params.push(vendor_id);
+        }
+
+        if (category_id && Array.isArray(category_id) && category_id.length > 0) {
+            whereClauses.push(`p.category_id IN (${category_id.map(() => '?').join(',')})`);
+            params.push(...category_id);
+        }
+
+        if (search_string) {
+            whereClauses.push("(p.name LIKE ? OR p.description LIKE ?)");
+            params.push(`%${search_string}%`, `%${search_string}%`);
+        }
+
+        let whereSQL = whereClauses.length > 0 ? "WHERE " + whereClauses.join(" AND ") : "";
+
+        // Main query with filters + pagination
+        const query = `
+            SELECT 
+                p.*, 
+                c.name AS category_name, 
+                s.name AS sub_category_name, 
+                b.name AS brand_name, 
+                b.categoryid AS brand_categoryid, 
+                b.brand_logo AS brandlogo, 
+                b.description AS brand_description, 
+                IFNULL(d.discount_percent, 0) AS discount_percent,
+                ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
+                CASE 
+                    WHEN f.product_id IS NOT NULL THEN TRUE 
+                    ELSE FALSE 
+                END AS is_favourite 
+            FROM products p 
+            LEFT JOIN product_categories c ON p.category_id = c.id 
+            LEFT JOIN product_subcategories s ON p.sub_category = s.id 
+            LEFT JOIN product_brands b ON p.brand_id = b.id 
+            LEFT JOIN product_discounts d ON p.id = d.product_id
+            LEFT JOIN favourite_products f 
+                ON p.id = f.product_id
+                AND f.user_id = ?
+            ${whereSQL}
+            ORDER BY p.created_at DESC
+            LIMIT ? OFFSET ?;
+        `;
+
+        // Add user_id for favourites, then pagination params
+        const finalParams = [user_id || null, ...params, limit, offset];
+
+        // Count query for pagination
+        const countQuery = `
+            SELECT COUNT(*) AS total 
+            FROM products p 
+            ${whereSQL};
+        `;
+
+        db.query(countQuery, params, (err, countResult) => {
+            if (err) return callback(err, null);
+
+            const total = countResult[0]?.total || 0;
+
+            db.query(query, finalParams, (err, results) => {
+                if (err) return callback(err, null);
+
+                const productPromises = results.map((product) => {
+                    return new Promise((resolve, reject) => {
+                        const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
+                        const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
+                        const variantsQuery = "SELECT id, type, value, price FROM product_variants WHERE product_id = ?";
+                        const addonsQuery = "SELECT id, name, price FROM product_addons WHERE product_id = ?";
+
+                        Promise.all([
+                            new Promise((res, rej) => {
+                                db.query(galleryQuery, [product.id], (err, data) => {
+                                    if (err) rej(err);
+                                    product.gallery_images = data || [];
+                                    res();
+                                });
+                            }),
+                            new Promise((res, rej) => {
+                                db.query(attributesQuery, [product.id], (err, data) => {
+                                    if (err) rej(err);
+                                    product.attributes = data || [];
+                                    res();
+                                });
+                            }),
+                            new Promise((res, rej) => {
+                                db.query(variantsQuery, [product.id], (err, data) => {
+                                    if (err) rej(err);
+                                    product.variants = data || [];
+                                    res();
+                                });
+                            }),
+                            new Promise((res, rej) => {
+                                db.query(addonsQuery, [product.id], (err, data) => {
+                                    if (err) rej(err);
+                                    product.addons = data || [];
+                                    res();
+                                });
+                            }),
+                        ])
+                            .then(() => resolve(product))
+                            .catch((error) => reject(error));
+                    });
+                });
+
+                Promise.all(productPromises)
+                    .then((productsWithDetails) => callback(null, { products: productsWithDetails, total }))
+                    .catch((error) => callback(error, null));
+            });
+        });
+    },
+
+
     
     
     // Update a product by ID (Includes sub_category)

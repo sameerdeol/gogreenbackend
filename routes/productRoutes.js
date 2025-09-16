@@ -20,7 +20,8 @@ const {
     getproductbycatvenID,
     getproductbybrandID,
     bestSellProducts,
-    getFilteredProducts
+    getFilteredProducts,
+    getProductwithFilter 
 } = require('../controllers/productController');
 
 // Route to create a new product - only managers can create products
@@ -34,6 +35,8 @@ router.post('/getallproductsbyvendorID/', verifyToken,getallproductsbyvendorID);
 router.post('/productbyid/', upload.none(), verifyToken,getProductById);
 // get list of products
 router.post('/getproducts/', verifyToken,getProducts);
+
+router.post('/getproductswithfilter/', verifyToken ,getProductwithFilter);
 
 // Route to update a product by ID - only managers can update products
 router.post('/update-products', verifyToken, uploadFields, updateProductById);
