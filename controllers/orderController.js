@@ -150,6 +150,7 @@ const createOrder = async (req, res) => {
                             userId: vendor_id,
                             title: "New Order Received",
                             body: `You have a new order #${order_id}`,
+                            saveToDB: false,
                             data: {
                                 order_id: order_id.toString(),
                                 order_uid: order_uid.toString(),
@@ -227,7 +228,8 @@ const updateOrderStatus = async (req, res) => {
                     userId: user_id,
                     title: "Order Confirmed",
                     body: `Your order from ${store_name} is being prepared.`,
-                    data: { order_id: orderIdStr, type: "order_update" }
+                    data: { order_id: orderIdStr, type: "order_update" },
+                    saveToDB: false
                 }));
 
                 // Notify nearby riders only if vendor_id exists
@@ -266,7 +268,8 @@ const updateOrderStatus = async (req, res) => {
                     userId: user_id,
                     title: "Order Rejected",
                     body: `Your order from ${store_name} was rejected. Please contact support if needed.`,
-                    data: { order_id: orderIdStr, type: "order_update" }
+                    data: { order_id: orderIdStr, type: "order_update" },
+                    saveToDB: false
                 }));
                 break;
 
@@ -855,7 +858,8 @@ const verifyOtp = async (req, res, io) => {
           userId: result.user_id,
           title: "Order Picked Up",
           body: "Your order is on the way!",
-          data: { order_id: order_id.toString(), type: "order_update" }
+          data: { order_id: order_id.toString(), type: "order_update" },
+          saveToDB: false
         });
 
         // ✅ Emit socket event for OTP verified
@@ -1146,6 +1150,7 @@ const handleOrderByRider = async (req, res, io) => {
               rider_phone: orderDetails.rider_number.toString(),
               type: "order_update",
             },
+             saveToDB: false
           });
 
           io.emit(`stop-buzzer-${orderIdStr}`, { orderId: orderIdStr });
@@ -1177,6 +1182,7 @@ const handleOrderByRider = async (req, res, io) => {
             title: "OTP for Vendor",
             body: `Show this OTP to the vendor: ${otp}`,
             data: { order_id: orderIdStr, type: "otp_info" },
+            saveToDB: false
           });
         } catch (e) {
           console.error("OTP notification error:", e);
@@ -1206,6 +1212,7 @@ const handleOrderByRider = async (req, res, io) => {
             title: "Order Delivered",
             body: "Your order has been delivered successfully.",
             data: { order_id: orderIdStr, type: "order_update" },
+            saveToDB: false
           });
         } catch (e) {
           console.error("Delivery notification error:", e);

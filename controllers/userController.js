@@ -255,7 +255,8 @@ const verifyUser = (req, res) => {
             const notificationResult = await sendNotificationToUser({
                 userId,
                 title: notificationTitle,
-                body: notificationBody
+                body: notificationBody,
+                saveToDB: false
             });
 
             if (!notificationResult.success) {
