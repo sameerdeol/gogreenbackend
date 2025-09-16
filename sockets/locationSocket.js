@@ -27,11 +27,6 @@ module.exports.emitRiderLocationToCustomer = (customerId, riderId, location) => 
     return;
   }
 
-  console.log(
-    `🔄 Emitting riderLocationUpdate to customer_${customerId} | Rider: ${riderId} | Location:`,
-    location
-  );
-
   ioInstance.to(`customer_${customerId}`).emit('riderLocationUpdate', {
     rider_id: riderId,
     ...location
