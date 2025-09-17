@@ -4,7 +4,6 @@ const sendNotificationToUser = require("../utils/sendNotificationToUser");
 const {User} = require("../models/User"); // ensure this exports getUserDetailsByIdAsync + getNearbyRidersWithPolylines
 
 const createParcel = async (req, res) => {
-
     try {
         const {
             pickup,
@@ -22,10 +21,16 @@ const createParcel = async (req, res) => {
             return res.status(400).json({ error: "Invalid parcel data" });
         }
 
+        // ✅ Format deliveryDate to MySQL-compatible format (YYYY-MM-DD HH:MM:SS)
+        const formattedDeliveryDate = new Date(deliveryDate)
+            .toISOString()
+            .slice(0, 19)
+            .replace('T', ' ');
+
         const parcel_uid = `PARCEL${Date.now()}`;
         const totalWeight = parcel.reduce((sum, p) => sum + (Number(p.weight) || 0), 0);
 
-        // ✅ Insert into DB
+        // ✅ Insert into DB with formatted date
         ParcelModel.addParcel(
             userId,
             pickup.address,
@@ -37,7 +42,7 @@ const createParcel = async (req, res) => {
             totalWeight,
             JSON.stringify(parcel),
             parcelComment,
-            deliveryDate,
+            formattedDeliveryDate,  // ✅ Use formatted date here
             scheduledComments,
             parcel_uid,
             async (err, result) => {
@@ -55,7 +60,6 @@ const createParcel = async (req, res) => {
                 });
 
                 try {
-                    // Inside your async controller
                     const userdata = await new Promise((resolve, reject) => {
                         User.findById(userId, (err, user) => {
                             if (err) return reject(err);
@@ -66,17 +70,16 @@ const createParcel = async (req, res) => {
                     const username = userdata
                         ? `${userdata.firstname ?? ""} ${userdata.lastname ?? ""}`.trim()
                         : "User";
+
                     const scheduledDate = new Date(deliveryDate);
 
                     if (scheduledDate > new Date()) {
-
                         schedule.scheduleJob(scheduledDate, async () => {
-
                             User.getNearbyRidersWithPolylinesForParcel(
                                 parcel_id,
                                 pickup.coords.lat,
                                 pickup.coords.lng,
-                                3, // radius in KM
+                                3,
                                 async (err, nearbyRiders) => {
                                     if (err) return console.error("Error getting nearby riders:", err);
                                     for (const rider of nearbyRiders) {
@@ -90,7 +93,7 @@ const createParcel = async (req, res) => {
                                                 customer: username.toString(),
                                                 pickup: pickup.address,
                                                 drop: drop.address,
-                                                deliveryDate: deliveryDate,
+                                                deliveryDate: formattedDeliveryDate,
                                                 rider_to_pickup_distance_km: String(rider.distance_km ?? "0.00")
                                             }
                                         });
@@ -100,7 +103,6 @@ const createParcel = async (req, res) => {
                         });
                     } else {
                         console.warn(`⚠️ Delivery date is in the past, notifying riders immediately for parcel #${parcel_id}`);
-
                         User.getNearbyRidersWithPolylines(
                             parcel_id,
                             null,
@@ -111,7 +113,6 @@ const createParcel = async (req, res) => {
                             3,
                             async (err, nearbyRiders) => {
                                 if (err) return console.error("Error getting nearby riders:", err);
-
                                 for (const rider of nearbyRiders) {
                                     await sendNotificationToUser({
                                         userId: String(rider.user_id || ""),
@@ -123,7 +124,7 @@ const createParcel = async (req, res) => {
                                             customer: username.toString(),
                                             pickup: pickup.address,
                                             drop: drop.address,
-                                            deliveryDate: deliveryDate,
+                                            deliveryDate: formattedDeliveryDate,
                                             parcelComment: parcelComment || "",
                                             scheduledComments: scheduledComments || "",
                                             rider_to_pickup_distance_km: String(rider.distance_km ?? "0.00")
@@ -145,5 +146,6 @@ const createParcel = async (req, res) => {
         }
     }
 };
+
 
 module.exports = { createParcel };
