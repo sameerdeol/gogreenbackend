@@ -150,6 +150,19 @@ const createParcel = async (req, res) => {
     }
 };
 
+const getParcel = (req, res) => {
+    ParcelModel.findall(req.params.user_id, (err, result) => {
+        if (err) return res.status(500).json({ success: false, message: 'Error fetching parcels', error: err });
+        if (!result.length) return res.status(404).json({ success: false, message: 'parcels not found' });
+        res.status(200).json({ success: true, parcels: result });
+    });
+};
+const getParcelbyID = (req, res) => {
+    ParcelModel.findById(req.params.id,req.params.user_id, (err, result) => {
+        if (err) return res.status(500).json({ success: false, message: 'Error fetching parcels', error: err });
+        if (!result) return res.status(404).json({ success: false, message: 'parcels not found' });
+        res.status(200).json({ success: true, parcels: result});
+    });
+};
 
-
-module.exports = { createParcel };
+module.exports = { createParcel, getParcel, getParcelbyID };
