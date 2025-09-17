@@ -1167,6 +1167,7 @@ const User = {
                 if (err) return callback(err);
                 if (!riders.length) return callback(null, []);
 
+                console.log("nearbyRiders",riders)
                 getDistanceMatrix(vendorLat, vendorLng, riders, customer_lat, customer_lng, (err, results) => {
                     if (err) return callback(err);
 
