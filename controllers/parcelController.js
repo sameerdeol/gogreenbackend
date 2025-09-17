@@ -42,7 +42,7 @@ const createParcel = async (req, res) => {
             totalWeight,
             JSON.stringify(parcel),
             parcelComment,
-            formattedDeliveryDate,  // ✅ Use formatted date here
+            formattedDeliveryDate,
             scheduledComments,
             parcel_uid,
             async (err, result) => {
@@ -53,10 +53,13 @@ const createParcel = async (req, res) => {
 
                 const parcel_id = result.insertId;
 
+                // ✅ Send a nice success message to frontend
                 res.status(201).json({
-                    message: "Parcel created successfully",
+                    success: true,
+                    message: `✅ Parcel #${parcel_uid} created successfully and scheduled for delivery on ${formattedDeliveryDate}`,
                     parcel_id,
-                    parcel_uid
+                    parcel_uid,
+                    delivery_date: formattedDeliveryDate
                 });
 
                 try {
@@ -146,6 +149,7 @@ const createParcel = async (req, res) => {
         }
     }
 };
+
 
 
 module.exports = { createParcel };
