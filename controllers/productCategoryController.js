@@ -179,6 +179,16 @@ const deleteCategoryById = async (req, res) => {
 };
 
 const getAllCatAndVendor = (req, res) => {
+    // Helper function to convert 24-hour time to 12-hour with AM/PM
+    const formatTo12Hour = (timeString) => {
+        if (!timeString) return null;
+        const [hour, minute] = timeString.split(':').map(Number);
+
+        let period = hour >= 12 ? 'PM' : 'AM';
+        let formattedHour = hour % 12 || 12; // converts 0 -> 12 for midnight
+        return `${formattedHour}:${minute.toString().padStart(2, '0')} ${period}`;
+    };
+
     ProductCategory.getAllCategoriesWithVendors((err, results) => {
         if (err) {
             return res.status(500).json({
@@ -190,6 +200,13 @@ const getAllCatAndVendor = (req, res) => {
 
         const categoryMap = {};
 
+        // Current time in India
+        const now = new Date();
+        const indiaTime = new Date(
+            now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+        );
+        const nowMinutes = indiaTime.getHours() * 60 + indiaTime.getMinutes();
+
         results.forEach(row => {
             if (!categoryMap[row.category_id]) {
                 categoryMap[row.category_id] = {
@@ -197,6 +214,18 @@ const getAllCatAndVendor = (req, res) => {
                     name: row.category_name,
                     vendors: []
                 };
+            }
+
+            // Calculate vendor open/close status
+            let is_vendor_opened = false;
+            if (row.vendor_start_time && row.vendor_close_time) {
+                const [startHour, startMinute] = row.vendor_start_time.split(':').map(Number);
+                const [closeHour, closeMinute] = row.vendor_close_time.split(':').map(Number);
+
+                const startMinutes = startHour * 60 + startMinute;
+                const closeMinutes = closeHour * 60 + closeMinute;
+
+                is_vendor_opened = nowMinutes >= startMinutes && nowMinutes < closeMinutes;
             }
 
             categoryMap[row.category_id].vendors.push({
@@ -213,11 +242,10 @@ const getAllCatAndVendor = (req, res) => {
                 profile_pic: row.profile_pic,
                 store_image: row.store_image,
                 vendor_thumb: row.vendor_thumb,
-                vendor_start_time: row.vendor_start_time,
-                vendor_close_time: row.vendor_close_time,
-                featured_images: row.featured_images 
-                    ? row.featured_images.split(',') 
-                    : []  // Safely parse to array
+                vendor_start_time: formatTo12Hour(row.vendor_start_time),
+                vendor_close_time: formatTo12Hour(row.vendor_close_time),
+                featured_images: row.featured_images ? row.featured_images.split(',') : [],
+                is_vendor_opened
             });
         });
 
