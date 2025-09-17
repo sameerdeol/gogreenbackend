@@ -188,15 +188,25 @@ const getProductById = (req, res) => {
 
 // Get product by VendorID
 const getallproductsbyvendorID = (req, res) => {
-    const {vendor_id, searchTerm, user_id} = req.body;
+    const { vendor_id, searchTerm, user_id } = req.body;
 
-    Product.findallByVendorId(vendor_id,searchTerm,user_id, (err, product) => {
-        if (err || !product) {
-            return res.status(404).json({ success: false, message: 'Product not found' });
+    console.log("📥 Incoming request body:", req.body);
+
+    Product.findallByVendorId(vendor_id, searchTerm, user_id, (err, product) => {
+        console.log("🔍 Model error:", err);
+        console.log("📦 Model returned product:", product);
+
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
         }
+        if (!product || product.length === 0) {
+            return res.status(404).json({ success: false, message: 'No products found' });
+        }
+
         res.status(200).json({ success: true, product });
     });
 };
+
 
 
 const getsingleproductsbyvendorID = (req, res) => {

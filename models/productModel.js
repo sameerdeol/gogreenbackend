@@ -530,106 +530,105 @@ const Product = {
     },
 
 
-    findallByVendorId: (vendorID, searchTerm, userID, callback) => {
-        const query = `
+findallByVendorId: (vendorID, searchTerm, userID, callback) => {
+    const safeSearch = searchTerm ? `%${searchTerm}%` : "%%";
+    const safeUserID = userID || 0; // 0 means no user logged in
+
+    const query = `
+        SELECT 
+            p.*, 
+            CASE 
+                WHEN f.product_id IS NOT NULL THEN TRUE 
+                ELSE FALSE 
+            END AS is_favourite,
+            c.name AS category_name, 
+            s.name AS sub_category_name, 
+            b.name AS brand_name, 
+            b.categoryid AS brand_categoryid, 
+            b.brand_logo AS brandlogo, 
+            b.description AS brand_description,
+            IFNULL(d.discount_percent, 0) AS discount_percent,
+            ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
+            d.updated_at AS discount_updated_at,
+            IFNULL(r.avg_rating, 0) AS average_rating,
+            IFNULL(r.total_ratings, 0) AS total_ratings,
+            CASE 
+                WHEN p.name LIKE ? THEN 1 
+                ELSE 0 
+            END AS match_priority
+        FROM products p
+        LEFT JOIN product_categories c ON p.category_id = c.id 
+        LEFT JOIN product_subcategories s ON p.sub_category = s.id 
+        LEFT JOIN product_brands b ON p.brand_id = b.id
+        LEFT JOIN product_discounts d ON p.id = d.product_id
+        LEFT JOIN favourite_products f 
+            ON f.product_id = p.id AND f.user_id = ?
+        LEFT JOIN (
             SELECT 
-                p.*, 
-                CASE 
-                    WHEN f.product_id IS NOT NULL THEN TRUE 
-                    ELSE FALSE 
-                END AS is_favourite,
-                c.name AS category_name, 
-                s.name AS sub_category_name, 
-                b.name AS brand_name, 
-                b.categoryid AS brand_categoryid, 
-                b.brand_logo AS brandlogo, 
-                b.description AS brand_description,
-                IFNULL(d.discount_percent, 0) AS discount_percent,
-                ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
-                d.updated_at AS discount_updated_at,
-                IFNULL(r.avg_rating, 0) AS average_rating,
-                IFNULL(r.total_ratings, 0) AS total_ratings,
-                CASE 
-                    WHEN p.name LIKE ? THEN 1 
-                    ELSE 0 
-                END AS match_priority
-            FROM products p
-            LEFT JOIN product_categories c ON p.category_id = c.id 
-            LEFT JOIN product_subcategories s ON p.sub_category = s.id 
-            LEFT JOIN product_brands b ON p.brand_id = b.id
-            LEFT JOIN product_discounts d ON p.id = d.product_id
-            LEFT JOIN favourite_products f 
-                ON f.product_id = p.id AND f.user_id = ?
-            LEFT JOIN (
-                SELECT 
-                    rateable_id,
-                    ROUND(AVG(rating), 1) AS avg_rating,
-                    COUNT(*) AS total_ratings
-                FROM ratings
-                WHERE rateable_type = 1
-                GROUP BY rateable_id
-            ) r ON r.rateable_id = p.id
-            WHERE p.vendor_id = ?
-            AND p.name LIKE ?
-            ORDER BY match_priority DESC, p.id DESC
-            LIMIT 0, 1000;
-        `;
+                rateable_id,
+                ROUND(AVG(rating), 1) AS avg_rating,
+                COUNT(*) AS total_ratings
+            FROM ratings
+            WHERE rateable_type = 1
+            GROUP BY rateable_id
+        ) r ON r.rateable_id = p.id
+        WHERE p.vendor_id = ?
+        AND p.name LIKE ?
+        ORDER BY match_priority DESC, p.id DESC
+        LIMIT 0, 1000;
+    `;
 
-        const likeSearch = `%${searchTerm}%`; // Prepare the wildcard search string
+    db.query(query, [safeSearch, safeUserID, vendorID, safeSearch], (err, results) => {
+        if (err) return callback(err, null);
+        if (!results.length) return callback(null, []);
 
-        db.query(query, [likeSearch, userID, vendorID, likeSearch], (err, results) => {
-            if (err) return callback(err, null);
-            if (!results.length) return callback(null, []);
+        const productPromises = results.map((product) => {
+            return new Promise((resolve, reject) => {
+                const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
+                const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
+                const variantsQuery = "SELECT id, type, value, price FROM product_variants WHERE product_id = ?";
+                const addonsQuery = "SELECT id, name, price FROM product_addons WHERE product_id = ?";
 
-            const productPromises = results.map((product) => {
-                return new Promise((resolve, reject) => {
-                    const galleryQuery = "SELECT image_path FROM gallery_images WHERE product_id = ?";
-                    const attributesQuery = "SELECT attribute_key, attribute_value FROM product_attributes WHERE product_id = ?";
-                    const variantsQuery = "SELECT id, type, value, price FROM product_variants WHERE product_id = ?";
-                    const addonsQuery = "SELECT id, name, price FROM product_addons WHERE product_id = ?";
-
-                    Promise.all([
-                        new Promise((res, rej) => {
-                            db.query(galleryQuery, [product.id], (e, r) => {
-                                if (e) return rej(e);
-                                product.gallery_images = r || [];
-                                res();
-                            });
-                        }),
-                        new Promise((res, rej) => {
-                            db.query(attributesQuery, [product.id], (e, r) => {
-                                if (e) return rej(e);
-                                product.attributes = r || [];
-                                res();
-                            });
-                        }),
-                        new Promise((res, rej) => {
-                            db.query(variantsQuery, [product.id], (e, r) => {
-                                if (e) return rej(e);
-                                product.variants = r || [];
-                                res();
-                            });
-                        }),
-                        new Promise((res, rej) => {
-                            db.query(addonsQuery, [product.id], (e, r) => {
-                                if (e) return rej(e);
-                                product.addons = r || [];
-                                res();
-                            });
-                        })
-                    ])
-                        .then(() => resolve(product))
-                        .catch((error) => reject(error));
-                });
+                Promise.all([
+                    new Promise((res, rej) => {
+                        db.query(galleryQuery, [product.id], (e, r) => {
+                            if (e) return rej(e);
+                            product.gallery_images = r || [];
+                            res();
+                        });
+                    }),
+                    new Promise((res, rej) => {
+                        db.query(attributesQuery, [product.id], (e, r) => {
+                            if (e) return rej(e);
+                            product.attributes = r || [];
+                            res();
+                        });
+                    }),
+                    new Promise((res, rej) => {
+                        db.query(variantsQuery, [product.id], (e, r) => {
+                            if (e) return rej(e);
+                            product.variants = r || [];
+                            res();
+                        });
+                    }),
+                    new Promise((res, rej) => {
+                        db.query(addonsQuery, [product.id], (e, r) => {
+                            if (e) return rej(e);
+                            product.addons = r || [];
+                            res();
+                        });
+                    })
+                ])
+                    .then(() => resolve(product))
+                    .catch((error) => reject(error));
             });
-
-            Promise.all(productPromises)
-                .then((productsWithAllDetails) => callback(null, productsWithAllDetails))
-                .catch((error) => callback(error, null));
         });
-    },
 
-  
+        Promise.all(productPromises)
+            .then((productsWithAllDetails) => callback(null, productsWithAllDetails))
+            .catch((error) => callback(error, null));
+    });
+},
 
 
 //find single produc with vendor id
