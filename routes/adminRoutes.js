@@ -6,6 +6,6 @@ const {
 } = require('../controllers/adminController');
 
 // Routes for User Addresses
-router.get('/dashboard-data', checkManagerRole, adminDashboardData);
+router.get('/dashboard-data', adminDashboardData);
 
 module.exports = router;

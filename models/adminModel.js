@@ -16,7 +16,7 @@ const adminModel = {
             (SELECT SUM(total_price) FROM order_details WHERE YEAR(created_at) = YEAR(CURDATE()) AND MONTH(created_at) = MONTH(CURDATE())) AS total_revenue_this_month,
 
             -- Riders
-            (SELECT COUNT(*) FROM users WHERE role_id = 4 AND status = 1) AS total_riders,
+            (SELECT COUNT(*) FROM users WHERE role_id = 4 AND status = 1) AS total_active_riders,
 
             -- Customers
             (SELECT COUNT(*) FROM users WHERE role_id = 5) AS total_customers,
