@@ -6,6 +6,7 @@ const generateCustomId = require('../utils/generateCustomId');
 const path = require('path');
 const deleteS3Image = require('../utils/deleteS3Image');
 const uploadToS3 = require('../utils/s3Upload');
+const { messaging } = require('firebase-admin');
 require('dotenv').config();
 
 const vendorSignup = async (req, res) => {
@@ -1084,6 +1085,23 @@ const vendorDashboardAnalytics = (req, res) => {
     );
 };
 
+const getVendorStatus = (req, res) => {
+    const { user_id,role_id } = req.body;
+
+    if (!user_id || !role_id) {
+        return res.status(400).json({ success: false, message: "user_id and role_id ID is required" });
+    }
+
+    User.getVendorStatus(user_id,role_id, (err, result) => {
+        if (err) {
+            console.error("result Error:", err);
+            return res.status(500).json({ success: false, message: "Internal Server Error" });
+        }
+
+        return res.json({ success: true,message:"status get successfully", data: result });
+    });
+}
+
 
 
 
@@ -1107,5 +1125,6 @@ module.exports = {
     vendorAnalytics,
     allVendorsforAdminbySubcatID,
     VendorbyID,
-    vendorDashboardAnalytics
+    vendorDashboardAnalytics,
+    getVendorStatus
 }; 

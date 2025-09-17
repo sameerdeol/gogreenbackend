@@ -1888,7 +1888,15 @@ const User = {
             if (err) return callback(err);
             callback(null, results);
         });
-    }
+    },
+    getVendorStatus: (user_id,role_id, callback) => {
+        const query = `SELECT status FROM users WHERE id = ? AND role_id = ?`;
+        db.query(query, [user_id,role_id], (err, results) => {
+            if (err) return callback(err, null);
+            if (results.length === 0) return callback(null, null);
+            callback(null, results[0]); // returns a single user object
+        });
+    }, 
 
 
 
