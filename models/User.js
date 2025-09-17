@@ -1335,9 +1335,11 @@ const User = {
                 v.sin_code, 
                 v.store_name, 
                 v.profile_pic, 
-                v.user_id AS vendor_id
+                v.user_id AS vendor_id,
+                ub.*
             FROM users u
             JOIN vendors v ON v.user_id = u.id
+            JOIN users_bank_details ub on ub.user_id = u.id
             WHERE u.role_id = 3 and u.is_verified = 1
         `;
 
@@ -1379,9 +1381,13 @@ const User = {
                 r.rider_lat,
                 r.rider_lng,
                 r.user_id AS rider_id,
-                r.vehicle_registration_number
+                r.vehicle_registration_number,
+                r.registration_doc,
+                r.rider_license_image,
+                ub.*
             FROM users u
             JOIN delivery_partners r ON r.user_id = u.id
+            JOIN users_bank_details ub on ub.user_id = u.id
             WHERE u.role_id = 4 and u.is_verified = 1
         `;
 
