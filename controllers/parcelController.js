@@ -4,7 +4,6 @@ const sendNotificationToUser = require("../utils/sendNotificationToUser");
 const {User} = require("../models/User"); // ensure this exports getUserDetailsByIdAsync + getNearbyRidersWithPolylines
 
 const createParcel = async (req, res) => {
-    console.log("📦 Parcel request received");
 
     try {
         const {
@@ -70,10 +69,8 @@ const createParcel = async (req, res) => {
                     const scheduledDate = new Date(deliveryDate);
 
                     if (scheduledDate > new Date()) {
-                        console.log(`⏰ Notification scheduled for parcel #${parcel_id} at ${scheduledDate}`);
 
                         schedule.scheduleJob(scheduledDate, async () => {
-                            console.log(`🚚 Triggering rider search for parcel #${parcel_id}`);
 
                             User.getNearbyRidersWithPolylinesForParcel(
                                 parcel_id,

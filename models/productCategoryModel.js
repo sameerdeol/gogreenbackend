@@ -114,7 +114,7 @@ const ProductCategory = {
 
                 GROUP_CONCAT(DISTINCT p.featured_image) AS featured_images
 
-            FROM product_categories c
+            FROM product_categories c   
 
             INNER JOIN products p ON p.category_id = c.id
             INNER JOIN vendors v ON v.user_id = p.vendor_id

@@ -530,14 +530,14 @@ const Product = {
     },
 
 
-    findallByVendorId: (vendorID, searchTerm,userID, callback) => {
+    findallByVendorId: (vendorID, searchTerm, userID, callback) => {
         const query = `
             SELECT 
                 p.*, 
                 CASE 
                     WHEN f.product_id IS NOT NULL THEN TRUE 
                     ELSE FALSE 
-                END AS is_favourite,   -- ✅ now dynamic from favourites table
+                END AS is_favourite,
                 c.name AS category_name, 
                 s.name AS sub_category_name, 
                 b.name AS brand_name, 
@@ -547,35 +547,37 @@ const Product = {
                 IFNULL(d.discount_percent, 0) AS discount_percent,
                 ROUND(p.price - (p.price * IFNULL(d.discount_percent, 0) / 100), 2) AS discounted_value,
                 d.updated_at AS discount_updated_at,
-                -- ✅ Average rating for product (only where rateable_type = 1)
                 IFNULL(r.avg_rating, 0) AS average_rating,
                 IFNULL(r.total_ratings, 0) AS total_ratings,
                 CASE 
-                    WHEN ? IS NOT NULL AND p.name LIKE CONCAT('%', ?, '%') THEN 1 
+                    WHEN p.name LIKE ? THEN 1 
                     ELSE 0 
                 END AS match_priority
-            FROM products p 
+            FROM products p
             LEFT JOIN product_categories c ON p.category_id = c.id 
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
             LEFT JOIN product_brands b ON p.brand_id = b.id
             LEFT JOIN product_discounts d ON p.id = d.product_id
             LEFT JOIN favourite_products f 
-                ON f.product_id = p.id AND f.user_id = ?   -- ✅ match favourite for given user
-            -- ✅ LEFT JOIN subquery to get ratings for products
+                ON f.product_id = p.id AND f.user_id = ?
             LEFT JOIN (
                 SELECT 
                     rateable_id,
                     ROUND(AVG(rating), 1) AS avg_rating,
                     COUNT(*) AS total_ratings
                 FROM ratings
-                WHERE rateable_type = 1   -- only products
+                WHERE rateable_type = 1
                 GROUP BY rateable_id
             ) r ON r.rateable_id = p.id
             WHERE p.vendor_id = ?
-            ORDER BY match_priority DESC, p.id DESC;
+            AND p.name LIKE ?
+            ORDER BY match_priority DESC, p.id DESC
+            LIMIT 0, 1000;
         `;
 
-        db.query(query, [searchTerm, searchTerm, userID, vendorID], (err, results) => {
+        const likeSearch = `%${searchTerm}%`; // Prepare the wildcard search string
+
+        db.query(query, [likeSearch, userID, vendorID, likeSearch], (err, results) => {
             if (err) return callback(err, null);
             if (!results.length) return callback(null, []);
 
@@ -587,7 +589,6 @@ const Product = {
                     const addonsQuery = "SELECT id, name, price FROM product_addons WHERE product_id = ?";
 
                     Promise.all([
-                        // Gallery
                         new Promise((res, rej) => {
                             db.query(galleryQuery, [product.id], (e, r) => {
                                 if (e) return rej(e);
@@ -595,7 +596,6 @@ const Product = {
                                 res();
                             });
                         }),
-                        // Attributes
                         new Promise((res, rej) => {
                             db.query(attributesQuery, [product.id], (e, r) => {
                                 if (e) return rej(e);
@@ -603,7 +603,6 @@ const Product = {
                                 res();
                             });
                         }),
-                        // Variants
                         new Promise((res, rej) => {
                             db.query(variantsQuery, [product.id], (e, r) => {
                                 if (e) return rej(e);
@@ -611,7 +610,6 @@ const Product = {
                                 res();
                             });
                         }),
-                        // Addons
                         new Promise((res, rej) => {
                             db.query(addonsQuery, [product.id], (e, r) => {
                                 if (e) return rej(e);
@@ -630,6 +628,7 @@ const Product = {
                 .catch((error) => callback(error, null));
         });
     },
+
   
 
 
