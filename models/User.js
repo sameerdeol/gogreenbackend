@@ -1429,6 +1429,7 @@ const User = {
         const sql = 'SELECT * FROM vendor_type where id = ?';
         db.query(sql, [id],callback);
     },
+// ✅ Model function
     addBankDetails: (user_id, data, callback) => {
         const {
             role_id,
@@ -1468,10 +1469,13 @@ const User = {
 
         db.query(query, values, (err, result) => {
             if (err) {
+                console.error("❌ DB Error:", err);
                 return callback(err, null);
             }
+            callback(null, result);
         });
     },
+
 
     userBankDetails: (user_id, role_id, callback) => {
         const sql = `

@@ -514,7 +514,6 @@ const userBankDetails = async (req, res) => {
             account_number,
             bank_name
         } = req.body;
-
         if (!user_id) {
             return res.status(400).json({ success: false, message: 'user_id is required' });
         }
@@ -536,7 +535,6 @@ const userBankDetails = async (req, res) => {
             bank_name,
             void_cheque: await fileUpload('void_cheque')
         };
-
         const filteredData = Object.fromEntries(
             Object.entries(userData).filter(([_, value]) => value !== undefined && value !== null)
         );

@@ -47,7 +47,7 @@ router.post('/createadmins', authenticateToken, (req, res) => {
 });
 
 router.post('/adminlogin', loginadmin);
-router.post('/addbankdetails', verifyToken, uploadFields, userBankDetails);
+router.post('/addbankdetails', uploadFields, userBankDetails);
 router.post('/vendor-statusbyadmin', authenticateToken, vendorController.vendorStatus);
 
 module.exports = router;
