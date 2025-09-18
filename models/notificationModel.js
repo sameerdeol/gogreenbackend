@@ -22,14 +22,31 @@ const Notification = {
     getAllByUser: async (user_id, onlyUnread = false) => {
         return new Promise((resolve, reject) => {
             let sql = `
-                SELECT id, title, message, type, reference_id, data, is_read, created_at
-                FROM notifications
-                WHERE user_id = ?
+                SELECT 
+                    n.id, 
+                    n.title, 
+                    n.message, 
+                    n.type, 
+                    n.reference_id, 
+                    n.data,
+                    n.is_read,
+                    n.created_at,
+                    o.vendor_id,
+                    v.vendor_lng,
+                    v.vendor_lat
+                FROM notifications n
+                LEFT JOIN order_details o 
+                    ON o.id = JSON_UNQUOTE(JSON_EXTRACT(n.data, '$.order_id'))
+                LEFT JOIN vendors v
+                    ON v.user_id = o.vendor_id
+                WHERE n.user_id = ?
             `;
+
             if (onlyUnread) {
-                sql += ' AND is_read = 0';
+                sql += ' AND n.is_read = 0';
             }
-            sql += ' ORDER BY created_at DESC';
+
+            sql += ' ORDER BY n.created_at DESC';
 
             db.query(sql, [user_id], (err, results) => {
                 if (err) return reject(err);
@@ -50,6 +67,7 @@ const Notification = {
             });
         });
     },
+
 
     markAsRead: async (notificationId) => {
         return new Promise((resolve, reject) => {
