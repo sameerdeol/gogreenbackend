@@ -92,7 +92,7 @@ const NotificationsOfUser = async (req, res) => {
     }
 
     try {
-        const notifications = await Notification.getAllByUser(user_id, id, onlyUnread);
+        const notifications = await Notification.getAllByUserandID(user_id, id, onlyUnread);
 
         return res.status(200).json({
             success: true,
