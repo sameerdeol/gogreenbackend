@@ -19,7 +19,7 @@ const Notification = {
         });
     },
 
-    getAllByUser: async (user_id, onlyUnread = false) => {
+    getAllByUser: async (user_id, id, onlyUnread = false) => {
         return new Promise((resolve, reject) => {
             let sql = `
                 SELECT 
@@ -36,10 +36,10 @@ const Notification = {
                     v.vendor_lat
                 FROM notifications n
                 LEFT JOIN order_details o 
-                    ON o.id = JSON_UNQUOTE(JSON_EXTRACT(n.data, '$.order_id'))
+                    ON JSON_VALID(n.data) AND o.id = JSON_UNQUOTE(JSON_EXTRACT(n.data, '$.order_id'))
                 LEFT JOIN vendors v
                     ON v.user_id = o.vendor_id
-                WHERE n.user_id = ?
+                WHERE n.user_id = ? AND n.id = ?
             `;
 
             if (onlyUnread) {
@@ -48,7 +48,7 @@ const Notification = {
 
             sql += ' ORDER BY n.created_at DESC';
 
-            db.query(sql, [user_id], (err, results) => {
+            db.query(sql, [user_id, id], (err, results) => {
                 if (err) return reject(err);
 
                 const notifications = results.map(n => {
@@ -57,7 +57,7 @@ const Notification = {
                         try {
                             parsedData = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
                         } catch (err) {
-                            parsedData = n.data;
+                            parsedData = n.data; // fallback to raw data
                         }
                     }
                     return { ...n, data: parsedData };
@@ -67,6 +67,7 @@ const Notification = {
             });
         });
     },
+
 
 
     markAsRead: async (notificationId) => {

@@ -79,6 +79,38 @@ const allNotificationsOfUser = async (req, res) => {
     }
 };
 
+const NotificationsOfUser = async (req, res) => {
+    const { user_id, id } = req.params;
+    const onlyUnread = req.query.onlyUnread === 'true';
+
+    // ✅ Validate both required params
+    if (!user_id) {
+        return res.status(400).json({ success: false, message: 'user_id is required.' });
+    }
+    if (!id) {
+        return res.status(400).json({ success: false, message: 'id is required.' });
+    }
+
+    try {
+        const notifications = await Notification.getAllByUser(user_id, id, onlyUnread);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Notifications fetched successfully',
+            data: notifications
+        });
+    } catch (err) {
+        console.error('❌ Error fetching notifications:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Error fetching notifications',
+            error: err.message
+        });
+    }
+};
+
+
+
 
 
 const markNotificationAsRead = async (req, res) => {
@@ -110,5 +142,6 @@ module.exports = {
     sendNotification,
     removeFcmToken,
     allNotificationsOfUser,
-    markNotificationAsRead
+    markNotificationAsRead,
+    NotificationsOfUser
 };
