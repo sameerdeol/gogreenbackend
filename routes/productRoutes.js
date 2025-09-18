@@ -39,7 +39,7 @@ router.post('/getproducts/', verifyToken,getProducts);
 router.post('/getproductswithfilter/', verifyToken ,getProductwithFilter);
 
 // Route to update a product by ID - only managers can update products
-router.post('/update-products', verifyToken, uploadFields, updateProductById);
+router.post('/update-products', uploadFields, updateProductById);
 router.delete('/delete-product', verifyToken, uploadFields, deleteProductById);
 
 // Route to delete a product by ID - only managers can delete products

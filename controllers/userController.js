@@ -126,6 +126,9 @@ const loginadmin = async (req, res) => {
             if (!isValid) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
+            if (user.role_id != 1) {
+                return res.status(401).json({ message: 'you are not superadmin unauthorized' });
+            }
 
             // ✅ Generate JWT token with expiration
             const token = jwt.sign(
