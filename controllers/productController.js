@@ -283,9 +283,6 @@ const getProductwithFilter = (req, res) => {
 };
 
 
-
-
-// Update product by ID
 const updateProductById = async (req, res) => {
     try {
         const { id, vendor_id } = req.body;
