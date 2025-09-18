@@ -1097,6 +1097,7 @@ const orderHistory = async (req, res) => {
             if (!order.products[row.product_id]) {
                 order.products[row.product_id] = {
                     product_id: row.product_id,
+                    name: row.name,
                     product_quantity: row.product_quantity,
                     total_item_price: row.total_item_price,
                     single_item_price: row.single_item_price,

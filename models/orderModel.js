@@ -465,6 +465,7 @@ const Order = {
                 OI.variant_id,
 
                 P.featured_image,
+                P.name,
 
                 -- Selected variant
                 PV.id AS variant_id,
