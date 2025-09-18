@@ -288,10 +288,36 @@ const getProductwithFilter = (req, res) => {
 // Update product by ID
 const updateProductById = async (req, res) => {
     try {
-        const { id, vendor_id, existingGalleryImages = [] } = req.body;
+        const { id, vendor_id } = req.body;
+        let { existingGalleryImages = [] } = req.body;
 
         if (!id) {
             return res.status(400).json({ success: false, message: 'Product ID is required.' });
+        }
+
+        // ✅ Ensure existingGalleryImages is always an array
+        if (typeof existingGalleryImages === "string") {
+            try {
+                existingGalleryImages = JSON.parse(existingGalleryImages);
+            } catch (e) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid existingGalleryImages format. Must be a JSON array."
+                });
+            }
+        }
+
+        // ✅ Validate all images are HTTPS
+        const invalidImages = existingGalleryImages.filter(
+            img => typeof img !== "string" || !img.startsWith("https://")
+        );
+
+        if (invalidImages.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "All existingGalleryImages must be valid HTTPS URLs",
+                invalid_images: invalidImages
+            });
         }
 
         // Parse JSON fields safely
@@ -334,6 +360,13 @@ const updateProductById = async (req, res) => {
             if (req.files?.galleryImages) {
                 for (const file of req.files.galleryImages) {
                     const url = await uploadToS3(file.buffer, file.originalname, file.fieldname, file.mimetype);
+                    if (!url.startsWith("https://")) {
+                        return res.status(500).json({
+                            success: false,
+                            message: "Uploaded gallery image returned an invalid URL",
+                            invalid_url: url
+                        });
+                    }
                     newGalleryImages.push(url);
                 }
             }
@@ -342,7 +375,6 @@ const updateProductById = async (req, res) => {
             Product.updateById(id, updatedData, (err) => {
                 if (err) return res.status(500).json({ success: false, message: 'Error updating product', error: err });
 
-                // Helper to update related tables
                 const updateRelatedTable = (tableName, dataArray, createFunc, cb) => {
                     if (!Array.isArray(dataArray)) return cb(null);
                     db.query(`DELETE FROM ${tableName} WHERE product_id = ?`, [id], (deleteErr) => {
@@ -358,13 +390,13 @@ const updateProductById = async (req, res) => {
                         GalleryImage.findByProductId(id, async (galleryErr, existingGallery) => {
                             if (galleryErr) return cb(galleryErr);
 
-                            // Delete removed images from S3
-                            const imagesToDelete = existingGallery.filter(img => !existingGalleryImages.includes(img.image_path));
+                            const imagesToDelete = existingGallery.filter(
+                                img => !existingGalleryImages.includes(img.image_path)
+                            );
                             for (const img of imagesToDelete) {
                                 await deleteS3Image(img.image_path);
                             }
 
-                            // Delete all existing gallery rows
                             GalleryImage.deleteByProductId(id, (deleteErr) => {
                                 if (deleteErr) return cb(deleteErr);
 
@@ -375,7 +407,6 @@ const updateProductById = async (req, res) => {
                     } else cb(null);
                 };
 
-                // Run all related updates
                 updateRelatedTable('product_attributes', attributes, Product.addAttributes, (attrErr) => {
                     if (attrErr) return res.status(500).json({ success: false, message: 'Error updating attributes', error: attrErr });
 
@@ -388,7 +419,6 @@ const updateProductById = async (req, res) => {
                             handleGallery((galleryErr) => {
                                 if (galleryErr) return res.status(500).json({ success: false, message: 'Error updating gallery', error: galleryErr });
 
-                                // Return updated product
                                 Product.findById(id, vendor_id, (findErr, updatedProduct) => {
                                     if (findErr) return res.status(500).json({ success: false, message: 'Error fetching updated product', error: findErr });
                                     res.status(200).json({ success: true, message: 'Product updated successfully', product: updatedProduct });
@@ -403,6 +433,8 @@ const updateProductById = async (req, res) => {
         res.status(400).json({ success: false, message: error.message });
     }
 };
+
+
 
 
 
