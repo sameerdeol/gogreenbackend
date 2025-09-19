@@ -48,9 +48,6 @@ const Notification = {
                 sql += ' AND n.is_read = 0';
             }
 
-            // ✅ Optional: filter only notifications that have a vendor (remove if you want all)
-            sql += ' AND o.vendor_id IS NOT NULL';
-
             sql += ' ORDER BY n.created_at DESC';
 
             db.query(sql, [user_id], (err, results) => {
@@ -85,6 +82,7 @@ const Notification = {
             });
         });
     },
+
 
 
     getAllByUserandID: async (user_id, id, onlyUnread = false) => {
