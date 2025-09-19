@@ -78,7 +78,9 @@ const Notification = {
                         created_at: n.created_at,
                         vendor_id: n.vendor_id || null,
                         vendor_lng: n.vendor_lng || null,
-                        vendor_lat: n.vendor_lat || null
+                        vendor_lat: n.vendor_lat || null,
+                        customer_lng: n.customer_lng || null,
+                        customer_lat: n.customer_lat || null
                     };
                 });
 
