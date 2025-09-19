@@ -827,6 +827,15 @@ findallByVendorId: (vendorID, searchTerm, userID, callback) => {
         }
 
         db.query(sql, params, callback);
+    },
+    getProductStock : (productId, callback) => {
+        db.query("SELECT stock, name FROM products WHERE id = ?", [productId], (err, results) => {
+            if (err) return callback(err);
+            callback(null, results[0]);
+        });
+    },
+    decreaseStock : (productId,     quantity, callback) => {
+        db.query("UPDATE products SET stock = stock - ? WHERE id = ?", [quantity, productId], callback);
     }
 
     

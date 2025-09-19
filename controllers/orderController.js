@@ -21,12 +21,32 @@ const createOrder = async (req, res) => {
         let total_price = 0;
         const order_uid = `ORD${Date.now()}`;
 
+        // ✅ 1. Validate Stock Before Creating Order
+        try {
+            const stockCheckPromises = cart.map(async (item) => {
+                return new Promise((resolve, reject) => {
+                    Product.getProductStock(item.product_id, (err, product) => {
+                        if (err) return reject(err);
+                        if (!product) return reject(new Error(`Product not found: ${item.product_id}`));
+                        if (product.stock < item.quantity) {
+                            return reject(new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}`));
+                        }
+                        resolve();
+                    });
+                });
+            });
+
+            await Promise.all(stockCheckPromises);
+        } catch (stockErr) {
+            console.warn("Stock validation failed:", stockErr.message);
+            return res.status(400).json({ error: stockErr.message });
+        }
+
+        // ✅ 2. Calculate totals
         cart.forEach((item) => {
             const hasVariant = item.variant_price && Number(item.variant_price) > 0;
             const baseOrVariantPrice = hasVariant ? Number(item.variant_price) : Number(item.price || 0);
-
             const addon_total = (item.addons || []).reduce((sum, a) => sum + Number(a.price || 0), 0);
-
             const item_unit_price = baseOrVariantPrice + addon_total;
             const item_total_price = parseFloat((item_unit_price * item.quantity).toFixed(2));
 
@@ -34,11 +54,11 @@ const createOrder = async (req, res) => {
             total_price = parseFloat((total_price + item_total_price).toFixed(2));
         });
 
-        // ✅ Add $3 if fast delivery is selected
         if (is_fast_delivery) {
             total_price = parseFloat((total_price + 3).toFixed(2));
         }
 
+        // ✅ 3. Create Order
         OrderDetails.addOrder(
             user_id,
             total_quantity,
@@ -58,14 +78,7 @@ const createOrder = async (req, res) => {
 
                 try {
                     const itemPromises = cart.map((item, index) => {
-                        const {
-                            product_id,
-                            quantity,
-                            price,
-                            variant_id = null,
-                            variant_price = 0,
-                            addons = []
-                        } = item;
+                        const { product_id, quantity, price, variant_id = null, variant_price = 0, addons = [] } = item;
                         const hasVariant = variant_price && Number(variant_price) > 0;
                         const baseOrVariantPrice = hasVariant ? Number(variant_price) : Number(price || 0);
                         const addon_total = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
@@ -91,20 +104,23 @@ const createOrder = async (req, res) => {
                                     const order_item_id = result.insertId;
 
                                     try {
+                                        // ✅ 4. Decrease Product Stock
+                                        Product.decreaseStock(product_id, quantity, (stockErr) => {
+                                            if (stockErr) {
+                                                console.error(`Error decreasing stock for product ${product_id}:`, stockErr);
+                                            }
+                                        });
+
+                                        // Addons
                                         const addonPromises = addons.map((addon) => {
                                             return new Promise((resolveAddon, rejectAddon) => {
-                                                OrderItem.addAddon(
-                                                    order_item_id,
-                                                    addon.addon_id,
-                                                    Number(addon.price),
-                                                    (err) => {
-                                                        if (err) {
-                                                            console.error("Error adding addon:", err);
-                                                            return rejectAddon(err);
-                                                        }
-                                                        resolveAddon();
+                                                OrderItem.addAddon(order_item_id, addon.addon_id, Number(addon.price), (err) => {
+                                                    if (err) {
+                                                        console.error("Error adding addon:", err);
+                                                        return rejectAddon(err);
                                                     }
-                                                );
+                                                    resolveAddon();
+                                                });
                                             });
                                         });
 
@@ -127,7 +143,7 @@ const createOrder = async (req, res) => {
                         order_uid
                     });
 
-                    // Optional: Notification logic (unchanged)
+                    // ✅ Notification logic (unchanged)
                     try {
                         const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
                         const username = userdata?.full_name || "User";
@@ -177,6 +193,7 @@ const createOrder = async (req, res) => {
         }
     }
 };
+
 
 const updateOrderStatus = async (req, res) => {
     const { order_id, vendor_id, order_status } = req.body;
