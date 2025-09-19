@@ -812,6 +812,27 @@ const riderDashboardAnalytics = (req, res) => {
         }
     );
 };
+const riderBankDetails = (req, res) => {
+    req.body.role_id = 4;
+    const { role_id, user_id } = req.body;
+    if ([1, 2].includes(parseInt(role_id))) {
+        return res.status(403).json({ success: false, message: 'You are not allowed to update the password.' });
+    }
+    User.userBankDetails(user_id, role_id, (err, bankdetails) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+        if (!bankdetails) {
+            return res.status(404).json({ success: false, message: 'Bank Details not found' });
+        }
+        return res.status(200).json({
+            success: true,
+            message: "User Bank Details retrieved successfully",
+            data: bankdetails
+        });
+    });
+};
 
 
 
@@ -831,5 +852,6 @@ module.exports = {
     vehicleDetails,
     updateVehicleDetails,
     riderAnalytics,
-    riderDashboardAnalytics
+    riderDashboardAnalytics,
+    riderBankDetails
 }; 

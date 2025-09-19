@@ -24,5 +24,6 @@ router.get('/getallridersforadmin', verifyToken, riderController.allRidersforAdm
 router.get('/getallridersforadminbyID/:rider_id', verifyToken, riderController.allRidersforAdminbyRiderID);
 router.post('/rider-analytics', verifyToken, riderController.riderAnalytics);
 router.post('/riderdashboard-analytics', verifyToken, riderController.riderDashboardAnalytics);
+router.post('/rider-bankdetails', verifyToken, riderController.riderBankDetails);
 
 module.exports = router; 
