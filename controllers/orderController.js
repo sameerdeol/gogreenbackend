@@ -21,24 +21,46 @@ const createOrder = async (req, res) => {
         let total_price = 0;
         const order_uid = `ORD${Date.now()}`;
 
-        // ✅ 1. Validate Stock Before Creating Order
+        // ✅ 1. Validate Stock / Availability Before Creating Order
         try {
             const stockCheckPromises = cart.map(async (item) => {
                 return new Promise((resolve, reject) => {
-                    Product.getProductStock(item.product_id, (err, product) => {
+                    // Step 1: Check if product has variants
+                    Product.countVariants(item.product_id, (err, count) => {
                         if (err) return reject(err);
-                        if (!product) return reject(new Error(`Product not found: ${item.product_id}`));
-                        if (product.stock < item.quantity) {
-                            return reject(new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}`));
+
+                        if (count > 0) {
+                            // Restaurant Product → must have variant_id and check availability
+                            if (!item.variant_id) {
+                                return reject(new Error(`Variant ID is required for product ${item.product_id}`));
+                            }
+
+                            Product.getVariantAvailability(item.variant_id, (err, variant) => {
+                                if (err) return reject(err);
+                                if (!variant || variant.is_available === 0) {
+                                    return reject(new Error(`Variant not available for product ${item.product_id}`));
+                                }
+                                resolve();
+                            });
+
+                        } else {
+                            // Normal product → check stock
+                            Product.getProductStock(item.product_id, (err, product) => {
+                                if (err) return reject(err);
+                                if (!product) return reject(new Error(`Product not found: ${item.product_id}`));
+                                if (product.stock < item.quantity) {
+                                    return reject(new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}`));
+                                }
+                                resolve();
+                            });
                         }
-                        resolve();
                     });
                 });
             });
 
             await Promise.all(stockCheckPromises);
         } catch (stockErr) {
-            console.warn("Stock validation failed:", stockErr.message);
+            console.warn("Stock/Availability validation failed:", stockErr.message);
             return res.status(400).json({ error: stockErr.message });
         }
 
@@ -104,10 +126,14 @@ const createOrder = async (req, res) => {
                                     const order_item_id = result.insertId;
 
                                     try {
-                                        // ✅ 4. Decrease Product Stock
-                                        Product.decreaseStock(product_id, quantity, (stockErr) => {
-                                            if (stockErr) {
-                                                console.error(`Error decreasing stock for product ${product_id}:`, stockErr);
+                                        // ✅ 4. Decrease Stock for normal products
+                                        Product.countVariants(product_id, (err, count) => {
+                                            if (!err && count === 0) {
+                                                Product.decreaseStock(product_id, quantity, (stockErr) => {
+                                                    if (stockErr) {
+                                                        console.error(`Error decreasing stock for product ${product_id}:`, stockErr);
+                                                    }
+                                                });
                                             }
                                         });
 
@@ -143,7 +169,7 @@ const createOrder = async (req, res) => {
                         order_uid
                     });
 
-                    // ✅ Notification logic (unchanged)
+                    // ✅ Notification logic remains unchanged
                     try {
                         const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
                         const username = userdata?.full_name || "User";
@@ -193,6 +219,7 @@ const createOrder = async (req, res) => {
         }
     }
 };
+
 
 
 const updateOrderStatus = async (req, res) => {

@@ -836,6 +836,26 @@ findallByVendorId: (vendorID, searchTerm, userID, callback) => {
     },
     decreaseStock : (productId,     quantity, callback) => {
         db.query("UPDATE products SET stock = stock - ? WHERE id = ?", [quantity, productId], callback);
+    },
+    countVariants : (product_id, callback) => {
+        db.query(
+            "SELECT COUNT(*) AS cnt FROM product_variants WHERE product_id = ?",
+            [product_id],
+            (err, results) => {
+                if (err) return callback(err);
+                callback(null, results[0].cnt);
+            }
+        );
+    },
+    getVariantAvailability : (variant_id, callback) => {
+        db.query(
+            "SELECT id, is_available FROM product_variants WHERE id = ?",
+            [variant_id],
+            (err, results) => {
+                if (err) return callback(err);
+                callback(null, results[0]);
+            }
+        );
     }
 
     
