@@ -33,11 +33,15 @@ const Notification = {
                     n.created_at,
                     o.vendor_id,
                     v.vendor_lng,
-                    v.vendor_lat
+                    v.vendor_lat,
+                    u.customer_lat,
+                    u.customer_lng
                 FROM notifications n
                 LEFT JOIN order_details o 
                     ON JSON_VALID(n.data) 
                 AND o.id = JSON_UNQUOTE(JSON_EXTRACT(n.data, '$.order_id'))
+				LEFT JOIN user_addresses u
+					ON u.user_id = o.user_address_id
                 LEFT JOIN vendors v
                     ON v.user_id = o.vendor_id
                 WHERE n.user_id = ?
@@ -99,12 +103,16 @@ const Notification = {
                     n.created_at,
                     o.vendor_id,
                     v.vendor_lng,
-                    v.vendor_lat
+                    v.vendor_lat,
+                    u.customer_lat,
+                    u.customer_lng
                 FROM notifications n
                 LEFT JOIN order_details o 
                     ON JSON_VALID(n.data) AND o.id = JSON_UNQUOTE(JSON_EXTRACT(n.data, '$.order_id'))
                 LEFT JOIN vendors v
                     ON v.user_id = o.vendor_id
+                LEFT JOIN user_addresses u
+					ON u.user_id = o.user_address_id
                 WHERE n.user_id = ? AND n.id = ?
             `;
 
