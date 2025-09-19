@@ -36,15 +36,20 @@ const Notification = {
                     v.vendor_lat
                 FROM notifications n
                 LEFT JOIN order_details o 
-                    ON JSON_VALID(n.data) AND o.id = JSON_UNQUOTE(JSON_EXTRACT(n.data, '$.order_id'))
+                    ON JSON_VALID(n.data) 
+                AND o.id = JSON_UNQUOTE(JSON_EXTRACT(n.data, '$.order_id'))
                 LEFT JOIN vendors v
                     ON v.user_id = o.vendor_id
                 WHERE n.user_id = ?
             `;
 
+            // ✅ Filter unread if requested
             if (onlyUnread) {
                 sql += ' AND n.is_read = 0';
             }
+
+            // ✅ Optional: filter only notifications that have a vendor (remove if you want all)
+            sql += ' AND o.vendor_id IS NOT NULL';
 
             sql += ' ORDER BY n.created_at DESC';
 
@@ -57,16 +62,30 @@ const Notification = {
                         try {
                             parsedData = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
                         } catch (err) {
-                            parsedData = n.data; // fallback to raw data
+                            parsedData = n.data; // fallback to raw data if parse fails
                         }
                     }
-                    return { ...n, data: parsedData };
+
+                    return {
+                        id: n.id,
+                        title: n.title,
+                        message: n.message,
+                        type: n.type,
+                        reference_id: n.reference_id,
+                        data: parsedData,
+                        is_read: n.is_read,
+                        created_at: n.created_at,
+                        vendor_id: n.vendor_id || null,
+                        vendor_lng: n.vendor_lng || null,
+                        vendor_lat: n.vendor_lat || null
+                    };
                 });
 
                 resolve(notifications);
             });
         });
     },
+
 
     getAllByUserandID: async (user_id, id, onlyUnread = false) => {
         return new Promise((resolve, reject) => {
