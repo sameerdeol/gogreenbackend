@@ -23,12 +23,17 @@ module.exports = (io) => {
 // Helper to emit rider location
 module.exports.emitRiderLocationToCustomer = (customerId, riderId, location) => {
   if (!ioInstance) {
-    console.warn("Socket.io instance not initialized. Cannot emit rider location.");
+    console.warn("⚠️ Socket.io instance not initialized. Cannot emit rider location.");
     return;
   }
 
-  ioInstance.to(`customer_${customerId}`).emit('riderLocationUpdate', {
+  const payload = {
     rider_id: riderId,
     ...location
-  });
+  };
+
+  console.log(`📡 Emitting riderLocationUpdate to customer_${customerId}`);
+  console.log("🔍 Payload:", JSON.stringify(payload, null, 2));
+
+  ioInstance.to(`customer_${customerId}`).emit('riderLocationUpdate', payload);
 };
