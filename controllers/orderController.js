@@ -974,7 +974,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                 order_item_id, product_id, product_name, product_description,
                 product_price, product_quantity, food_type, total_item_price,
                 variant_id, variant_type, variant_value, variant_price,
-                addon_id, addon_name, addon_price,
+                addon_id, addon_name, addon_price, discount_percent,
                 address, type, floor, landmark,
                 firstname, lastname, phonenumber, is_fast_delivery, rider_unique_id,
                 vendor_prefix, vendor_phonenumber, store_address, store_name, store_image,
@@ -1031,7 +1031,8 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                     addons: [],
                     total_item_price: 0, // initialize for summation
                     featured_image: featured_image || null,
-                    gallery_images: gallery_image ? [gallery_image] : []
+                    gallery_images: gallery_image ? [gallery_image] : [],
+                    discount_percent: discount_percent || 0 // store discount for reference
                 };
             }
 
@@ -1045,7 +1046,14 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
             // Add base product price only once
             if (item.total_item_price === 0) {
                 const basePrice = parseFloat(variant_id ? variant_price : product_price) || 0;
-                item.total_item_price += basePrice;
+                
+                // ✅ Apply discount if available
+                let finalPrice = basePrice;
+                if (item.discount_percent > 0) {
+                    finalPrice = finalPrice - (finalPrice * (item.discount_percent / 100));
+                }
+
+                item.total_item_price += finalPrice;
             }
 
             // Add addon if exists & update total price
@@ -1056,6 +1064,7 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                     addon_price
                 });
 
+                // ✅ Add addon price after discount logic (addons usually not discounted)
                 item.total_item_price += parseFloat(addon_price || 0);
             }
         });

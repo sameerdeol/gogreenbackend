@@ -54,6 +54,8 @@ const Order = {
                 P.food_type,
                 P.featured_image,
 
+                PD.discount_percent,
+
                 UA.address,
                 UA.type,
                 UA.floor,
@@ -88,6 +90,7 @@ const Order = {
             LEFT JOIN products P ON OI.product_id = P.id
             LEFT JOIN users U ON OD.user_id = U.id
             LEFT JOIN user_addresses UA ON OD.user_address_id = UA.id
+            LEFT JOIN product_discounts PD ON PD.product_id = OI.product_id
 
             -- Selected variant
             LEFT JOIN product_variants PV ON OI.variant_id = PV.id
