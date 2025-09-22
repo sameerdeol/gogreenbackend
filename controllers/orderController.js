@@ -1029,10 +1029,10 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
                     variant_value,
                     variant_price,
                     addons: [],
-                    total_item_price: 0, // initialize for summation
+                    total_item_price: 0,
                     featured_image: featured_image || null,
                     gallery_images: gallery_image ? [gallery_image] : [],
-                    discount_percent: discount_percent || 0 // store discount for reference
+                    discount_percent: discount_percent || 0
                 };
             }
 
@@ -1046,26 +1046,37 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
             // Add base product price only once
             if (item.total_item_price === 0) {
                 const basePrice = parseFloat(variant_id ? variant_price : product_price) || 0;
-                
-                // ✅ Apply discount if available
                 let finalPrice = basePrice;
+
+                // Debug base price
+                console.log(`\n[DEBUG] OrderItem ID: ${order_item_id}`);
+                console.log(`Base Price: ${basePrice}`);
+                console.log(`Discount Percent: ${item.discount_percent}%`);
+
                 if (item.discount_percent > 0) {
-                    finalPrice = finalPrice - (finalPrice * (item.discount_percent / 100));
+                    const discountAmount = (basePrice * (item.discount_percent / 100));
+                    finalPrice = basePrice - discountAmount;
+                    console.log(`Discount Applied: -${discountAmount} => After Discount: ${finalPrice}`);
+                } else {
+                    console.log(`No Discount Applied`);
                 }
 
                 item.total_item_price += finalPrice;
+                console.log(`Running Total Item Price (after base price): ${item.total_item_price}`);
             }
 
             // Add addon if exists & update total price
             if (addon_id && !item.addons.some(a => a.addon_id === addon_id)) {
+                console.log(`Addon Found: ${addon_name} | Price: ${addon_price}`);
+
                 item.addons.push({
                     addon_id,
                     addon_name,
                     addon_price
                 });
 
-                // ✅ Add addon price after discount logic (addons usually not discounted)
                 item.total_item_price += parseFloat(addon_price || 0);
+                console.log(`Running Total Item Price (after addons): ${item.total_item_price}`);
             }
         });
 
@@ -1077,12 +1088,17 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
 
         finalOrders.sort((a, b) => new Date(b.order_created_at) - new Date(a.order_created_at));
 
+        console.log("\n========== FINAL ORDERS DEBUG ==========");
+        finalOrders.forEach(order => {
+            console.log(`Order #${order.order_id} | Total Items: ${order.items.length}`);
+            order.items.forEach(item => {
+                console.log(`  Item: ${item.product_name} | Final Total Price: ${item.total_item_price}`);
+            });
+        });
+
         res.status(200).json(finalOrders);
     });
 };
-
-
-
 
 
 const orderHistory = async (req, res) => {
