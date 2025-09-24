@@ -636,6 +636,7 @@ findallByVendorId: (vendorID, searchTerm, userID, callback) => {
         const query = `
             SELECT 
                 p.*, 
+                PV.is_available
                 c.name AS category_name, 
                 s.name AS sub_category_name, 
                 b.name AS brand_name, 
@@ -650,6 +651,7 @@ findallByVendorId: (vendorID, searchTerm, userID, callback) => {
             LEFT JOIN product_subcategories s ON p.sub_category = s.id 
             LEFT JOIN product_brands b ON p.brand_id = b.id 
             LEFT JOIN product_discounts d ON p.id = d.product_id
+            LEFT JOIN product_variants PV ON p.id = PV.product_id
             WHERE p.id = ? AND p.vendor_id = ?;
         `;
 
