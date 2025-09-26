@@ -485,6 +485,7 @@ const User = {
                 data.registration_doc,
                 data.identity_proof
             ];
+
         } else {
             return callback(new Error('Invalid role_id'), null);
         }
@@ -495,6 +496,9 @@ const User = {
             }
             // ✅ Removed verification_applied update
             callback(null, { insertResult: result });
+            if (role_id== 4) {
+                updateVerificationApplied(data.user_id, callback, result);
+            }
         });
     },
     
@@ -559,7 +563,7 @@ const User = {
                         return callback(err, null);
                     }
                     console.log("✅ [DEBUG] Updated delivery_partner row:", result);
-                    updateVerificationApplied(data.user_id, callback, result);
+                    // updateVerificationApplied(data.user_id, callback, result);
                 });
             }
         });
