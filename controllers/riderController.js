@@ -92,6 +92,7 @@ const riderSignup = async (req, res) => {
                         firstname: existingUser.firstname,
                         lastname: existingUser.lastname,
                         is_verified: existingUser.is_verified,
+                        verification_Done: existingUser.verification_applied,
                     }, process.env.JWT_SECRET);
                     if (existingUser.role_id !== 4) {
                         return res.status(409).json({
@@ -143,6 +144,8 @@ const riderSignup = async (req, res) => {
                         firstname: finalFirstname,
                         lastname: finalLastname,
                         is_verified: 0,
+                        verification_Done: false,
+
                     }, process.env.JWT_SECRET);
                     return res.status(201).json({
                         success: true,
