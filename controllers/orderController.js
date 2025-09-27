@@ -285,7 +285,7 @@ const updateOrderStatus = async (req, res) => {
                         vendor_lng,
                         user_id,
                         user_address_id,
-                        3, // radius in KM
+                        30, // radius in KM
                         (err, nearbyRiders) => {
                             if (err) return console.error("Error getting nearby riders:", err);
                             for (const rider of nearbyRiders) {
