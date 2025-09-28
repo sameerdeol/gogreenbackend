@@ -678,5 +678,6 @@ module.exports = {
     bestSellProducts,
     getFilteredProducts,
     getProductwithFilter,
-    insertProductDiscount
+    insertProductDiscount,
+    updateProductDiscount
 };
