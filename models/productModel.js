@@ -392,20 +392,24 @@ const Product = {
             INSERT INTO product_discounts (product_id, discount_percent, updated_at)
             VALUES (?, ?, NOW())
             ON DUPLICATE KEY UPDATE 
-                discount_percent = VALUES(discount_percent), 
+                discount_percent = VALUES(discount_percent),
                 updated_at = NOW()
         `;
 
         db.query(query, [product_id, discount_percent], (err, result) => {
             if (err) return callback(err, null);
 
-            // MySQL returns affectedRows = 1 for insert, 2 for update
-            const isUpdate = result.affectedRows === 2;
+            let message = "Discount updated successfully";
+            if (result.affectedRows === 1) {
+                message = "Discount added successfully"; // only insert happened
+            } else if (result.affectedRows === 2) {
+                message = "Discount updated successfully"; // update happened
+            }
 
             callback(null, {
                 success: true,
-                message: isUpdate ? "Discount updated successfully" : "Discount added successfully",
-                product_id: product_id
+                message,
+                product_id
             });
         });
     },
