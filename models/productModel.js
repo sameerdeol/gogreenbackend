@@ -383,8 +383,32 @@ const Product = {
         });
     },
 
+    update_discounted_product: (product_id, discount_percent, callback) => {
+        if (!product_id || discount_percent == null) {
+            return callback(new Error("Product ID and discount percent are required"));
+        }
 
-    
+        const query = `
+            UPDATE product_discounts
+            SET discount_percent = ?
+            WHERE product_id = ?
+        `;
+
+        db.query(query, [discount_percent, product_id], (err, result) => {
+            if (err) return callback(err, null);
+
+            // Check if any row was actually updated
+            if (result.affectedRows === 0) {
+                return callback(null, { success: false, message: "No discount found for this product" });
+            }
+
+            callback(null, {
+                success: true,
+                message: "Discount updated successfully",
+                productId
+            });
+        });
+    },
     
     // Update a product by ID (Includes sub_category)
     updateById: (id, updateData, callback) => {

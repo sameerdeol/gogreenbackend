@@ -170,19 +170,6 @@ const createProduct = async (req, res) => {
     }
 };
 
-// const insertProductDiscount = (req, res) => {
-//     const product_id = req.product_id;
-//     const discount_percent = req.discount_percent;
-//     Product.upload_discounted_product(product_id, discount_percent, (attrErr, attrResult) => {
-//         if (attrErr) {
-//             console.error("Discount Insert Error:", attrErr);
-//             return res.status(500).json({ success: false, message: 'Error adding discount', error: attrErr });
-//         }
-//         attrResult.status(200).json({ success: true, message: 'Discount added successfully'});
-//         // callback(null, attrResult);
-//     });
-// };
-
 const insertProductDiscount = (req, res) => {
     const { product_id, discount_percent } = req.body; // get data from request body
 
@@ -200,6 +187,24 @@ const insertProductDiscount = (req, res) => {
         return res.status(200).json(result);
     });
 };
+
+const updateProductDiscount = (req, res) => {
+    const { product_id, discount_percent } = req.body;
+
+    Product.update_discounted_product(product_id, discount_percent, (err, result) => {
+        if (err) {
+            console.error("Discount Update Error:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Error updating discount",
+                error: err.message
+            });
+        }
+
+        res.status(200).json(result);
+    });
+};
+
 
 // Get product by ID
 const getProductById = (req, res) => {
@@ -454,6 +459,7 @@ const updateProductById = async (req, res) => {
         res.status(400).json({ success: false, message: error.message });
     }
 };
+
 
 // Delete product by ID
 const deleteProductById = async (req, res) => {

@@ -27,7 +27,8 @@ const {
 
 // Route to create a new product - only managers can create products
 router.post('/products', verifyToken, uploadFields, createProduct);
-router.post('/uploadproductdiscount', insertProductDiscount);
+router.post('/uploadproductdiscount', verifyToken, insertProductDiscount);
+router.post('/update-product-discount', verifyToken, updateProductDiscount);
 
 router.post('/productbyvendorid/', verifyToken,getsingleproductsbyvendorID);
 // get list of products
