@@ -61,6 +61,36 @@ const Product = {
             db.query(query, [values], callback);
         },
 
+        // upload_discounted_product: (product_id, discount_percent, callback) => {
+
+        //     values = [product_id, discount_percent];
+        
+        //     const query = `INSERT INTO product_discounts (product_id, discount_percent) VALUES ?`;
+        
+        //     db.query(query, [values], callback);
+        
+        // },
+
+        upload_discounted_product: (product_id, discount_percent, callback) => {
+            if (!product_id || discount_percent == null) {
+                return callback(new Error("Product ID and discount percent are required"));
+            }
+
+            const values = [[product_id, discount_percent]]; // array of arrays
+
+            const query = `INSERT INTO product_discounts (product_id, discount_percent) VALUES ?`;
+
+            db.query(query, [values], (err, result) => {
+                if (err) return callback(err, null);
+
+                callback(null, {
+                    success: true,
+                    message: "Discount added successfully",
+                    discountId: result.insertId
+                });
+            });
+        },
+
     findById: (id, userID, callback) => {
         const query = `
             SELECT 
@@ -137,8 +167,22 @@ const Product = {
         });
     },
 
-         
-    
+    // create: (product_id, discount_percent, callback) => {
+    //     const query = `
+    //     INSERT INTO product_discounts 
+    //     (product_id, discount_percent) 
+    //     VALUES (?, ?)
+    //     `;
+
+    //     db.query(
+    //     query,
+    //     [product_id, discount_percent],
+    //     (err, result) => {
+    //         if (err) return callback(err, null);
+    //         callback(null, result);
+    //     }
+    //     );
+    // },
 
     // Get all products (Optimized with Promise.all) Find All Products (Include Attributes and Gallery)
     find: (userID, callback) => {

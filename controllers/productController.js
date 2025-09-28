@@ -44,6 +44,7 @@ const createProduct = async (req, res) => {
 
         // Parse attributes
         let attributes = [];
+
         if (req.body.attributes) {
             try {
                 attributes = JSON.parse(req.body.attributes);
@@ -80,7 +81,6 @@ const createProduct = async (req, res) => {
 
                 const productId = productResult.insertId;
 
-                // Insert gallery images
                 const insertGallery = (callback) => {
                     if (galleryImages.length > 0) {
                         GalleryImage.create(productId, galleryImages, (imageErr, imageResult) => {
@@ -95,7 +95,6 @@ const createProduct = async (req, res) => {
                     }
                 };
 
-                // Insert attributes
                 const insertAttributes = (callback) => {
                     if (attributes.length > 0) {
                         Product.addAttributes(productId, attributes, (attrErr, attrResult) => {
@@ -171,6 +170,36 @@ const createProduct = async (req, res) => {
     }
 };
 
+// const insertProductDiscount = (req, res) => {
+//     const product_id = req.product_id;
+//     const discount_percent = req.discount_percent;
+//     Product.upload_discounted_product(product_id, discount_percent, (attrErr, attrResult) => {
+//         if (attrErr) {
+//             console.error("Discount Insert Error:", attrErr);
+//             return res.status(500).json({ success: false, message: 'Error adding discount', error: attrErr });
+//         }
+//         attrResult.status(200).json({ success: true, message: 'Discount added successfully'});
+//         // callback(null, attrResult);
+//     });
+// };
+
+const insertProductDiscount = (req, res) => {
+    const { product_id, discount_percent } = req.body; // get data from request body
+
+    Product.upload_discounted_product(product_id, discount_percent, (err, result) => {
+        if (err) {
+            console.error("Discount Insert Error:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Error adding discount",
+                error: err.message
+            });
+        }
+
+        // Send proper response
+        return res.status(200).json(result);
+    });
+};
 
 // Get product by ID
 const getProductById = (req, res) => {
@@ -207,8 +236,6 @@ const getallproductsbyvendorID = (req, res) => {
     });
 };
 
-
-
 const getsingleproductsbyvendorID = (req, res) => {
     const {id,vendor_id} = req.body;
     const productId = id;
@@ -220,8 +247,6 @@ const getsingleproductsbyvendorID = (req, res) => {
         res.status(200).json({ success: true, product });
     });
 };
-
-
 
 const getProducts = (req, res) => {
     const { userID } = req.body;
@@ -281,7 +306,6 @@ const getProductwithFilter = (req, res) => {
         res.status(500).json({ success: false, message: 'Unexpected server error' });
     }
 };
-
 
 const updateProductById = async (req, res) => {
     try {
@@ -430,10 +454,6 @@ const updateProductById = async (req, res) => {
         res.status(400).json({ success: false, message: error.message });
     }
 };
-
-
-
-
 
 // Delete product by ID
 const deleteProductById = async (req, res) => {
@@ -651,5 +671,6 @@ module.exports = {
     getproductbybrandID,
     bestSellProducts,
     getFilteredProducts,
-    getProductwithFilter
+    getProductwithFilter,
+    insertProductDiscount
 };

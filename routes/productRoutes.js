@@ -21,11 +21,13 @@ const {
     getproductbybrandID,
     bestSellProducts,
     getFilteredProducts,
-    getProductwithFilter 
+    getProductwithFilter,
+    insertProductDiscount
 } = require('../controllers/productController');
 
 // Route to create a new product - only managers can create products
 router.post('/products', verifyToken, uploadFields, createProduct);
+router.post('/uploadproductdiscount', insertProductDiscount);
 
 router.post('/productbyvendorid/', verifyToken,getsingleproductsbyvendorID);
 // get list of products
