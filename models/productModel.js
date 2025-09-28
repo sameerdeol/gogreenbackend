@@ -385,32 +385,41 @@ const Product = {
 
     update_discounted_product: (product_id, discount_percent, callback) => {
         if (!product_id || discount_percent == null) {
-            return callback(new Error("Product ID and discount percent are required"), null);
+            return callback(new Error("Product ID and discount percent are required"));
         }
 
-        const query = `
-            INSERT INTO product_discounts (product_id, discount_percent, updated_at)
-            VALUES (?, ?, NOW())
-            ON DUPLICATE KEY UPDATE 
-                discount_percent = VALUES(discount_percent),
-                updated_at = NOW()
+        const updateQuery = `
+            UPDATE product_discounts
+            SET discount_percent = ?
+            WHERE product_id = ?
         `;
 
-        db.query(query, [product_id, discount_percent], (err, result) => {
+        db.query(updateQuery, [discount_percent, product_id], (err, result) => {
             if (err) return callback(err, null);
 
-            let message = "Discount updated successfully";
-            if (result.affectedRows === 1) {
-                message = "Discount added successfully"; // only insert happened
-            } else if (result.affectedRows === 2) {
-                message = "Discount updated successfully"; // update happened
-            }
+            // If no row was updated, insert a new one
+            if (result.affectedRows === 0) {
+                const insertQuery = `
+                    INSERT INTO product_discounts (product_id, discount_percent, updated_at)
+                    VALUES (?, ?, NOW())
+                `;
 
-            callback(null, {
-                success: true,
-                message,
-                product_id
-            });
+                db.query(insertQuery, [product_id, discount_percent], (insertErr, insertResult) => {
+                    if (insertErr) return callback(insertErr, null);
+
+                    return callback(null, {
+                        success: true,
+                        message: "Discount added successfully",
+                        discountId: insertResult.insertId
+                    });
+                });
+            } else {
+                // Update succeeded
+                return callback(null, {
+                    success: true,
+                    message: "Discount updated successfully"
+                });
+            }
         });
     },
     
