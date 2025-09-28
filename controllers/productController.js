@@ -193,14 +193,13 @@ const updateProductDiscount = (req, res) => {
 
     Product.update_discounted_product(product_id, discount_percent, (err, result) => {
         if (err) {
-            console.error("Discount Update Error:", err);
+            console.error("Discount Upsert Error:", err);
             return res.status(500).json({
                 success: false,
-                message: "Error updating discount",
-                error: err.message
+                message: "Error saving discount",
+                error: err
             });
         }
-
         res.status(200).json(result);
     });
 };

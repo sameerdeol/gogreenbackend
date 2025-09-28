@@ -385,27 +385,27 @@ const Product = {
 
     update_discounted_product: (product_id, discount_percent, callback) => {
         if (!product_id || discount_percent == null) {
-            return callback(new Error("Product ID and discount percent are required"));
+            return callback(new Error("Product ID and discount percent are required"), null);
         }
 
         const query = `
-            UPDATE product_discounts
-            SET discount_percent = ?
-            WHERE product_id = ?
+            INSERT INTO product_discounts (product_id, discount_percent, updated_at)
+            VALUES (?, ?, NOW())
+            ON DUPLICATE KEY UPDATE 
+                discount_percent = VALUES(discount_percent), 
+                updated_at = NOW()
         `;
 
-        db.query(query, [discount_percent, product_id], (err, result) => {
+        db.query(query, [product_id, discount_percent], (err, result) => {
             if (err) return callback(err, null);
 
-            // Check if any row was actually updated
-            if (result.affectedRows === 0) {
-                return callback(null, { success: false, message: "No discount found for this product" });
-            }
+            // MySQL returns affectedRows = 1 for insert, 2 for update
+            const isUpdate = result.affectedRows === 2;
 
             callback(null, {
                 success: true,
-                message: "Discount updated successfully",
-                productId
+                message: isUpdate ? "Discount updated successfully" : "Discount added successfully",
+                product_id: product_id
             });
         });
     },
