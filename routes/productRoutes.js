@@ -31,6 +31,7 @@ router.post('/products', verifyToken, uploadFields, createProduct);
 router.post('/uploadproductdiscount', verifyToken, insertProductDiscount);
 router.put('/update-product-discount', verifyToken, updateProductDiscount);
 
+
 router.post('/productbyvendorid/', verifyToken,getsingleproductsbyvendorID);
 // get list of products
 router.post('/getallproductsbyvendorID/', verifyToken,getallproductsbyvendorID);
