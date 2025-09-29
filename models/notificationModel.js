@@ -35,7 +35,8 @@ const Notification = {
                     v.vendor_lng,
                     v.vendor_lat,
                     u.customer_lat,
-                    u.customer_lng
+                    u.customer_lng,
+                    o.order_uid
                 FROM notifications n
                 LEFT JOIN order_details o 
                     ON JSON_VALID(n.data) 
@@ -80,7 +81,8 @@ const Notification = {
                         vendor_lng: n.vendor_lng || null,
                         vendor_lat: n.vendor_lat || null,
                         customer_lng: n.customer_lng || null,
-                        customer_lat: n.customer_lat || null
+                        customer_lat: n.customer_lat || null,
+                        order_uid: n.order_uid
                     };
                 });
 
