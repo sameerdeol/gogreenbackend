@@ -34,12 +34,24 @@ const sendNotificationToUser = async ({ userId, title, body, data = {}, saveToDB
             return { success: false, error: "No FCM token found" };
         }
 
+        // const message = {
+        //     token: user.fcm_token,
+        //     notification: { title, body },
+        //     data: Object.fromEntries(
+        //         Object.entries(data).map(([k, v]) => [k, String(v)])
+        //     )
+        // };
+
         const message = {
             token: user.fcm_token,
-            notification: { title, body },
-            data: Object.fromEntries(
+            data: {
+                title,
+                body,
+                ...Object.fromEntries(
                 Object.entries(data).map(([k, v]) => [k, String(v)])
-            )
+                )
+            }
+            // 🚫 DO NOT include `notification: { ... }`
         };
 
         const firebaseApp = getFirebaseApp();
