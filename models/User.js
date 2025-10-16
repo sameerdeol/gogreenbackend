@@ -642,6 +642,7 @@ const User = {
                     u.custom_id,  
                     v.user_id AS vendor_id,
                     v.store_address, 
+                    v.vendor_type_id,
                     v.sin_code, 
                     v.store_name, 
                     v.profile_pic, 
