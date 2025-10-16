@@ -256,7 +256,7 @@ const User = {
             if (err) return callback(err, null);
     
             const userTableFields = ['firstname', 'lastname', 'prefix', 'phonenumber', 'email'];
-            const vendorTableFields = ['store_name', 'store_address', 'sin_code', 'profile_pic', 'vendor_thumb', 'vendor_lng', 'vendor_lat','business_reg_number', 'store_image'];
+            const vendorTableFields = ['store_name','vendor_type_id','store_address', 'sin_code', 'profile_pic', 'vendor_thumb', 'vendor_lng', 'vendor_lat','business_reg_number', 'store_image'];
             const deliveryPartnerTableFields = ['license_number', 'sin_code', 'profile_pic', 'dob'];
             const customerTableFields = ['dob','gender'];
     
