@@ -280,7 +280,9 @@ const vendorVerification = async (req, res) => {
             business_reg_number,
             vendor_type_id: Array.isArray(vendor_type_id) ? vendor_type_id.join(',') : vendor_type_id,
             vendor_start_time,
-            vendor_close_time
+            vendor_close_time,
+            vendor_lat,
+            vendor_lng
         };
 
         // Wrap insertUserVerification in a Promise too

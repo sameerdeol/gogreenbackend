@@ -449,8 +449,8 @@ const User = {
 
             insertQuery = `
                 INSERT INTO vendors 
-                (user_id, store_name, store_address, sin_code, country_status, identity_proof, profile_pic, store_image, business_reg_number, vendor_type_id, vendor_start_time, vendor_close_time) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (user_id, store_name, store_address, sin_code, country_status, identity_proof, vendor_lat, vendor_lng, profile_pic, store_image, business_reg_number, vendor_type_id, vendor_start_time, vendor_close_time) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             values = [
                 data.user_id,
@@ -464,7 +464,9 @@ const User = {
                 data.business_reg_number,
                 vendorTypeIdsString,
                 data.vendor_start_time,
-                data.vendor_close_time  
+                data.vendor_close_time ,
+                data.vendor_lat,
+                data.vendor_lng 
             ];
         } else if (role_id == 4) { // Delivery Partner
             insertQuery = `
