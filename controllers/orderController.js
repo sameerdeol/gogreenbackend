@@ -8,218 +8,6 @@ const { generateOtp } = require('../utils/otpGenerator'); // adjust path if need
 
 
  
-// const createOrder = async (req, res) => {
-//     try {
-//         const { user_id, cart, payment_method, user_address_id, vendor_id, is_fast_delivery } = req.body;
-
-//         if (!user_id || !cart || cart.length === 0) {
-//             console.warn("Invalid order data received");
-//             return res.status(400).json({ error: "Invalid order data" });
-//         }
-
-//         let total_quantity = 0;
-//         let total_price = 0;
-//         const order_uid = `ORD${Date.now()}`;
-
-//         // ✅ 1. Validate Stock / Availability Before Creating Order
-//         try {
-//             const stockCheckPromises = cart.map(async (item) => {
-//                 return new Promise((resolve, reject) => {
-//                     // Step 1: Check if product has variants
-//                     Product.countVariants(item.product_id, (err, count) => {
-//                         if (err) return reject(err);
-
-//                         if (count > 0) {
-//                             // Restaurant Product → must have variant_id and check availability
-//                             if (!item.variant_id) {
-//                                 return reject(new Error(`Variant ID is required for product ${item.product_id}`));
-//                             }
-
-//                             Product.getVariantAvailability(item.variant_id, (err, variant) => {
-//                                 if (err) return reject(err);
-//                                 if (!variant || variant.is_available === 0) {
-//                                     return reject(new Error(`Variant not available for product ${item.product_id}`));
-//                                 }
-//                                 resolve();
-//                             });
-
-//                         } else {
-//                             // Normal product → check stock
-//                             Product.getProductStock(item.product_id, (err, product) => {
-//                                 if (err) return reject(err);
-//                                 if (!product) return reject(new Error(`Product not found: ${item.product_id}`));
-//                                 if (product.stock < item.quantity) {
-//                                     return reject(new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}`));
-//                                 }
-//                                 resolve();
-//                             });
-//                         }
-//                     });
-//                 });
-//             });
-
-//             await Promise.all(stockCheckPromises);
-//         } catch (stockErr) {
-//             console.warn("Stock/Availability validation failed:", stockErr.message);
-//             return res.status(400).json({ error: stockErr.message });
-//         }
-
-//         // ✅ 2. Calculate totals
-//         cart.forEach((item) => {
-//             const hasVariant = item.variant_price && Number(item.variant_price) > 0;
-//             const baseOrVariantPrice = hasVariant ? Number(item.variant_price) : Number(item.price || 0);
-//             const addon_total = (item.addons || []).reduce((sum, a) => sum + Number(a.price || 0), 0);
-//             const item_unit_price = baseOrVariantPrice + addon_total;
-//             const item_total_price = parseFloat((item_unit_price * item.quantity).toFixed(2));
-
-//             total_quantity += item.quantity;
-//             total_price = parseFloat((total_price + item_total_price).toFixed(2));
-//         });
-
-//         if (is_fast_delivery) {
-//             total_price = parseFloat((total_price + 3).toFixed(2));
-//         }
-
-//         // ✅ 3. Create Order
-//         OrderDetails.addOrder(
-//             user_id,
-//             total_quantity,
-//             total_price,
-//             payment_method,
-//             user_address_id,
-//             vendor_id,
-//             is_fast_delivery,
-//             order_uid,
-//             async (err, result) => {
-//                 if (err) {
-//                     console.error("Error adding order details:", err);
-//                     return res.status(500).json({ error: "Error adding order details" });
-//                 }
-
-//                 const order_id = result.insertId;
-
-//                 try {
-//                     const itemPromises = cart.map((item, index) => {
-//                         const { product_id, quantity, price, variant_id = null, variant_price = 0, addons = [] } = item;
-//                         const hasVariant = variant_price && Number(variant_price) > 0;
-//                         const baseOrVariantPrice = hasVariant ? Number(variant_price) : Number(price || 0);
-//                         const addon_total = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
-//                         const item_unit_price = baseOrVariantPrice + addon_total;
-//                         const total_item_price = parseFloat((item_unit_price * quantity).toFixed(2));
-
-//                         return new Promise((resolve, reject) => {
-//                             OrderItem.addItem(
-//                                 order_id,
-//                                 user_id,
-//                                 product_id,
-//                                 quantity,
-//                                 Number(price),
-//                                 total_item_price,
-//                                 variant_id,
-//                                 Number(variant_price),
-//                                 async (err, result) => {
-//                                     if (err) {
-//                                         console.error(`Error adding item ${index + 1}:`, err);
-//                                         return reject(err);
-//                                     }
-
-//                                     const order_item_id = result.insertId;
-
-//                                     try {
-//                                         // ✅ 4. Decrease Stock for normal products
-//                                         Product.countVariants(product_id, (err, count) => {
-//                                             if (!err && count === 0) {
-//                                                 Product.decreaseStock(product_id, quantity, (stockErr) => {
-//                                                     if (stockErr) {
-//                                                         console.error(`Error decreasing stock for product ${product_id}:`, stockErr);
-//                                                     }
-//                                                 });
-//                                             }
-//                                         });
-
-//                                         // Addons
-//                                         const addonPromises = addons.map((addon) => {
-//                                             return new Promise((resolveAddon, rejectAddon) => {
-//                                                 OrderItem.addAddon(order_item_id, addon.addon_id, Number(addon.price), (err) => {
-//                                                     if (err) {
-//                                                         console.error("Error adding addon:", err);
-//                                                         return rejectAddon(err);
-//                                                     }
-//                                                     resolveAddon();
-//                                                 });
-//                                             });
-//                                         });
-
-//                                         await Promise.all(addonPromises);
-//                                         resolve();
-//                                     } catch (addonErr) {
-//                                         console.error("Error adding addons:", addonErr);
-//                                         reject(addonErr);
-//                                     }
-//                                 }
-//                             );
-//                         });
-//                     });
-
-//                     await Promise.all(itemPromises);
-
-//                     res.status(201).json({
-//                         message: "Order created successfully",
-//                         order_id,
-//                         order_uid
-//                     });
-
-//                     // ✅ Notification logic remains unchanged
-//                     try {
-//                         const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
-//                         const username = userdata?.full_name || "User";
-//                         const addressText = userdata?.full_address || "No address found";
-//                         const productIds = cart.map(item => item.product_id);
-//                         const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
-
-//                         const productMap = {};
-//                         productDetails.forEach(prod => {
-//                             productMap[prod.id] = prod;
-//                         });
-
-//                         const enrichedCart = cart.map(item => ({
-//                             quantity: item.quantity,
-//                             price: item.price,
-//                             product_name: productMap[item.product_id]?.name || 'Unknown Product'
-//                         }));
-
-//                         sendNotificationToUser({
-//                             userId: vendor_id,
-//                             title: "New Order Received",
-//                             body: `You have a new order #${order_id}`,
-//                             saveToDB: true,
-//                             data: {
-//                                 order_id: order_id.toString(),
-//                                 order_uid: order_uid.toString(),
-//                                 type: "new_order",
-//                                 customer: username.toString(),
-//                                 customer_address: addressText.toString(),
-//                                 order_cart: JSON.stringify(enrichedCart),
-//                                 is_fast_delivery: is_fast_delivery.toString()
-//                             }
-//                         });
-//                     } catch (fetchErr) {
-//                         console.warn("Order created, but failed to fetch user or product data:", fetchErr);
-//                     }
-
-//                 } catch (itemErr) {
-//                     console.error("Error adding order items or addons:", itemErr);
-//                 }
-//             }
-//         );
-//     } catch (error) {
-//         console.error("Server error while creating order:", error);
-//         if (!res.headersSent) {
-//             res.status(500).json({ error: "Server error" });
-//         }
-//     }
-// };
-
 const createOrder = async (req, res) => {
     try {
         const { user_id, cart, payment_method, user_address_id, vendor_id, is_fast_delivery } = req.body;
@@ -233,14 +21,16 @@ const createOrder = async (req, res) => {
         let total_price = 0;
         const order_uid = `ORD${Date.now()}`;
 
-        // ✅ 1. Validate stock
+        // ✅ 1. Validate Stock / Availability Before Creating Order
         try {
             const stockCheckPromises = cart.map(async (item) => {
                 return new Promise((resolve, reject) => {
+                    // Step 1: Check if product has variants
                     Product.countVariants(item.product_id, (err, count) => {
                         if (err) return reject(err);
 
                         if (count > 0) {
+                            // Restaurant Product → must have variant_id and check availability
                             if (!item.variant_id) {
                                 return reject(new Error(`Variant ID is required for product ${item.product_id}`));
                             }
@@ -252,7 +42,9 @@ const createOrder = async (req, res) => {
                                 }
                                 resolve();
                             });
+
                         } else {
+                            // Normal product → check stock
                             Product.getProductStock(item.product_id, (err, product) => {
                                 if (err) return reject(err);
                                 if (!product) return reject(new Error(`Product not found: ${item.product_id}`));
@@ -288,7 +80,7 @@ const createOrder = async (req, res) => {
             total_price = parseFloat((total_price + 3).toFixed(2));
         }
 
-        // ✅ 3. Create order
+        // ✅ 3. Create Order
         OrderDetails.addOrder(
             user_id,
             total_quantity,
@@ -299,141 +91,86 @@ const createOrder = async (req, res) => {
             is_fast_delivery,
             order_uid,
             async (err, result) => {
-        if (err) {
-            console.error("Error adding order details:", err);
-            if (!res.headersSent)
-                return res.status(500).json({ error: "Error adding order details" });
-            return;
-        }
+                if (err) {
+                    console.error("Error adding order details:", err);
+                    return res.status(500).json({ error: "Error adding order details" });
+                }
 
-        const order_id = result.insertId;
+                const order_id = result.insertId;
 
-        try {
-            // ✅ 1. Add all items and addons
-            await Promise.all(cart.map(async (item, index) => {
-                const { product_id, quantity, price, variant_id = null, variant_price = 0, addons = [] } = item;
-                const hasVariant = variant_price && Number(variant_price) > 0;
-                const baseOrVariantPrice = hasVariant ? Number(variant_price) : Number(price || 0);
-                const addon_total = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
-                const item_unit_price = baseOrVariantPrice + addon_total;
-                const total_item_price = parseFloat((item_unit_price * quantity).toFixed(2));
+                try {
+                    const itemPromises = cart.map((item, index) => {
+                        const { product_id, quantity, price, variant_id = null, variant_price = 0, addons = [] } = item;
+                        const hasVariant = variant_price && Number(variant_price) > 0;
+                        const baseOrVariantPrice = hasVariant ? Number(variant_price) : Number(price || 0);
+                        const addon_total = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
+                        const item_unit_price = baseOrVariantPrice + addon_total;
+                        const total_item_price = parseFloat((item_unit_price * quantity).toFixed(2));
 
-                // wrap addItem in Promise
-                const result = await new Promise((resolve, reject) => {
-                    OrderItem.addItem(
-                        order_id,
-                        user_id,
-                        product_id,
-                        quantity,
-                        Number(price),
-                        total_item_price,
-                        variant_id,
-                        Number(variant_price),
-                        (err, result) => {
-                            if (err) return reject(err);
-                            resolve(result);
-                        }
-                    );
-                });
-
-                const order_item_id = result.insertId;
-
-                // decrease stock if needed
-                Product.countVariants(product_id, (err, count) => {
-                    if (!err && count === 0) {
-                        Product.decreaseStock(product_id, quantity, (stockErr) => {
-                            if (stockErr)
-                                console.error(`Error decreasing stock for product ${product_id}:`, stockErr);
-                        });
-                    }
-                });
-
-                // handle addons
-                await Promise.all(addons.map(addon => {
-                    return new Promise((resolveAddon, rejectAddon) => {
-                        OrderItem.addAddon(order_item_id, addon.addon_id, Number(addon.price), (err) => {
-                            if (err) return rejectAddon(err);
-                            resolveAddon();
-                        });
-                    });
-                }));
-            }));
-
-           // ✅ 2. Get vendor and nearby riders (safe block)
-            let vendorDetails = null;
-            try {
-                vendorDetails = await new Promise((resolve, reject) => {
-                    Vendor.getVendorById(vendor_id, (err, result) => {
-                        if (err) return reject(err);
-                        resolve(result?.[0] || null);
-                    });
-                });
-            } catch (e) {
-                console.warn("Vendor fetch failed:", e.message);
-            }
-
-            let nearbyRiders = [];
-            let searchRadiusKm = 3;
-            let riderFound = false;
-
-            if (vendorDetails) {
-                const { lat: vendor_lat, lng: vendor_lng } = vendorDetails;
-
-                const radiusOptions = [3, 5, 10];
-                for (const radius of radiusOptions) {
-                    try {
-                        const ridersInRange = await new Promise((resolve, reject) => {
-                            User.getNearbyRidersWithPolylines(
+                        return new Promise((resolve, reject) => {
+                            OrderItem.addItem(
                                 order_id,
-                                vendor_id,
-                                vendor_lat,
-                                vendor_lng,
                                 user_id,
-                                user_address_id,
-                                radius,
-                                (err, riders) => {
-                                    if (err) return reject(err);
-                                    resolve(riders || []);
+                                product_id,
+                                quantity,
+                                Number(price),
+                                total_item_price,
+                                variant_id,
+                                Number(variant_price),
+                                async (err, result) => {
+                                    if (err) {
+                                        console.error(`Error adding item ${index + 1}:`, err);
+                                        return reject(err);
+                                    }
+
+                                    const order_item_id = result.insertId;
+
+                                    try {
+                                        // ✅ 4. Decrease Stock for normal products
+                                        Product.countVariants(product_id, (err, count) => {
+                                            if (!err && count === 0) {
+                                                Product.decreaseStock(product_id, quantity, (stockErr) => {
+                                                    if (stockErr) {
+                                                        console.error(`Error decreasing stock for product ${product_id}:`, stockErr);
+                                                    }
+                                                });
+                                            }
+                                        });
+
+                                        // Addons
+                                        const addonPromises = addons.map((addon) => {
+                                            return new Promise((resolveAddon, rejectAddon) => {
+                                                OrderItem.addAddon(order_item_id, addon.addon_id, Number(addon.price), (err) => {
+                                                    if (err) {
+                                                        console.error("Error adding addon:", err);
+                                                        return rejectAddon(err);
+                                                    }
+                                                    resolveAddon();
+                                                });
+                                            });
+                                        });
+
+                                        await Promise.all(addonPromises);
+                                        resolve();
+                                    } catch (addonErr) {
+                                        console.error("Error adding addons:", addonErr);
+                                        reject(addonErr);
+                                    }
                                 }
                             );
                         });
+                    });
 
-                        if (ridersInRange.length > 0) {
-                            nearbyRiders = ridersInRange;
-                            searchRadiusKm = radius;
-                            riderFound = true;
-                            break; // ✅ stop after finding riders
-                        }
-                    } catch (riderErr) {
-                        console.warn(`Failed to fetch riders in ${radius}km:`, riderErr.message);
-                    }
-                }
-            }
+                    await Promise.all(itemPromises);
 
-            // ✅ 3. Always respond (no matter what)
-            if (!res.headersSent) {
-                res.status(201).json({
-                    message: "Order created successfully",
-                    order_id,
-                    order_uid,
-                    total_price,
-                    rider_found,
-                    nearby_riders_count: nearbyRiders.length,
-                    search_radius_km: searchRadiusKm,
-                    nearby_riders: nearbyRiders.map(r => ({
-                        user_id: r.user_id,
-                        rider_lat: r.rider_lat,
-                        rider_lng: r.rider_lng,
-                        distance_km: r.distance_km
-                    }))
-                });
-            }
+                    res.status(201).json({
+                        message: "Order created successfully",
+                        order_id,
+                        order_uid
+                    });
 
-            // ✅ 4. Continue background tasks (notifications)
-            process.nextTick(async () => {
-                try {
-                    // only send notification if rider found
-                    if (riderFound) {
+                    // ✅ Notification logic remains unchanged
+                    try {
                         const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
                         const username = userdata?.full_name || "User";
                         const addressText = userdata?.full_address || "No address found";
@@ -466,23 +203,15 @@ const createOrder = async (req, res) => {
                                 is_fast_delivery: is_fast_delivery.toString()
                             }
                         });
-                    } else {
-                        console.log(`🚫 No riders found within 10 km — vendor not notified`);
+                    } catch (fetchErr) {
+                        console.warn("Order created, but failed to fetch user or product data:", fetchErr);
                     }
-                } catch (notifyErr) {
-                    console.warn("Notification failed:", notifyErr.message);
+
+                } catch (itemErr) {
+                    console.error("Error adding order items or addons:", itemErr);
                 }
-            });
-
-
-        } catch (innerErr) {
-            console.error("Error during order creation:", innerErr);
-            if (!res.headersSent)
-                res.status(500).json({ error: "Error while processing order" });
-        }
-    }
+            }
         );
-
     } catch (error) {
         console.error("Server error while creating order:", error);
         if (!res.headersSent) {
@@ -490,6 +219,8 @@ const createOrder = async (req, res) => {
         }
     }
 };
+
+
 
 
 const updateOrderStatus = async (req, res) => {
