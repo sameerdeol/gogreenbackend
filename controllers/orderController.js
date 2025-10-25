@@ -290,15 +290,15 @@ const createOrder = async (req, res) => {
 
         // ✅ 3. Create order
         OrderDetails.addOrder(
-    user_id,
-    total_quantity,
-    total_price,
-    payment_method,
-    user_address_id,
-    vendor_id,
-    is_fast_delivery,
-    order_uid,
-    async (err, result) => {
+            user_id,
+            total_quantity,
+            total_price,
+            payment_method,
+            user_address_id,
+            vendor_id,
+            is_fast_delivery,
+            order_uid,
+            async (err, result) => {
         if (err) {
             console.error("Error adding order details:", err);
             if (!res.headersSent)
@@ -359,7 +359,7 @@ const createOrder = async (req, res) => {
                 }));
             }));
 
-            // ✅ 2. Get vendor and nearby riders (safe block)
+           // ✅ 2. Get vendor and nearby riders (safe block)
             let vendorDetails = null;
             try {
                 vendorDetails = await new Promise((resolve, reject) => {
@@ -374,33 +374,39 @@ const createOrder = async (req, res) => {
 
             let nearbyRiders = [];
             let searchRadiusKm = 3;
+            let riderFound = false;
 
             if (vendorDetails) {
                 const { lat: vendor_lat, lng: vendor_lng } = vendorDetails;
 
-                try {
-                    nearbyRiders = await new Promise((resolve, reject) => {
-                        User.getNearbyRidersWithPolylines(
-                            order_id,
-                            vendor_id,
-                            vendor_lat,
-                            vendor_lng,
-                            user_id,
-                            user_address_id,
-                            3,
-                            (err, riders) => {
-                                if (err) return reject(err);
-                                resolve(riders || []);
-                            }
-                        );
-                    });
+                const radiusOptions = [3, 5, 10];
+                for (const radius of radiusOptions) {
+                    try {
+                        const ridersInRange = await new Promise((resolve, reject) => {
+                            User.getNearbyRidersWithPolylines(
+                                order_id,
+                                vendor_id,
+                                vendor_lat,
+                                vendor_lng,
+                                user_id,
+                                user_address_id,
+                                radius,
+                                (err, riders) => {
+                                    if (err) return reject(err);
+                                    resolve(riders || []);
+                                }
+                            );
+                        });
 
-                    if (nearbyRiders.length > 0) {
-                        const maxDistance = Math.max(...nearbyRiders.map(r => parseFloat(r.distance_km) || 0));
-                        searchRadiusKm = Math.ceil(maxDistance || 3);
+                        if (ridersInRange.length > 0) {
+                            nearbyRiders = ridersInRange;
+                            searchRadiusKm = radius;
+                            riderFound = true;
+                            break; // ✅ stop after finding riders
+                        }
+                    } catch (riderErr) {
+                        console.warn(`Failed to fetch riders in ${radius}km:`, riderErr.message);
                     }
-                } catch (riderErr) {
-                    console.warn("Failed to fetch nearby riders:", riderErr.message);
                 }
             }
 
@@ -411,6 +417,7 @@ const createOrder = async (req, res) => {
                     order_id,
                     order_uid,
                     total_price,
+                    rider_found,
                     nearby_riders_count: nearbyRiders.length,
                     search_radius_km: searchRadiusKm,
                     nearby_riders: nearbyRiders.map(r => ({
@@ -425,42 +432,48 @@ const createOrder = async (req, res) => {
             // ✅ 4. Continue background tasks (notifications)
             process.nextTick(async () => {
                 try {
-                    const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
-                    const username = userdata?.full_name || "User";
-                    const addressText = userdata?.full_address || "No address found";
-                    const productIds = cart.map(item => item.product_id);
-                    const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
+                    // only send notification if rider found
+                    if (riderFound) {
+                        const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
+                        const username = userdata?.full_name || "User";
+                        const addressText = userdata?.full_address || "No address found";
+                        const productIds = cart.map(item => item.product_id);
+                        const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
 
-                    const productMap = {};
-                    productDetails.forEach(prod => {
-                        productMap[prod.id] = prod;
-                    });
+                        const productMap = {};
+                        productDetails.forEach(prod => {
+                            productMap[prod.id] = prod;
+                        });
 
-                    const enrichedCart = cart.map(item => ({
-                        quantity: item.quantity,
-                        price: item.price,
-                        product_name: productMap[item.product_id]?.name || 'Unknown Product'
-                    }));
+                        const enrichedCart = cart.map(item => ({
+                            quantity: item.quantity,
+                            price: item.price,
+                            product_name: productMap[item.product_id]?.name || 'Unknown Product'
+                        }));
 
-                    sendNotificationToUser({
-                        userId: vendor_id,
-                        title: "New Order Received",
-                        body: `You have a new order #${order_id}`,
-                        saveToDB: true,
-                        data: {
-                            order_id: order_id.toString(),
-                            order_uid: order_uid.toString(),
-                            type: "new_order",
-                            customer: username.toString(),
-                            customer_address: addressText.toString(),
-                            order_cart: JSON.stringify(enrichedCart),
-                            is_fast_delivery: is_fast_delivery.toString()
-                        }
-                    });
+                        sendNotificationToUser({
+                            userId: vendor_id,
+                            title: "New Order Received",
+                            body: `You have a new order #${order_id}`,
+                            saveToDB: true,
+                            data: {
+                                order_id: order_id.toString(),
+                                order_uid: order_uid.toString(),
+                                type: "new_order",
+                                customer: username.toString(),
+                                customer_address: addressText.toString(),
+                                order_cart: JSON.stringify(enrichedCart),
+                                is_fast_delivery: is_fast_delivery.toString()
+                            }
+                        });
+                    } else {
+                        console.log(`🚫 No riders found within 10 km — vendor not notified`);
+                    }
                 } catch (notifyErr) {
                     console.warn("Notification failed:", notifyErr.message);
                 }
             });
+
 
         } catch (innerErr) {
             console.error("Error during order creation:", innerErr);
