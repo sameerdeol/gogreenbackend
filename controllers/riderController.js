@@ -586,7 +586,7 @@ const riderStatus = (req, res) => {
 const updateRiderLocation = (req, res) => {
   const { user_id, rider_lat, rider_lng, customer_id } = req.body;
 
-  if (!user_id || !rider_lat || !rider_lng || !customer_id) {
+  if (!user_id || !rider_lat || !rider_lng) {
     return res.status(400).json({ 
       success: false, 
       message: "user_id, rider_lat, rider_lng, and customer_id are required" 
@@ -613,6 +613,8 @@ const updateRiderLocation = (req, res) => {
     });
   });
 };
+
+
 
 const allRidersforAdmin = (req, res) => {
     User.getallRidersForAdmin(null,(err, users) => {

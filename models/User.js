@@ -1129,7 +1129,7 @@ const User = {
             vendorLng,
             customerId,
             user_address_id,
-            radiusInKm = 3
+            radiusInKm 
         ) => {
             return new Promise((resolve, reject) => {
                 vendorLat = Number(vendorLat);
