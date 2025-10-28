@@ -293,6 +293,10 @@ const createOrder = async (req, res) => {
         if (is_fast_delivery) {
             total_price = parseFloat((total_price + 3).toFixed(2));
         }
+        const formattedScheduledTime =
+        scheduled_time && typeof scheduled_time === "string" && scheduled_time.trim() !== ""
+            ? scheduled_time.replace("T", " ")
+            : null;
 
         // ✅ 3. Create order entry
         const orderResult = await new Promise((resolve, reject) => {
@@ -305,7 +309,7 @@ const createOrder = async (req, res) => {
                 vendor_id,
                 is_fast_delivery,
                 order_uid,
-                scheduled_time,
+                formattedScheduledTime,
                 (err, result) => {
                     if (err) return reject(err);
                     resolve(result);
