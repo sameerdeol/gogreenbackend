@@ -233,47 +233,45 @@ const createOrder = async (req, res) => {
         let total_price = 0;
         const order_uid = `ORD${Date.now()}`;
 
-        console.log("🟢 Step 1: Validating stock...");
-
         // ✅ 1. Validate stock
-        await Promise.all(
-            cart.map(
-                (item) =>
-                    new Promise((resolve, reject) => {
-                        Product.countVariants(item.product_id, (err, count) => {
+        try {
+            const stockCheckPromises = cart.map(item => new Promise((resolve, reject) => {
+                Product.countVariants(item.product_id, (err, count) => {
+                    if (err) return reject(err);
+
+                    if (count > 0) {
+                        if (!item.variant_id) {
+                            return reject(new Error(`Variant ID is required for product ${item.product_id}`));
+                        }
+
+                        Product.getVariantAvailability(item.variant_id, (err, variant) => {
                             if (err) return reject(err);
-
-                            if (count > 0) {
-                                if (!item.variant_id) {
-                                    return reject(new Error(`Variant ID is required for product ${item.product_id}`));
-                                }
-
-                                Product.getVariantAvailability(item.variant_id, (err, variant) => {
-                                    if (err) return reject(err);
-                                    if (!variant || variant.is_available === 0) {
-                                        return reject(new Error(`Variant not available for product ${item.product_id}`));
-                                    }
-                                    resolve();
-                                });
-                            } else {
-                                Product.getProductStock(item.product_id, (err, product) => {
-                                    if (err) return reject(err);
-                                    if (!product) return reject(new Error(`Product not found: ${item.product_id}`));
-                                    if (product.stock < item.quantity) {
-                                        return reject(new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}`));
-                                    }
-                                    resolve();
-                                });
+                            if (!variant || variant.is_available === 0) {
+                                return reject(new Error(`Variant not available for product ${item.product_id}`));
                             }
+                            resolve();
                         });
-                    })
-            )
-        );
+                    } else {
+                        Product.getProductStock(item.product_id, (err, product) => {
+                            if (err) return reject(err);
+                            if (!product) return reject(new Error(`Product not found: ${item.product_id}`));
+                            if (product.stock < item.quantity) {
+                                return reject(new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}`));
+                            }
+                            resolve();
+                        });
+                    }
+                });
+            }));
 
-        console.log("✅ Stock validation completed.");
+            await Promise.all(stockCheckPromises);
+        } catch (stockErr) {
+            console.warn("Stock validation failed:", stockErr.message);
+            return res.status(400).json({ error: stockErr.message });
+        }
 
         // ✅ 2. Calculate totals
-        for (const item of cart) {
+        cart.forEach((item) => {
             const hasVariant = item.variant_price && Number(item.variant_price) > 0;
             const baseOrVariantPrice = hasVariant ? Number(item.variant_price) : Number(item.price || 0);
             const addon_total = (item.addons || []).reduce((sum, a) => sum + Number(a.price || 0), 0);
@@ -282,15 +280,13 @@ const createOrder = async (req, res) => {
 
             total_quantity += item.quantity;
             total_price = parseFloat((total_price + item_total_price).toFixed(2));
-        }
+        });
 
         if (is_fast_delivery) {
             total_price = parseFloat((total_price + 3).toFixed(2));
         }
 
-        console.log("🟢 Step 2: Creating order record...");
-
-        // ✅ 3. Create order
+        // ✅ 3. Create order entry
         const orderResult = await new Promise((resolve, reject) => {
             OrderDetails.addOrder(
                 user_id,
@@ -309,118 +305,102 @@ const createOrder = async (req, res) => {
         });
 
         const order_id = orderResult.insertId;
-        console.log(`✅ Order created successfully: order_id=${order_id}`);
+        console.log(`✅ Order created: ${order_id}`);
 
         // ✅ 4. Add items + addons
-        console.log("🟢 Step 3: Adding order items...");
-        await Promise.all(
-            cart.map(async (item) => {
-                const { product_id, quantity, price, variant_id = null, variant_price = 0, addons = [] } = item;
-                const hasVariant = variant_price && Number(variant_price) > 0;
-                const baseOrVariantPrice = hasVariant ? Number(variant_price) : Number(price || 0);
-                const addon_total = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
-                const item_unit_price = baseOrVariantPrice + addon_total;
-                const total_item_price = parseFloat((item_unit_price * quantity).toFixed(2));
+        await Promise.all(cart.map(async (item) => {
+            const { product_id, quantity, price, variant_id = null, variant_price = 0, addons = [] } = item;
+            const hasVariant = variant_price && Number(variant_price) > 0;
+            const baseOrVariantPrice = hasVariant ? Number(variant_price) : Number(price || 0);
+            const addon_total = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
+            const item_unit_price = baseOrVariantPrice + addon_total;
+            const total_item_price = parseFloat((item_unit_price * quantity).toFixed(2));
 
-                const orderItemResult = await new Promise((resolve, reject) => {
-                    OrderItem.addItem(
-                        order_id,
-                        user_id,
-                        product_id,
-                        quantity,
-                        Number(price),
-                        total_item_price,
-                        variant_id,
-                        Number(variant_price),
-                        (err, result) => {
-                            if (err) return reject(err);
-                            resolve(result);
-                        }
-                    );
-                });
-
-                const order_item_id = orderItemResult.insertId;
-
-                // Decrease stock (non-blocking)
-                Product.countVariants(product_id, (err, count) => {
-                    if (!err && count === 0) {
-                        Product.decreaseStock(product_id, quantity, (stockErr) => {
-                            if (stockErr) console.error(`Error decreasing stock for product ${product_id}:`, stockErr);
-                        });
+            const itemResult = await new Promise((resolve, reject) => {
+                OrderItem.addItem(
+                    order_id,
+                    user_id,
+                    product_id,
+                    quantity,
+                    Number(price),
+                    total_item_price,
+                    variant_id,
+                    Number(variant_price),
+                    (err, result) => {
+                        if (err) return reject(err);
+                        resolve(result);
                     }
-                });
-
-                // Add addons
-                await Promise.all(
-                    addons.map(
-                        (addon) =>
-                            new Promise((resolveAddon, rejectAddon) => {
-                                OrderItem.addAddon(order_item_id, addon.addon_id, Number(addon.price), (err) => {
-                                    if (err) return rejectAddon(err);
-                                    resolveAddon();
-                                });
-                            })
-                    )
                 );
-            })
-        );
+            });
 
-        console.log("✅ Order items added successfully.");
+            const order_item_id = itemResult.insertId;
 
-        // ✅ 5. Fetch vendor details
-        console.log("🟢 Step 4: Fetching vendor details...");
+            Product.countVariants(product_id, (err, count) => {
+                if (!err && count === 0) {
+                    Product.decreaseStock(product_id, quantity, (stockErr) => {
+                        if (stockErr) console.error(`Stock update failed for ${product_id}:`, stockErr);
+                    });
+                }
+            });
+
+            await Promise.all(addons.map(addon => new Promise((resolveAddon, rejectAddon) => {
+                OrderItem.addAddon(order_item_id, addon.addon_id, Number(addon.price), (err) => {
+                    if (err) return rejectAddon(err);
+                    resolveAddon();
+                });
+            })));
+        }));
+
+        // ✅ 5. Fetch vendor
         const vendorDetails = await new Promise((resolve, reject) => {
             User.getVendorById(vendor_id, (err, result) => {
                 if (err) return reject(err);
-                resolve(result?.[0] || null);
+                resolve(result || null);
             });
         });
 
-        console.log("✅ Vendor fetched:", vendorDetails);
-
-        const vendor_lat = parseFloat(vendorDetails?.lat || vendorDetails?.vendor_lat);
-        const vendor_lng = parseFloat(vendorDetails?.lng || vendorDetails?.vendor_lng);
-
-        if (isNaN(vendor_lat) || isNaN(vendor_lng)) {
-            console.warn(`⚠️ Invalid vendor coordinates for vendor_id=${vendor_id}`);
+        if (!vendorDetails) {
+            console.warn(`⚠️ Vendor not found for vendor_id=${vendor_id}`);
         }
 
+        const vendor_lat = parseFloat(vendorDetails?.vendor_lat);
+        const vendor_lng = parseFloat(vendorDetails?.vendor_lng);
+
+        // ✅ 6. Find nearby riders
         let nearbyRiders = [];
-        let riderFound = false;
         let searchRadiusKm = 10;
+        let riderFound = false;
 
         if (!isNaN(vendor_lat) && !isNaN(vendor_lng)) {
-            console.log("🟢 Step 5: Searching for nearby riders...");
             const radiusOptions = [3, 5, 10];
             for (const radius of radiusOptions) {
-                const ridersInRange = await new Promise((resolve, reject) => {
-                    User.getNearbyRidersWithPolylines(
+                try {
+                    const ridersInRange = await User.getNearbyRidersWithPolylines(
                         order_id,
                         vendor_id,
                         vendor_lat,
                         vendor_lng,
                         user_id,
                         user_address_id,
-                        radius,
-                        (err, riders) => {
-                            if (err) return reject(err);
-                            resolve(riders || []);
-                        }
+                        radius
                     );
-                });
 
-                if (ridersInRange.length > 0) {
-                    nearbyRiders = ridersInRange;
-                    riderFound = true;
-                    searchRadiusKm = radius;
-                    console.log(`✅ Found ${ridersInRange.length} riders within ${radius} km.`);
-                    break;
+                    if (ridersInRange.length > 0) {
+                        nearbyRiders = ridersInRange;
+                        searchRadiusKm = radius;
+                        riderFound = true;
+                        console.log(`✅ Found ${ridersInRange.length} riders within ${radius} km`);
+                        break;
+                    }
+                } catch (riderErr) {
+                    console.warn(`Failed to fetch riders in ${radius}km:`, riderErr.message);
                 }
             }
+        } else {
+            console.warn(`Invalid vendor coordinates: vendor_lat=${vendor_lat}, vendor_lng=${vendor_lng}`);
         }
 
-        // ✅ 6. Send immediate response
-        console.log("🟢 Step 6: Sending response...");
+        // ✅ 7. Respond to client (with rider lat/lng included)
         if (!res.headersSent) {
             res.status(201).json({
                 message: "Order created successfully",
@@ -430,72 +410,70 @@ const createOrder = async (req, res) => {
                 rider_found: riderFound,
                 nearby_riders_count: nearbyRiders.length,
                 search_radius_km: searchRadiusKm,
-                vendor_location: vendorDetails
-                    ? {
-                        vendor_id,
-                        vendor_lat,
-                        vendor_lng,
-                        store_name: vendorDetails.store_name,
-                    }
-                    : null,
-                nearby_riders: nearbyRiders.map((r) => ({
+                vendor: {
+                    vendor_id,
+                    store_name: vendorDetails?.store_name || null,
+                    vendor_lat,
+                    vendor_lng
+                },
+                nearby_riders: nearbyRiders.map(r => ({
                     user_id: r.user_id,
                     rider_lat: parseFloat(r.rider_lat),
                     rider_lng: parseFloat(r.rider_lng),
-                    distance_km: parseFloat(r.distance_km),
-                })),
+                    distance_km: parseFloat(r.distance_km)
+                }))
             });
         }
 
-        console.log("✅ Response sent to client.");
-
-        // ✅ 7. Background notifications
+        // ✅ 8. Background notifications
         process.nextTick(async () => {
             try {
-                if (!riderFound) return;
-                const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
-                const username = userdata?.full_name || "User";
-                const addressText = userdata?.full_address || "No address found";
-                const productIds = cart.map((item) => item.product_id);
-                const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
+                if (riderFound) {
+                    const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
+                    const username = userdata?.full_name || "User";
+                    const addressText = userdata?.full_address || "No address found";
+                    const productIds = cart.map(item => item.product_id);
+                    const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
 
-                const productMap = {};
-                productDetails.forEach((prod) => {
-                    productMap[prod.id] = prod;
-                });
+                    const productMap = {};
+                    productDetails.forEach(prod => { productMap[prod.id] = prod; });
 
-                const enrichedCart = cart.map((item) => ({
-                    quantity: item.quantity,
-                    price: item.price,
-                    product_name: productMap[item.product_id]?.name || "Unknown Product",
-                }));
+                    const enrichedCart = cart.map(item => ({
+                        quantity: item.quantity,
+                        price: item.price,
+                        product_name: productMap[item.product_id]?.name || 'Unknown Product'
+                    }));
 
-                sendNotificationToUser({
-                    userId: vendor_id,
-                    title: "New Order Received",
-                    body: `You have a new order #${order_id}`,
-                    saveToDB: true,
-                    data: {
-                        order_id: order_id.toString(),
-                        order_uid: order_uid.toString(),
-                        type: "new_order",
-                        customer: username,
-                        customer_address: addressText,
-                        order_cart: JSON.stringify(enrichedCart),
-                        is_fast_delivery: is_fast_delivery.toString(),
-                    },
-                });
+                    sendNotificationToUser({
+                        userId: vendor_id,
+                        title: "New Order Received",
+                        body: `You have a new order #${order_id}`,
+                        saveToDB: true,
+                        data: {
+                            order_id: order_id.toString(),
+                            order_uid: order_uid.toString(),
+                            type: "new_order",
+                            customer: username.toString(),
+                            customer_address: addressText.toString(),
+                            order_cart: JSON.stringify(enrichedCart),
+                            is_fast_delivery: is_fast_delivery.toString()
+                        }
+                    });
+                } else {
+                    console.log("🚫 No riders found within 10 km — vendor not notified");
+                }
             } catch (notifyErr) {
                 console.warn("Notification failed:", notifyErr.message);
             }
         });
 
     } catch (error) {
-        console.error("❌ Server error while creating order:", error);
-        if (!res.headersSent) res.status(500).json({ error: "Server error" });
+        console.error("Server error while creating order:", error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: "Server error" });
+        }
     }
 };
-
 
 
 
