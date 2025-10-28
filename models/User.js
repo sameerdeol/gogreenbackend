@@ -1221,45 +1221,46 @@ const User = {
             });
         },
 
-       getVendorById: (vendor_id, callback) => {
-            if (!vendor_id) return callback(new Error("Vendor ID is required"));
+       // models/User.js
+    getVendorById: (vendor_id, callback) => {
+        if (!vendor_id) return callback(new Error("Vendor ID is required"));
 
-            const query = `
-                SELECT 
-                    v.id,
-                    v.user_id,
-                    v.store_name,
-                    v.store_address,
-                    v.store_image,
-                    v.vendor_lat AS lat,
-                    v.vendor_lng AS lng,
-                    v.vendor_start_time,
-                    v.vendor_close_time,
-                    u.firstname,
-                    u.lastname,
-                    u.email,
-                    u.phonenumber
-                FROM vendors v
-                LEFT JOIN users u ON v.user_id = u.id
-                WHERE v.user_id = ?
-                LIMIT 1
-            `;
+        const query = `
+            SELECT 
+                v.id AS vendor_table_id,
+                v.user_id,
+                v.store_name,
+                v.store_address,
+                v.store_image,
+                v.vendor_lat AS lat,
+                v.vendor_lng AS lng,
+                v.vendor_start_time,
+                v.vendor_close_time,
+                u.firstname,
+                u.lastname,
+                u.email,
+                u.phonenumber
+            FROM vendors v
+            LEFT JOIN users u ON v.user_id = u.id
+            WHERE v.user_id = ?
+            LIMIT 1
+        `;
 
-            db.query(query, [vendor_id], (err, results) => {
-                if (err) {
-                    console.error("❌ Error fetching vendor by ID:", err);
-                    return callback(err);
-                }
+        db.query(query, [vendor_id], (err, results) => {
+            if (err) {
+                console.error("❌ Error fetching vendor by ID:", err);
+                return callback(err);
+            }
 
-                if (!results || results.length === 0) {
-                    console.warn(`⚠️ No vendor found for user_id=${vendor_id}`);
-                    return callback(null, []);
-                }
+            if (!results || results.length === 0) {
+                console.warn(`⚠️ No vendor found for user_id=${vendor_id}`);
+                return callback(null, []); // ✅ Always call back, even if empty
+            }
 
-                console.log("✅ Vendor found:", results[0]);
-                callback(null, results);
-            });
-        },
+            console.log("✅ Vendor found:", results[0]);
+            return callback(null, results);
+        });
+    },
 
 
 
