@@ -222,7 +222,15 @@ const { generateOtp } = require('../utils/otpGenerator'); // adjust path if need
 
 const createOrder = async (req, res) => {
     try {
-        const { user_id, cart, payment_method, user_address_id, vendor_id, is_fast_delivery } = req.body;
+        const { 
+            user_id, 
+            cart, 
+            payment_method, 
+            user_address_id, 
+            vendor_id, 
+            is_fast_delivery, 
+            scheduled_time // ⏰ new field for scheduled delivery
+        } = req.body;
 
         if (!user_id || !cart || cart.length === 0) {
             console.warn("Invalid order data received");
@@ -297,6 +305,7 @@ const createOrder = async (req, res) => {
                 vendor_id,
                 is_fast_delivery,
                 order_uid,
+                scheduled_time,
                 (err, result) => {
                     if (err) return reject(err);
                     resolve(result);
@@ -359,14 +368,45 @@ const createOrder = async (req, res) => {
             });
         });
 
-        if (!vendorDetails) {
-            console.warn(`⚠️ Vendor not found for vendor_id=${vendor_id}`);
+        const vendor_lat = parseFloat(vendorDetails?.lat);
+        const vendor_lng = parseFloat(vendorDetails?.lng);
+
+        // ✅ 6. Scheduled Order Logic
+        if (scheduledTime) {
+            // Save schedule info to DB
+            await OrderDetails.updateSchedule(order_id, scheduledTime);
+
+            // 📨 Notify vendor about scheduled order
+            sendNotificationToUser({
+                userId: vendor_id,
+                title: "Scheduled Order Received",
+                body: `You have a scheduled order for ${new Date(scheduledTime).toLocaleString()}`,
+                saveToDB: true,
+                data: {
+                    order_id: order_id.toString(),
+                    order_uid: order_uid.toString(),
+                    type: "scheduled_order",
+                    scheduled_time: scheduledTime.toString()
+                }
+            });
+
+            // Respond immediately, skip rider logic
+            return res.status(201).json({
+                message: "Scheduled order created successfully",
+                order_id,
+                order_uid,
+                total_price,
+                scheduled_time: scheduledTime,
+                vendor: {
+                    vendor_id,
+                    store_name: vendorDetails?.store_name || null,
+                    vendor_lat,
+                    vendor_lng
+                }
+            });
         }
 
-        const vendor_lat = parseFloat(vendorDetails?.vendor_lat);
-        const vendor_lng = parseFloat(vendorDetails?.vendor_lng);
-
-        // ✅ 6. Find nearby riders
+        // ✅ 7. Normal (Instant) Order Flow
         let nearbyRiders = [];
         let searchRadiusKm = 10;
         let riderFound = false;
@@ -396,53 +436,38 @@ const createOrder = async (req, res) => {
                     console.warn(`Failed to fetch riders in ${radius}km:`, riderErr.message);
                 }
             }
-        } else {
-            console.warn(`Invalid vendor coordinates: vendor_lat=${vendor_lat}, vendor_lng=${vendor_lng}`);
         }
 
-        // ✅ 7. Respond to client (with rider lat/lng included)
-        if (!res.headersSent) {
-            res.status(201).json({
-                message: "Order created successfully",
-                order_id,
-                order_uid,
-                total_price,
-                rider_found: riderFound,
-                nearby_riders_count: nearbyRiders.length,
-                search_radius_km: searchRadiusKm,
-                vendor: {
-                    vendor_id,
-                    store_name: vendorDetails?.store_name || null,
-                    vendor_lat,
-                    vendor_lng
-                },
-                nearby_riders: nearbyRiders.map(r => ({
-                    user_id: r.user_id,
-                    rider_lat: parseFloat(r.rider_lat),
-                    rider_lng: parseFloat(r.rider_lng),
-                    distance_km: parseFloat(r.distance_km)
-                }))
-            });
-        }
+        // ✅ 8. Respond (instant orders)
+        res.status(201).json({
+            message: "Order created successfully",
+            order_id,
+            order_uid,
+            total_price,
+            rider_found: riderFound,
+            nearby_riders_count: nearbyRiders.length,
+            search_radius_km: searchRadiusKm,
+            vendor: {
+                vendor_id,
+                store_name: vendorDetails?.store_name || null,
+                vendor_lat,
+                vendor_lng
+            },
+            nearby_riders: nearbyRiders.map(r => ({
+                user_id: r.user_id,
+                rider_lat: parseFloat(r.rider_lat),
+                rider_lng: parseFloat(r.rider_lng),
+                distance_km: parseFloat(r.distance_km)
+            }))
+        });
 
-        // ✅ 8. Background notifications
-        process.nextTick(async () => {
-            try {
-                if (riderFound) {
+        // ✅ 9. Background Notifications (instant orders)
+        if (riderFound) {
+            process.nextTick(async () => {
+                try {
                     const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
                     const username = userdata?.full_name || "User";
                     const addressText = userdata?.full_address || "No address found";
-                    const productIds = cart.map(item => item.product_id);
-                    const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
-
-                    const productMap = {};
-                    productDetails.forEach(prod => { productMap[prod.id] = prod; });
-
-                    const enrichedCart = cart.map(item => ({
-                        quantity: item.quantity,
-                        price: item.price,
-                        product_name: productMap[item.product_id]?.name || 'Unknown Product'
-                    }));
 
                     sendNotificationToUser({
                         userId: vendor_id,
@@ -455,17 +480,14 @@ const createOrder = async (req, res) => {
                             type: "new_order",
                             customer: username.toString(),
                             customer_address: addressText.toString(),
-                            order_cart: JSON.stringify(enrichedCart),
                             is_fast_delivery: is_fast_delivery.toString()
                         }
                     });
-                } else {
-                    console.log("🚫 No riders found within 10 km — vendor not notified");
+                } catch (notifyErr) {
+                    console.warn("Notification failed:", notifyErr.message);
                 }
-            } catch (notifyErr) {
-                console.warn("Notification failed:", notifyErr.message);
-            }
-        });
+            });
+        }
 
     } catch (error) {
         console.error("Server error while creating order:", error);
@@ -474,6 +496,7 @@ const createOrder = async (req, res) => {
         }
     }
 };
+
 
 
 
