@@ -377,8 +377,7 @@ const createOrder = async (req, res) => {
 
         // ✅ 6. Scheduled Order Logic
         if (scheduled_time) {
-            // Save schedule info to DB
-            await OrderDetails.updateSchedule(order_id, scheduled_time);
+            
 
             // 📨 Notify vendor about scheduled order
             sendNotificationToUser({
