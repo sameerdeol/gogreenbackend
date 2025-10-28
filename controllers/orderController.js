@@ -235,36 +235,34 @@ const createOrder = async (req, res) => {
 
         // ✅ 1. Validate stock
         try {
-            const stockCheckPromises = cart.map(async (item) => {
-                return new Promise((resolve, reject) => {
-                    Product.countVariants(item.product_id, (err, count) => {
-                        if (err) return reject(err);
+            const stockCheckPromises = cart.map(item => new Promise((resolve, reject) => {
+                Product.countVariants(item.product_id, (err, count) => {
+                    if (err) return reject(err);
 
-                        if (count > 0) {
-                            if (!item.variant_id) {
-                                return reject(new Error(`Variant ID is required for product ${item.product_id}`));
-                            }
-
-                            Product.getVariantAvailability(item.variant_id, (err, variant) => {
-                                if (err) return reject(err);
-                                if (!variant || variant.is_available === 0) {
-                                    return reject(new Error(`Variant not available for product ${item.product_id}`));
-                                }
-                                resolve();
-                            });
-                        } else {
-                            Product.getProductStock(item.product_id, (err, product) => {
-                                if (err) return reject(err);
-                                if (!product) return reject(new Error(`Product not found: ${item.product_id}`));
-                                if (product.stock < item.quantity) {
-                                    return reject(new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}`));
-                                }
-                                resolve();
-                            });
+                    if (count > 0) {
+                        if (!item.variant_id) {
+                            return reject(new Error(`Variant ID is required for product ${item.product_id}`));
                         }
-                    });
+
+                        Product.getVariantAvailability(item.variant_id, (err, variant) => {
+                            if (err) return reject(err);
+                            if (!variant || variant.is_available === 0) {
+                                return reject(new Error(`Variant not available for product ${item.product_id}`));
+                            }
+                            resolve();
+                        });
+                    } else {
+                        Product.getProductStock(item.product_id, (err, product) => {
+                            if (err) return reject(err);
+                            if (!product) return reject(new Error(`Product not found: ${item.product_id}`));
+                            if (product.stock < item.quantity) {
+                                return reject(new Error(`Insufficient stock for ${product.name}. Available: ${product.stock}`));
+                            }
+                            resolve();
+                        });
+                    }
                 });
-            });
+            }));
 
             await Promise.all(stockCheckPromises);
         } catch (stockErr) {
@@ -288,187 +286,131 @@ const createOrder = async (req, res) => {
             total_price = parseFloat((total_price + 3).toFixed(2));
         }
 
-        // ✅ 3. Create order
-        OrderDetails.addOrder(
-            user_id,
-            total_quantity,
-            total_price,
-            payment_method,
-            user_address_id,
-            vendor_id,
-            is_fast_delivery,
-            order_uid,
-            async (err, result) => {
-        if (err) {
-            console.error("Error adding order details:", err);
-            if (!res.headersSent)
-                return res.status(500).json({ error: "Error adding order details" });
-            return;
+        // ✅ 3. Create order (Promise wrapper)
+        const orderResult = await new Promise((resolve, reject) => {
+            OrderDetails.addOrder(
+                user_id,
+                total_quantity,
+                total_price,
+                payment_method,
+                user_address_id,
+                vendor_id,
+                is_fast_delivery,
+                order_uid,
+                (err, result) => {
+                    if (err) return reject(err);
+                    resolve(result);
+                }
+            );
+        });
+
+        const order_id = orderResult.insertId;
+        console.log(`✅ Order created: ${order_id}`);
+
+        // ✅ 4. Add items + addons
+        await Promise.all(cart.map(async (item) => {
+            const { product_id, quantity, price, variant_id = null, variant_price = 0, addons = [] } = item;
+            const hasVariant = variant_price && Number(variant_price) > 0;
+            const baseOrVariantPrice = hasVariant ? Number(variant_price) : Number(price || 0);
+            const addon_total = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
+            const item_unit_price = baseOrVariantPrice + addon_total;
+            const total_item_price = parseFloat((item_unit_price * quantity).toFixed(2));
+
+            // Add order item
+            const orderItemResult = await new Promise((resolve, reject) => {
+                OrderItem.addItem(
+                    order_id,
+                    user_id,
+                    product_id,
+                    quantity,
+                    Number(price),
+                    total_item_price,
+                    variant_id,
+                    Number(variant_price),
+                    (err, result) => {
+                        if (err) return reject(err);
+                        resolve(result);
+                    }
+                );
+            });
+
+            const order_item_id = orderItemResult.insertId;
+
+            // Decrease stock if needed
+            Product.countVariants(product_id, (err, count) => {
+                if (!err && count === 0) {
+                    Product.decreaseStock(product_id, quantity, (stockErr) => {
+                        if (stockErr) console.error(`Error decreasing stock for product ${product_id}:`, stockErr);
+                    });
+                }
+            });
+
+            // Add addons
+            await Promise.all(addons.map(addon => new Promise((resolveAddon, rejectAddon) => {
+                OrderItem.addAddon(order_item_id, addon.addon_id, Number(addon.price), (err) => {
+                    if (err) return rejectAddon(err);
+                    resolveAddon();
+                });
+            })));
+        }));
+
+        // ✅ 5. Fetch vendor details (corrected)
+        const vendorDetails = await new Promise((resolve, reject) => {
+            User.getVendorById(vendor_id, (err, result) => {
+                if (err) return reject(err);
+                resolve(result?.[0] || null);
+            });
+        });
+
+        if (!vendorDetails) {
+            console.warn(`⚠️ Vendor not found for vendor_id=${vendor_id}`);
         }
 
-        const order_id = result.insertId;
+        const vendor_lat = parseFloat(vendorDetails?.lat || vendorDetails?.vendor_lat);
+        const vendor_lng = parseFloat(vendorDetails?.lng || vendorDetails?.vendor_lng);
 
-        try {
-            // ✅ 1. Add all items and addons
-            await Promise.all(cart.map(async (item, index) => {
-                const { product_id, quantity, price, variant_id = null, variant_price = 0, addons = [] } = item;
-                const hasVariant = variant_price && Number(variant_price) > 0;
-                const baseOrVariantPrice = hasVariant ? Number(variant_price) : Number(price || 0);
-                const addon_total = addons.reduce((sum, a) => sum + Number(a.price || 0), 0);
-                const item_unit_price = baseOrVariantPrice + addon_total;
-                const total_item_price = parseFloat((item_unit_price * quantity).toFixed(2));
+        let nearbyRiders = [];
+        let searchRadiusKm = 10;
+        let riderFound = false;
 
-                // wrap addItem in Promise
-                const result = await new Promise((resolve, reject) => {
-                    OrderItem.addItem(
-                        order_id,
-                        user_id,
-                        product_id,
-                        quantity,
-                        Number(price),
-                        total_item_price,
-                        variant_id,
-                        Number(variant_price),
-                        (err, result) => {
-                            if (err) return reject(err);
-                            resolve(result);
-                        }
-                    );
-                });
-
-                const order_item_id = result.insertId;
-
-                // decrease stock if needed
-                Product.countVariants(product_id, (err, count) => {
-                    if (!err && count === 0) {
-                        Product.decreaseStock(product_id, quantity, (stockErr) => {
-                            if (stockErr)
-                                console.error(`Error decreasing stock for product ${product_id}:`, stockErr);
-                        });
-                    }
-                });
-
-                // handle addons
-                await Promise.all(addons.map(addon => {
-                    return new Promise((resolveAddon, rejectAddon) => {
-                        OrderItem.addAddon(order_item_id, addon.addon_id, Number(addon.price), (err) => {
-                            if (err) return rejectAddon(err);
-                            resolveAddon();
-                        });
-                    });
-                }));
-            }));
-
-           
-            // ✅ 2. Get vendor and nearby riders (safe block)
-            let vendorDetails = null;
-            try {
-                vendorDetails = await new Promise((resolve, reject) => {
-                    User.getVendorById(vendor_id, (err, result) => {
-                        if (err) return reject(err);
-                        resolve(result?.[0] || null);
-                    });
-                });
-            } catch (e) {
-                console.warn("Vendor fetch failed:", e.message);
-            }
-
-            let nearbyRiders = [];
-            let searchRadiusKm = 10;
-            let riderFound = false;
-
-            if (vendorDetails) {
-                // 🔍 Ensure we use correct field names and convert to numbers
-                const vendor_lat = parseFloat(vendorDetails.lat || vendorDetails.latitude);
-                const vendor_lng = parseFloat(vendorDetails.lng || vendorDetails.longitude);
-
-                if (!isNaN(vendor_lat) && !isNaN(vendor_lng)) {
-                    const radiusOptions = [3, 5, 10];
-
-                    for (const radius of radiusOptions) {
-                        try {
-                            const ridersInRange = await new Promise((resolve, reject) => {
-                                User.getNearbyRidersWithPolylines(
-                                    order_id,
-                                    vendor_id,
-                                    vendor_lat,
-                                    vendor_lng,
-                                    user_id,
-                                    user_address_id,
-                                    radius,
-                                    (err, riders) => {
-                                        if (err) return reject(err);
-                                        resolve(riders || []);
-                                    }
-                                );
-                            });
-
-                            if (ridersInRange.length > 0) {
-                                nearbyRiders = ridersInRange;
-                                searchRadiusKm = radius;
-                                riderFound = true;
-
-                                console.log(`✅ Found ${ridersInRange.length} riders within ${radius} km`);
-                                
-                                // ✅ send vendor notification immediately once found
-                                process.nextTick(async () => {
-                                    try {
-                                        const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
-                                        const username = userdata?.full_name || "User";
-                                        const addressText = userdata?.full_address || "No address found";
-                                        const productIds = cart.map(item => item.product_id);
-                                        const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
-
-                                        const productMap = {};
-                                        productDetails.forEach(prod => { productMap[prod.id] = prod; });
-
-                                        const enrichedCart = cart.map(item => ({
-                                            quantity: item.quantity,
-                                            price: item.price,
-                                            product_name: productMap[item.product_id]?.name || 'Unknown Product'
-                                        }));
-
-                                        sendNotificationToUser({
-                                            userId: vendor_id,
-                                            title: "New Order Received",
-                                            body: `You have a new order #${order_id}`,
-                                            saveToDB: true,
-                                            data: {
-                                                order_id: order_id.toString(),
-                                                order_uid: order_uid.toString(),
-                                                type: "new_order",
-                                                customer: username.toString(),
-                                                customer_address: addressText.toString(),
-                                                order_cart: JSON.stringify(enrichedCart),
-                                                is_fast_delivery: is_fast_delivery.toString()
-                                            }
-                                        });
-
-                                    } catch (notifyErr) {
-                                        console.warn("Notification failed:", notifyErr.message);
-                                    }
-                                });
-
-                                break; // ✅ Stop once we find riders and send notification
+        if (!isNaN(vendor_lat) && !isNaN(vendor_lng)) {
+            const radiusOptions = [3, 5, 10];
+            for (const radius of radiusOptions) {
+                try {
+                    const ridersInRange = await new Promise((resolve, reject) => {
+                        User.getNearbyRidersWithPolylines(
+                            order_id,
+                            vendor_id,
+                            vendor_lat,
+                            vendor_lng,
+                            user_id,
+                            user_address_id,
+                            radius,
+                            (err, riders) => {
+                                if (err) return reject(err);
+                                resolve(riders || []);
                             }
-                        } catch (riderErr) {
-                            console.warn(`Failed to fetch riders in ${radius} km:`, riderErr.message);
-                        }
-                    }
+                        );
+                    });
 
-                    if (!riderFound) {
-                        console.log("🚫 No riders found within 10 km — vendor not notified");
+                    if (ridersInRange.length > 0) {
+                        nearbyRiders = ridersInRange;
+                        searchRadiusKm = radius;
+                        riderFound = true;
+                        console.log(`✅ Found ${ridersInRange.length} riders within ${radius} km`);
+                        break;
                     }
-                } else {
-                    console.warn(`Invalid vendor coordinates for vendor_id=${vendor_id}`);
+                } catch (riderErr) {
+                    console.warn(`Failed to fetch riders in ${radius}km:`, riderErr.message);
                 }
-            } else {
-                console.warn(`Vendor not found for vendor_id=${vendor_id}`);
             }
+        } else {
+            console.warn(`Invalid vendor coordinates: vendor_lat=${vendor_lat}, vendor_lng=${vendor_lng}`);
+        }
 
-            // ✅ Respond to client regardless of notification result
-            if (!res.headersSent) {
-                res.status(201).json({
+        // ✅ 6. Respond to client
+        if (!res.headersSent) {
+            res.status(201).json({
                 message: "Order created successfully",
                 order_id,
                 order_uid,
@@ -476,82 +418,66 @@ const createOrder = async (req, res) => {
                 rider_found: riderFound,
                 nearby_riders_count: nearbyRiders.length,
                 search_radius_km: searchRadiusKm,
-
-                // ✅ Include vendor coordinates
                 vendor_location: vendorDetails
                     ? {
                         vendor_id,
-                        vendor_lat: parseFloat(vendorDetails.lat || vendorDetails.latitude),
-                        vendor_lng: parseFloat(vendorDetails.lng || vendorDetails.longitude),
-                        store_name: vendorDetails.store_name || null
+                        vendor_lat,
+                        vendor_lng,
+                        store_name: vendorDetails.store_name
                     }
                     : null,
-
-                // ✅ Include each nearby rider with coordinates + distance
                 nearby_riders: nearbyRiders.map(r => ({
                     user_id: r.user_id,
                     rider_lat: parseFloat(r.rider_lat),
                     rider_lng: parseFloat(r.rider_lng),
                     distance_km: parseFloat(r.distance_km)
                 }))
-                });
-
-            }
-
-
-            // ✅ 4. Continue background tasks (notifications)
-            process.nextTick(async () => {
-                try {
-                    // only send notification if rider found
-                    if (riderFound) {
-                        const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
-                        const username = userdata?.full_name || "User";
-                        const addressText = userdata?.full_address || "No address found";
-                        const productIds = cart.map(item => item.product_id);
-                        const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
-
-                        const productMap = {};
-                        productDetails.forEach(prod => {
-                            productMap[prod.id] = prod;
-                        });
-
-                        const enrichedCart = cart.map(item => ({
-                            quantity: item.quantity,
-                            price: item.price,
-                            product_name: productMap[item.product_id]?.name || 'Unknown Product'
-                        }));
-
-                        sendNotificationToUser({
-                            userId: vendor_id,
-                            title: "New Order Received",
-                            body: `You have a new order #${order_id}`,
-                            saveToDB: true,
-                            data: {
-                                order_id: order_id.toString(),
-                                order_uid: order_uid.toString(),
-                                type: "new_order",
-                                customer: username.toString(),
-                                customer_address: addressText.toString(),
-                                order_cart: JSON.stringify(enrichedCart),
-                                is_fast_delivery: is_fast_delivery.toString()
-                            }
-                        });
-                    } else {
-                        console.log(`🚫 No riders found within 10 km — vendor not notified`);
-                    }
-                } catch (notifyErr) {
-                    console.warn("Notification failed:", notifyErr.message);
-                }
             });
-
-
-        } catch (innerErr) {
-            console.error("Error during order creation:", innerErr);
-            if (!res.headersSent)
-                res.status(500).json({ error: "Error while processing order" });
         }
-    }
-        );
+
+        // ✅ 7. Background notification
+        process.nextTick(async () => {
+            try {
+                if (riderFound) {
+                    const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
+                    const username = userdata?.full_name || "User";
+                    const addressText = userdata?.full_address || "No address found";
+                    const productIds = cart.map(item => item.product_id);
+                    const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
+
+                    const productMap = {};
+                    productDetails.forEach(prod => {
+                        productMap[prod.id] = prod;
+                    });
+
+                    const enrichedCart = cart.map(item => ({
+                        quantity: item.quantity,
+                        price: item.price,
+                        product_name: productMap[item.product_id]?.name || 'Unknown Product'
+                    }));
+
+                    sendNotificationToUser({
+                        userId: vendor_id,
+                        title: "New Order Received",
+                        body: `You have a new order #${order_id}`,
+                        saveToDB: true,
+                        data: {
+                            order_id: order_id.toString(),
+                            order_uid: order_uid.toString(),
+                            type: "new_order",
+                            customer: username.toString(),
+                            customer_address: addressText.toString(),
+                            order_cart: JSON.stringify(enrichedCart),
+                            is_fast_delivery: is_fast_delivery.toString()
+                        }
+                    });
+                } else {
+                    console.log(`🚫 No riders found within 10 km — vendor not notified`);
+                }
+            } catch (notifyErr) {
+                console.warn("Notification failed:", notifyErr.message);
+            }
+        });
 
     } catch (error) {
         console.error("Server error while creating order:", error);
@@ -560,6 +486,7 @@ const createOrder = async (req, res) => {
         }
     }
 };
+
 
 
 const updateOrderStatus = async (req, res) => {
