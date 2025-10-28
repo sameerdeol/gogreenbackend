@@ -359,11 +359,12 @@ const createOrder = async (req, res) => {
                 }));
             }));
 
-           // ✅ 2. Get vendor and nearby riders (safe block)
+           
+            // ✅ 2. Get vendor and nearby riders (safe block)
             let vendorDetails = null;
             try {
                 vendorDetails = await new Promise((resolve, reject) => {
-                    Vendor.getVendorById(vendor_id, (err, result) => {
+                    User.getVendorById(vendor_id, (err, result) => {
                         if (err) return reject(err);
                         resolve(result?.[0] || null);
                     });
@@ -373,61 +374,117 @@ const createOrder = async (req, res) => {
             }
 
             let nearbyRiders = [];
-            let searchRadiusKm = 3;
+            let searchRadiusKm = 0;
             let riderFound = false;
 
             if (vendorDetails) {
-                const { lat: vendor_lat, lng: vendor_lng } = vendorDetails;
+                // 🔍 Ensure we use correct field names and convert to numbers
+                const vendor_lat = parseFloat(vendorDetails.lat || vendorDetails.latitude);
+                const vendor_lng = parseFloat(vendorDetails.lng || vendorDetails.longitude);
 
-                const radiusOptions = [3, 5, 10];
-                for (const radius of radiusOptions) {
-                    try {
-                        const ridersInRange = await new Promise((resolve, reject) => {
-                            User.getNearbyRidersWithPolylines(
-                                order_id,
-                                vendor_id,
-                                vendor_lat,
-                                vendor_lng,
-                                user_id,
-                                user_address_id,
-                                radius,
-                                (err, riders) => {
-                                    if (err) return reject(err);
-                                    resolve(riders || []);
-                                }
-                            );
-                        });
+                if (!isNaN(vendor_lat) && !isNaN(vendor_lng)) {
+                    const radiusOptions = [3, 5, 10];
 
-                        if (ridersInRange.length > 0) {
-                            nearbyRiders = ridersInRange;
-                            searchRadiusKm = radius;
-                            riderFound = true;
-                            break; // ✅ stop after finding riders
+                    for (const radius of radiusOptions) {
+                        try {
+                            const ridersInRange = await new Promise((resolve, reject) => {
+                                User.getNearbyRidersWithPolylines(
+                                    order_id,
+                                    vendor_id,
+                                    vendor_lat,
+                                    vendor_lng,
+                                    user_id,
+                                    user_address_id,
+                                    radius,
+                                    (err, riders) => {
+                                        if (err) return reject(err);
+                                        resolve(riders || []);
+                                    }
+                                );
+                            });
+
+                            if (ridersInRange.length > 0) {
+                                nearbyRiders = ridersInRange;
+                                searchRadiusKm = radius;
+                                riderFound = true;
+
+                                console.log(`✅ Found ${ridersInRange.length} riders within ${radius} km`);
+                                
+                                // ✅ send vendor notification immediately once found
+                                process.nextTick(async () => {
+                                    try {
+                                        const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
+                                        const username = userdata?.full_name || "User";
+                                        const addressText = userdata?.full_address || "No address found";
+                                        const productIds = cart.map(item => item.product_id);
+                                        const productDetails = await Product.getProductDetailsByIdsAsync(productIds);
+
+                                        const productMap = {};
+                                        productDetails.forEach(prod => { productMap[prod.id] = prod; });
+
+                                        const enrichedCart = cart.map(item => ({
+                                            quantity: item.quantity,
+                                            price: item.price,
+                                            product_name: productMap[item.product_id]?.name || 'Unknown Product'
+                                        }));
+
+                                        sendNotificationToUser({
+                                            userId: vendor_id,
+                                            title: "New Order Received",
+                                            body: `You have a new order #${order_id}`,
+                                            saveToDB: true,
+                                            data: {
+                                                order_id: order_id.toString(),
+                                                order_uid: order_uid.toString(),
+                                                type: "new_order",
+                                                customer: username.toString(),
+                                                customer_address: addressText.toString(),
+                                                order_cart: JSON.stringify(enrichedCart),
+                                                is_fast_delivery: is_fast_delivery.toString()
+                                            }
+                                        });
+
+                                    } catch (notifyErr) {
+                                        console.warn("Notification failed:", notifyErr.message);
+                                    }
+                                });
+
+                                break; // ✅ Stop once we find riders and send notification
+                            }
+                        } catch (riderErr) {
+                            console.warn(`Failed to fetch riders in ${radius} km:`, riderErr.message);
                         }
-                    } catch (riderErr) {
-                        console.warn(`Failed to fetch riders in ${radius}km:`, riderErr.message);
                     }
+
+                    if (!riderFound) {
+                        console.log("🚫 No riders found within 10 km — vendor not notified");
+                    }
+                } else {
+                    console.warn(`Invalid vendor coordinates for vendor_id=${vendor_id}`);
                 }
+            } else {
+                console.warn(`Vendor not found for vendor_id=${vendor_id}`);
             }
 
-            // ✅ 3. Always respond (no matter what)
+            // ✅ Respond to client regardless of notification result
             if (!res.headersSent) {
                 res.status(201).json({
-                message: "Order created successfully",
-                order_id,
-                order_uid,
-                total_price,
-                rider_found: riderFound, // <- map it correctly
-                nearby_riders_count: nearbyRiders.length,
-                search_radius_km: searchRadiusKm,
-                nearby_riders: nearbyRiders.map(r => ({
-                    user_id: r.user_id,
-                    rider_lat: r.rider_lat,
-                    rider_lng: r.rider_lng,
-                    distance_km: r.distance_km
-                }))
-            });
+                    message: "Order created successfully",
+                    order_id,
+                    order_uid,
+                    total_price,
+                    rider_found: riderFound,
+                    nearby_riders_count: nearbyRiders.length,
+                    search_radius_km: searchRadiusKm,
+                    nearby_riders: nearbyRiders.map(r => ({
+                        user_id: r.user_id,
+                        rider_lat: r.rider_lat,
+                        rider_lng: r.rider_lng,
+                        distance_km: r.distance_km
+                    }))
+                });
             }
+
 
             // ✅ 4. Continue background tasks (notifications)
             process.nextTick(async () => {

@@ -1221,6 +1221,43 @@ const User = {
             });
         },
 
+       getVendorById: (vendor_id, callback) => {
+        if (!vendor_id) return callback(new Error("Vendor ID is required"));
+
+        const query = `
+            SELECT 
+                v.id,
+                v.user_id,
+                v.store_name,
+                v.store_address,
+                v.store_image,
+                v.vendor_lat,
+                v.vendor_lng,
+                u.firstname,
+                u.lastname,
+                u.email,
+                u.phonenumber
+            FROM vendors v
+            LEFT JOIN users u ON v.user_id = u.id
+            WHERE v.user_id = ?
+            LIMIT 1
+        `;
+
+        db.query(query, [vendor_id], (err, results) => {
+            if (err) {
+                console.error("❌ Error fetching vendor by ID:", err);
+                return callback(err);
+            }
+
+            if (!results || results.length === 0) {
+                console.warn(`⚠️ No vendor found for user_id=${vendor_id}`);
+                return callback(null, []);
+            }
+
+            callback(null, results);
+        });
+    },
+
 
     // getNearbyRidersWithPolylines: (
     //     order_id,
