@@ -374,7 +374,7 @@ const createOrder = async (req, res) => {
             }
 
             let nearbyRiders = [];
-            let searchRadiusKm = 0;
+            let searchRadiusKm = 10;
             let riderFound = false;
 
             if (vendorDetails) {
