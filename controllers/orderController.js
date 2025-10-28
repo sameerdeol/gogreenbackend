@@ -494,11 +494,17 @@ const createOrder = async (req, res) => {
         }
 
     } catch (error) {
-        console.error("Server error while creating order:", error);
-        if (!res.headersSent) {
-            res.status(500).json({ error: "Server error" });
-        }
+    console.error("❌ Server error while creating order:");
+    console.error(error.message);
+    console.error(error.stack);
+
+    if (!res.headersSent) {
+        res.status(500).json({
+            error: "Server error",
+            details: error.message // 👈 this will show real error in response
+        });
     }
+}
 };
 
 
