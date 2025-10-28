@@ -469,20 +469,33 @@ const createOrder = async (req, res) => {
             // ✅ Respond to client regardless of notification result
             if (!res.headersSent) {
                 res.status(201).json({
-                    message: "Order created successfully",
-                    order_id,
-                    order_uid,
-                    total_price,
-                    rider_found: riderFound,
-                    nearby_riders_count: nearbyRiders.length,
-                    search_radius_km: searchRadiusKm,
-                    nearby_riders: nearbyRiders.map(r => ({
-                        user_id: r.user_id,
-                        rider_lat: r.rider_lat,
-                        rider_lng: r.rider_lng,
-                        distance_km: r.distance_km
-                    }))
+                message: "Order created successfully",
+                order_id,
+                order_uid,
+                total_price,
+                rider_found: riderFound,
+                nearby_riders_count: nearbyRiders.length,
+                search_radius_km: searchRadiusKm,
+
+                // ✅ Include vendor coordinates
+                vendor_location: vendorDetails
+                    ? {
+                        vendor_id,
+                        vendor_lat: parseFloat(vendorDetails.lat || vendorDetails.latitude),
+                        vendor_lng: parseFloat(vendorDetails.lng || vendorDetails.longitude),
+                        store_name: vendorDetails.store_name || null
+                    }
+                    : null,
+
+                // ✅ Include each nearby rider with coordinates + distance
+                nearby_riders: nearbyRiders.map(r => ({
+                    user_id: r.user_id,
+                    rider_lat: parseFloat(r.rider_lat),
+                    rider_lng: parseFloat(r.rider_lng),
+                    distance_km: parseFloat(r.distance_km)
+                }))
                 });
+
             }
 
 
