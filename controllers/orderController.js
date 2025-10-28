@@ -372,8 +372,8 @@ const createOrder = async (req, res) => {
             });
         });
 
-        const vendor_lat = parseFloat(vendorDetails?.lat);
-        const vendor_lng = parseFloat(vendorDetails?.lng);
+        const vendor_lat = parseFloat(vendorDetails?.vendor_lat);
+        const vendor_lng = parseFloat(vendorDetails?.vendor_lng);
 
         // ✅ 6. Scheduled Order Logic
         if (scheduled_time) {
