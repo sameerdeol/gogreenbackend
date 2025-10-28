@@ -1,10 +1,65 @@
 const db = require("../config/db");
  
 const OrderDetails = {
-    addOrder: (user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, order_uid,scheduled_time ,callback) => {
-        const sql = `INSERT INTO order_details (user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, order_uid,scheduled_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)`;
-        db.query(sql, [user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, order_uid,scheduled_time ? scheduled_time.replace('T', ' ') : null], callback);
-    },
+    // addOrder: (user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, order_uid,scheduled_time ,callback) => {
+    //     const sql = `INSERT INTO order_details (user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, order_uid,scheduled_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)`;
+    //     db.query(sql, [user_id, total_quantity, total_price, payment_method, user_address_id, vendor_id, is_fast_delivery, order_uid,scheduled_time ? scheduled_time.replace('T', ' ') : null], callback);
+    // },
+    addOrder: (
+        user_id,
+        total_quantity,
+        total_price,
+        payment_method,
+        user_address_id,
+        vendor_id,
+        is_fast_delivery,
+        order_uid,
+        scheduled_time,
+        callback
+        ) => {
+        const sql = `
+            INSERT INTO order_details (
+            user_id,
+            total_quantity,
+            total_price,
+            payment_method,
+            user_address_id,
+            vendor_id,
+            is_fast_delivery,
+            order_uid,
+            scheduled_time
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        // ✅ Handle both cases: scheduled_time can be null or valid datetime
+        const formattedScheduledTime =
+            scheduled_time && typeof scheduled_time === "string" && scheduled_time.trim() !== ""
+            ? scheduled_time.replace("T", " ")
+            : null;
+
+        db.query(
+            sql,
+            [
+            user_id,
+            total_quantity,
+            total_price,
+            payment_method,
+            user_address_id,
+            vendor_id,
+            is_fast_delivery ? 1 : 0,
+            order_uid,
+            formattedScheduledTime
+            ],
+            (err, result) => {
+            if (err) {
+                console.error("❌ Error inserting order:", err);
+                return callback(err);
+            }
+            callback(null, result);
+            }
+        );
+        },
+
 
     getOrderById: (order_id, callback) => {
         const sql = `SELECT * FROM order_details WHERE order_id = ?`;
