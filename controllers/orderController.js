@@ -372,21 +372,21 @@ const createOrder = async (req, res) => {
         const vendor_lng = parseFloat(vendorDetails?.lng);
 
         // ✅ 6. Scheduled Order Logic
-        if (scheduledTime) {
+        if (scheduled_time) {
             // Save schedule info to DB
-            await OrderDetails.updateSchedule(order_id, scheduledTime);
+            await OrderDetails.updateSchedule(order_id, scheduled_time);
 
             // 📨 Notify vendor about scheduled order
             sendNotificationToUser({
                 userId: vendor_id,
                 title: "Scheduled Order Received",
-                body: `You have a scheduled order for ${new Date(scheduledTime).toLocaleString()}`,
+                body: `You have a scheduled order for ${new Date(scheduled_time).toLocaleString()}`,
                 saveToDB: true,
                 data: {
                     order_id: order_id.toString(),
                     order_uid: order_uid.toString(),
                     type: "scheduled_order",
-                    scheduled_time: scheduledTime.toString()
+                    scheduled_time: scheduled_time.toString()
                 }
             });
 
@@ -396,7 +396,7 @@ const createOrder = async (req, res) => {
                 order_id,
                 order_uid,
                 total_price,
-                scheduled_time: scheduledTime,
+                scheduled_time: scheduled_time,
                 vendor: {
                     vendor_id,
                     store_name: vendorDetails?.store_name || null,
