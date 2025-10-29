@@ -631,9 +631,7 @@ const updateOrderStatus = async (req, res) => {
 
         // ✅ Step 6: Include nearby rider details in response
         return res.status(200).json({
-            message: `Order status updated to '${order_status}' successfully`,
-            nearby_riders_count: nearbyRiders.length,
-            nearby_riders: nearbyRiders
+            message: `Order status updated to '${order_status}' successfully`,        
         });
 
     } catch (error) {
