@@ -553,6 +553,8 @@ const updateOrderStatus = async (req, res) => {
         const orderIdStr = order_id.toString();
         const notifications = [];
         // Step 4: Handle notifications
+        let nearbyRiders = []; // declare this before the switch
+
         // Step 4: Handle notifications
         switch (order_status) {
             case 1: // ✅ Vendor confirmed order
@@ -568,7 +570,7 @@ const updateOrderStatus = async (req, res) => {
                 // Notify nearby riders if vendor_id exists
                 if (vendor_id) {
                     try {
-                        const nearbyRiders = await new Promise((resolve, reject) => {
+                        nearbyRiders = await new Promise((resolve, reject) => {
                             User.getNearbyRidersWithPolylines(
                                 order_id,
                                 vendor_id,
@@ -617,19 +619,30 @@ const updateOrderStatus = async (req, res) => {
                 }));
                 break;
 
-                    default:
-                        console.log("ℹ️ No specific notification for status:", order_status);
-                }
+            default:
+                console.log("ℹ️ No specific notification for status:", order_status);
+        }
 
+        // Step 5: Wait for all notifications
+        const notifResults = await Promise.allSettled(notifications);
+        notifResults.forEach((result, index) => {
+            if (result.status === "rejected") {
+                console.warn(`⚠️ Notification #${index + 1} failed:`, result.reason);
+            }
+        });
 
-                const notifResults = await Promise.allSettled(notifications);
-                notifResults.forEach((result, index) => {
-                    if (result.status === "rejected") {
-                        console.warn(`Notification #${index + 1} failed:`, result.reason);
-                    }
-                });
+        // ✅ Step 6: Return response including nearby riders info (if found)
+        return res.status(200).json({
+            message: `Order status updated to '${order_status}' successfully`,
+            nearby_riders_count: nearbyRiders.length || 0,
+            nearby_riders: nearbyRiders.map(r => ({
+                rider_id: r.user_id,
+                rider_lat: parseFloat(r.rider_lat),
+                rider_lng: parseFloat(r.rider_lng),
+                distance_km: parseFloat(r.distance_km)
+            }))
+        });
 
-                return res.status(200).json({ message: `Order status updated to '${order_status}' successfully` });
 
             } catch (error) {
                 console.error("Error in updateOrderStatus:", error);
