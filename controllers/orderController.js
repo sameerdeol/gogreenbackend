@@ -553,8 +553,10 @@ const updateOrderStatus = async (req, res) => {
         const orderIdStr = order_id.toString();
         const notifications = [];
         // Step 4: Handle notifications
+        // Step 4: Handle notifications
         switch (order_status) {
-            case 1: // Vendor confirmed order
+            case 1: // ✅ Vendor confirmed order
+                // Notify the user
                 notifications.push(sendNotificationToUser({
                     userId: user_id,
                     title: "Order Confirmed",
@@ -563,38 +565,49 @@ const updateOrderStatus = async (req, res) => {
                     saveToDB: true
                 }));
 
-                // Notify nearby riders only if vendor_id exists
+                // Notify nearby riders if vendor_id exists
                 if (vendor_id) {
-                    User.getNearbyRidersWithPolylines(
-                        order_id,
-                        vendor_id,
-                        vendor_lat,
-                        vendor_lng,
-                        user_id,
-                        user_address_id,
-                        10, // radius in KM
-                        (err, nearbyRiders) => {
-                            if (err) return console.error("Error getting nearby riders:", err);
-                            for (const rider of nearbyRiders) {
-                                notifications.push(sendNotificationToUser({
-                                    userId: String(rider.user_id || ""),
-                                    title: "New Delivery Opportunity",
-                                    body: `New order from ${store_name} is ready for pickup near you.`,
-                                    data: {
-                                        order_id: orderIdStr,
-                                        type: "new_order",
-                                        vendor_id: String(vendor_id),
-                                        vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
-                                        rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00")
-                                    }
-                                }));
-                            }
+                    try {
+                        const nearbyRiders = await new Promise((resolve, reject) => {
+                            User.getNearbyRidersWithPolylines(
+                                order_id,
+                                vendor_id,
+                                vendor_lat,
+                                vendor_lng,
+                                user_id,
+                                user_address_id,
+                                10, // radius in KM
+                                (err, results) => {
+                                    if (err) return reject(err);
+                                    resolve(results);
+                                }
+                            );
+                        });
+
+                        console.log(`✅ Found ${nearbyRiders.length} nearby riders for order ${order_id}`);
+
+                        for (const rider of nearbyRiders) {
+                            notifications.push(sendNotificationToUser({
+                                userId: String(rider.user_id || ""),
+                                title: "New Delivery Opportunity",
+                                body: `New order from ${store_name} is ready for pickup near you.`,
+                                data: {
+                                    order_id: orderIdStr,
+                                    type: "new_order",
+                                    vendor_id: String(vendor_id),
+                                    vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
+                                    rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00")
+                                },
+                                saveToDB: true
+                            }));
                         }
-                    );
+                    } catch (err) {
+                        console.error("❌ Error getting nearby riders:", err);
+                    }
                 }
                 break;
 
-            case 3: // Rejected
+            case 3: // ❌ Order Rejected
                 notifications.push(sendNotificationToUser({
                     userId: user_id,
                     title: "Order Rejected",
@@ -604,24 +617,25 @@ const updateOrderStatus = async (req, res) => {
                 }));
                 break;
 
-            default:
-                console.log("No specific notification for status:", order_status);
-        }
+                    default:
+                        console.log("ℹ️ No specific notification for status:", order_status);
+                }
 
-        const notifResults = await Promise.allSettled(notifications);
-        notifResults.forEach((result, index) => {
-            if (result.status === "rejected") {
-                console.warn(`Notification #${index + 1} failed:`, result.reason);
+
+                const notifResults = await Promise.allSettled(notifications);
+                notifResults.forEach((result, index) => {
+                    if (result.status === "rejected") {
+                        console.warn(`Notification #${index + 1} failed:`, result.reason);
+                    }
+                });
+
+                return res.status(200).json({ message: `Order status updated to '${order_status}' successfully` });
+
+            } catch (error) {
+                console.error("Error in updateOrderStatus:", error);
+                return res.status(500).json({ error: "Something went wrong while updating order status" });
             }
-        });
-
-        return res.status(200).json({ message: `Order status updated to '${order_status}' successfully` });
-
-    } catch (error) {
-        console.error("Error in updateOrderStatus:", error);
-        return res.status(500).json({ error: "Something went wrong while updating order status" });
-    }
-};
+        };
 
 
 // const updateOrder = async (req, res, io) => {
