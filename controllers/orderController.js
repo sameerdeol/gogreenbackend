@@ -525,18 +525,20 @@ const updateOrderStatus = async (req, res) => {
                     resolve(results);
                 });
             });
+
             if (orderResult.length === 0) {
                 return res.status(403).json({ error: "Unauthorized to update this order" });
             }
         }
 
-        // Step 2: Update order status (and rider_id if provided)
+        // Step 2: Update order status
         await new Promise((resolve, reject) => {
             OrderDetails.updateOrderStatus(order_id, order_status, (err) => {
                 if (err) return reject(err);
                 resolve();
             });
         });
+
         // Step 3: Fetch user info
         const userResult = await new Promise((resolve, reject) => {
             OrderDetails.getUserIdByOrderId(order_id, (err, result) => {
@@ -544,15 +546,18 @@ const updateOrderStatus = async (req, res) => {
                 resolve(result);
             });
         });
+
         if (userResult.length === 0 || !userResult[0].user_id) {
             console.warn("User not found for notification");
             return res.status(200).json({ message: "Order updated, but user notification skipped" });
         }
 
-        const { user_id, store_name, vendor_lat, vendor_lng, user_address_id, rider_id: assigned_rider_id } = userResult[0];
+        const { user_id, store_name, vendor_lat, vendor_lng, user_address_id } = userResult[0];
         const orderIdStr = order_id.toString();
         const notifications = [];
-        // Step 4: Handle notifications
+        let nearbyRiders = [];
+
+        // Step 4: Handle notifications and riders
         switch (order_status) {
             case 1: // Vendor confirmed order
                 notifications.push(sendNotificationToUser({
@@ -563,34 +568,42 @@ const updateOrderStatus = async (req, res) => {
                     saveToDB: true
                 }));
 
-                // Notify nearby riders only if vendor_id exists
+                // Get nearby riders if vendor exists
                 if (vendor_id) {
-                    User.getNearbyRidersWithPolylines(
-                        order_id,
-                        vendor_id,
-                        vendor_lat,
-                        vendor_lng,
-                        user_id,
-                        user_address_id,
-                        10, // radius in KM
-                        (err, nearbyRiders) => {
-                            if (err) return console.error("Error getting nearby riders:", err);
-                            for (const rider of nearbyRiders) {
-                                notifications.push(sendNotificationToUser({
-                                    userId: String(rider.user_id || ""),
-                                    title: "New Delivery Opportunity",
-                                    body: `New order from ${store_name} is ready for pickup near you.`,
-                                    data: {
-                                        order_id: orderIdStr,
-                                        type: "new_order",
-                                        vendor_id: String(vendor_id),
-                                        vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
-                                        rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00")
-                                    }
-                                }));
-                            }
+                    try {
+                        nearbyRiders = await new Promise((resolve, reject) => {
+                            User.getNearbyRidersWithPolylines(
+                                order_id,
+                                vendor_id,
+                                vendor_lat,
+                                vendor_lng,
+                                user_id,
+                                user_address_id,
+                                10, // radius in KM
+                                (err, riders) => {
+                                    if (err) return reject(err);
+                                    resolve(riders);
+                                }
+                            );
+                        });
+
+                        for (const rider of nearbyRiders) {
+                            notifications.push(sendNotificationToUser({
+                                userId: String(rider.user_id || ""),
+                                title: "New Delivery Opportunity",
+                                body: `New order from ${store_name} is ready for pickup near you.`,
+                                data: {
+                                    order_id: orderIdStr,
+                                    type: "new_order",
+                                    vendor_id: String(vendor_id),
+                                    vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
+                                    rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00")
+                                }
+                            }));
                         }
-                    );
+                    } catch (err) {
+                        console.error("Error fetching nearby riders:", err);
+                    }
                 }
                 break;
 
@@ -608,6 +621,7 @@ const updateOrderStatus = async (req, res) => {
                 console.log("No specific notification for status:", order_status);
         }
 
+        // Step 5: Send notifications
         const notifResults = await Promise.allSettled(notifications);
         notifResults.forEach((result, index) => {
             if (result.status === "rejected") {
@@ -615,13 +629,19 @@ const updateOrderStatus = async (req, res) => {
             }
         });
 
-        return res.status(200).json({ message: `Order status updated to '${order_status}' successfully` });
+        // ✅ Step 6: Include nearby rider details in response
+        return res.status(200).json({
+            message: `Order status updated to '${order_status}' successfully`,
+            nearby_riders_count: nearbyRiders.length,
+            nearby_riders: nearbyRiders
+        });
 
     } catch (error) {
         console.error("Error in updateOrderStatus:", error);
         return res.status(500).json({ error: "Something went wrong while updating order status" });
     }
 };
+
 
 
 // const updateOrder = async (req, res, io) => {
