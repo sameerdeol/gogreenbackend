@@ -12,11 +12,19 @@ const app = express();
 const server = http.createServer(app);
 
 // Initialize Socket.IO
+// const io = new Server(server, {
+//   path: '/socket.io',
+//   cors: {
+//     origin: '*',
+//     methods: ['GET', 'POST']
+//   }
+// });
 const io = new Server(server, {
   path: '/socket.io',
   cors: {
     origin: '*',
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   }
 });
 
