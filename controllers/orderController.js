@@ -617,12 +617,7 @@ const updateOrderStatus = async (req, res) => {
 
         return res.status(200).json({ message: `Order status updated to '${order_status}' successfully`,
             nearby_riders_count: nearbyRiders.length,
-            nearby_riders: nearbyRiders.map(r => ({
-                user_id: r.user_id,
-                rider_lat: parseFloat(r.rider_lat),
-                rider_lng: parseFloat(r.rider_lng),
-                distance_km: parseFloat(r.distance_km)
-            })) });
+            });
 
     } catch (error) {
         console.error("Error in updateOrderStatus:", error);
