@@ -80,27 +80,9 @@ const OrderDetails = {
         db.query(sql, [status, order_id, rider_id], callback);
     },
     
-    // getUserIdByOrderId: (order_id, callback) => {
-    //     const sql = `
-    //         SELECT 
-    //         o.user_id,
-    //         o.rider_id,
-    //         v.store_name,
-    //         v.vendor_lat,
-    //         v.vendor_lng,
-    //         o.user_address_id,
-    //         v.store_address,
-    //         ua.address
-    //         FROM order_details o
-    //         JOIN vendors v on v.user_id=o.vendor_id
-    //         JOIN user_addresses ua on ua.user_id=o.user_id 
-    //         WHERE o.id = ?
-    //     `;
-    //     db.query(sql, [order_id], callback);
-    // }
     getUserIdByOrderId: (order_id, callback) => {
-    const sql = `
-        SELECT 
+        const sql = `
+            SELECT 
             o.user_id,
             o.rider_id,
             v.store_name,
@@ -108,18 +90,14 @@ const OrderDetails = {
             v.vendor_lng,
             o.user_address_id,
             v.store_address,
-            ua.address,
-            ua.customer_lat,
-            ua.customer_lng
-        FROM order_details o
-        JOIN vendors v ON v.user_id = o.vendor_id
-        JOIN user_addresses ua ON ua.user_id = o.user_id 
-            AND ua.id = o.user_address_id  -- ✅ added this line
-        WHERE o.id = ?
-    `;
-    db.query(sql, [order_id], callback);
-},
-
+            ua.address
+            FROM order_details o
+            JOIN vendors v on v.user_id=o.vendor_id
+            JOIN user_addresses ua on ua.user_id=o.user_id 
+            WHERE o.id = ?
+        `;
+        db.query(sql, [order_id], callback);
+    }
 };
  
  module.exports = OrderDetails;
