@@ -1147,10 +1147,26 @@ const User = {
                 `;
 
                 db.query(sqlCustomer, [customerId, user_address_id], (err, customerResults) => {
+
+                console.log("🧭 [DEBUG] SQL Customer params:", { customerId, user_address_id });
+                if (err) {
+                    console.error("❌ [DEBUG] sqlCustomer error:", err);
+                    return reject(err);
+                }
+
+                console.log("📦 [DEBUG] sqlCustomer results:", customerResults);
+
+                if (!customerResults.length) {
+                    console.warn("⚠️ [DEBUG] No address found for user:", customerId, "address_id:", user_address_id);
+                    return reject(new Error("Address not found"));
+                }
+
+                const { customer_lat, customer_lng } = customerResults[0];
+                console.log("📍 [DEBUG] Customer coordinates:", { customer_lat, customer_lng });
                     if (err) return reject(err);
                     if (!customerResults.length) return reject(new Error("Address not found"));
 
-                    const { customer_lat, customer_lng } = customerResults[0];
+                    // const { customer_lat, customer_lng } = customerResults[0];
 
                     const latDelta = radiusInKm / 111;
                     const lngDelta = radiusInKm / (111 * Math.cos(vendorLat * Math.PI / 180));
