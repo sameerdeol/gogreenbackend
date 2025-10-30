@@ -577,6 +577,7 @@ const updateOrderStatus = async (req, res) => {
 
                 if (vendor_id) {
                     console.log("🛰 Fetching nearby riders for order:", order_id);
+                    console.log("🛰 Fetching userId:", user_id);
 
                     try {
                         nearbyRiders = await new Promise((resolve, reject) => {
@@ -587,7 +588,7 @@ const updateOrderStatus = async (req, res) => {
                                 vendor_lng,
                                 user_id,
                                 user_address_id,
-                                50, // radius in KM
+                                10, // radius in KM
                                 (err, riders) => {
                                     if (err) return reject(err);
                                     resolve(riders);
