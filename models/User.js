@@ -1147,7 +1147,6 @@ const User = {
                 `;
 
                 db.query(sqlCustomer, [customerId, user_address_id], (err, customerResults) => {
-                    
                     if (err) return reject(err);
                     if (!customerResults.length) return reject(new Error("Address not found"));
 
@@ -1169,17 +1168,6 @@ const User = {
                     `;
 
                     db.query(sqlRiders, [minLat, maxLat, minLng, maxLng], (err, riders) => {
-                        if (err) {
-                            console.error("❌ [DEBUG] sqlRiders error:", err);
-                            return reject(err);
-                        }
-
-                        console.log("👥 [DEBUG] sqlRiders results count:", riders.length);
-                        if (riders.length > 0) console.log("📦 [DEBUG] Riders found:", riders);
-                        if (!riders.length) {
-                            console.warn("⚠️ [DEBUG] No riders found near vendor within radius:", radiusInKm, "km");
-                            return resolve([]);
-    }
                         if (err) return reject(err);
                         if (!riders.length) return resolve([]);
 

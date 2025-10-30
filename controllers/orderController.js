@@ -575,58 +575,41 @@ const updateOrderStatus = async (req, res) => {
                     saveToDB: true
                 }));
 
-                if (vendor_id) {
-                    console.log("🛰 Fetching nearby riders for order:", order_id);
-                    console.log("🛰 Fetching userId:", user_id);
-                    console.log("🛰 Fetching user_address_id:", user_address_id);
-
+               if (vendor_id) {
                     try {
-                        nearbyRiders = await new Promise((resolve, reject) => {
-                            User.getNearbyRidersWithPolylines(
-                                order_id,
-                                vendor_id,
-                                vendor_lat,
-                                vendor_lng,
-                                user_id,
-                                user_address_id,
-                                10, // radius in KM
-                                (err, riders) => {
-                                    if (err) return reject(err);
-                                    resolve(riders);
-                                }
-                            );
-                        });
+                        console.log("🛰 Fetching nearby riders for order:", order_id);
 
-                        console.log("📦 Nearby riders fetched:", nearbyRiders);
-                        console.log("👥 Riders count:", nearbyRiders?.length || 0);
+                        nearbyRiders = await User.getNearbyRidersWithPolylines(
+                            order_id,
+                            vendor_id,
+                            vendor_lat,
+                            vendor_lng,
+                            user_id,
+                            user_address_id,
+                            10 // radius in km
+                        );
 
-                        if (!nearbyRiders || nearbyRiders.length === 0) {
-                            console.warn("⚠️ No nearby riders found for order:", order_id);
-                        }
+                        console.log("✅ Nearby riders fetched:", nearbyRiders.length);
 
                         for (const rider of nearbyRiders) {
-                            console.log(`📨 Sending notification to rider ${rider.user_id}`);
-                            try {
-                                notifications.push(sendNotificationToUser({
-                                    userId: String(rider.user_id || ""),
-                                    title: "New Delivery Opportunity",
-                                    body: `New order from ${store_name} is ready for pickup near you.`,
-                                    data: {
-                                        order_id: orderIdStr,
-                                        type: "new_order",
-                                        vendor_id: String(vendor_id),
-                                        vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
-                                        rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00")
-                                    }
-                                }));
-                            } catch (notifErr) {
-                                console.error("❌ Notification failed for rider:", rider.user_id, notifErr);
-                            }
+                            notifications.push(sendNotificationToUser({
+                                userId: String(rider.user_id || ""),
+                                title: "New Delivery Opportunity",
+                                body: `New order from ${store_name} is ready for pickup near you.`,
+                                data: {
+                                    order_id: orderIdStr,
+                                    type: "new_order",
+                                    vendor_id: String(vendor_id),
+                                    vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
+                                    rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00")
+                                }
+                            }));
                         }
                     } catch (err) {
-                        console.error("❌ Error fetching nearby riders:", err);
+                        console.error("Error fetching nearby riders:", err);
                     }
                 }
+
                 break;
 
             case 3: // Rejected
