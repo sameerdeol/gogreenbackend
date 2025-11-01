@@ -594,8 +594,8 @@ const updateOrderStatus = async (req, res) => {
                         for (const rider of nearbyRiders) {
                             notifications.push(sendNotificationToUser({
                                 userId: String(rider.user_id || ""),
-                                title: "New Delivery Opportunity",
-                                body: `New order from ${store_name} is ready for pickup near you.`,
+                                // title: "New Delivery Opportunity",
+                                // body: `New order from ${store_name} is ready for pickup near you.`,
                                 data: {
                                     order_id: orderIdStr,
                                     type: "new_order",
