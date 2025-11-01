@@ -592,30 +592,19 @@ const updateOrderStatus = async (req, res) => {
                         console.log("✅ Nearby riders fetched:", nearbyRiders.length);
 
                         for (const rider of nearbyRiders) {
-                            const payloadData = {
-                                order_id: orderIdStr,
-                                type: "new_order",
-                                vendor_id: String(vendor_id),
-                                vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
-                                rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00")
-                            };
-
-                            // ✅ 1. Send data-only for foreground (your app JS will handle it)
-                            notifications.push(sendNotificationToUser({
-                                userId: String(rider.user_id || ""),
-                                data: payloadData
-                            }));
-
-                            // ✅ 2. Send notification+data for background display
                             notifications.push(sendNotificationToUser({
                                 userId: String(rider.user_id || ""),
                                 title: "New Delivery Opportunity",
                                 body: `New order from ${store_name} is ready for pickup near you.`,
-                                data: payloadData
+                                data: {
+                                    order_id: orderIdStr,
+                                    type: "new_order",
+                                    vendor_id: String(vendor_id),
+                                    vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
+                                    rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00")
+                                }
                             }));
-                            }
-                            
-
+                        }
                     } catch (err) {
                         console.error("Error fetching nearby riders:", err);
                     }
