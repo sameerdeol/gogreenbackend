@@ -614,6 +614,7 @@ const updateOrderStatus = async (req, res) => {
                                 data: payloadData
                             }));
                             }
+                            
 
                     } catch (err) {
                         console.error("Error fetching nearby riders:", err);
