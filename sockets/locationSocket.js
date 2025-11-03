@@ -37,3 +37,19 @@ module.exports.emitRiderLocationToCustomer = (customerId, riderId, location) => 
 
   ioInstance.to(`customer_${customerId}`).emit('riderLocationUpdate', payload);
 };
+module.exports.emitNewOrderToRiders = (riderList, payload) => {
+  if (!ioInstance) {
+    console.warn("⚠️ Socket.io instance not initialized.");
+    return;
+  }
+
+  riderList.forEach((rider) => {
+    const room = `rider_${rider.user_id}`;
+    console.log(`📦 Emitting new_order to ${room}`);
+    ioInstance.to(room).emit("new_order", {
+      ...payload,
+      vendor_to_customer_distance_km: rider.vendor_to_customer_distance_km ?? "0.00",
+      rider_to_vendor_distance_km: rider.distance_km ?? "0.00",
+    });
+  });
+};
