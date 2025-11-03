@@ -6,7 +6,7 @@ const {User} = require('../models/User');
 const Product = require('../models/productModel');
 const { generateOtp } = require('../utils/otpGenerator'); // adjust path if needed
 
-
+const { emitNewDeliveryOpportunityToRiders } = require('../socket/locationSocket');
  
 // const createOrder = async (req, res) => {
 //     try {
@@ -605,6 +605,21 @@ const updateOrderStatus = async (req, res) => {
                                 }
                             }));
                         }
+                        if (nearbyRiders.length > 0) {
+                            console.log("📡 Sending socket updates to nearby riders...");
+
+                            const payload = {
+                                order_id: orderIdStr,
+                                store_name,
+                                vendor_id,
+                                vendor_lat,
+                                vendor_lng,
+                                user_id,
+                                user_address_id,
+                            };
+
+                            emitNewDeliveryOpportunityToRiders(nearbyRiders, payload);
+                            }
                     } catch (err) {
                         console.error("Error fetching nearby riders:", err);
                     }

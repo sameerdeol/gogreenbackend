@@ -37,3 +37,18 @@ module.exports.emitRiderLocationToCustomer = (customerId, riderId, location) => 
 
   ioInstance.to(`customer_${customerId}`).emit('riderLocationUpdate', payload);
 };
+
+module.exports.emitNewDeliveryOpportunityToRiders = (nearbyRiders, payload) => {
+  if (!ioInstance) {
+    console.warn("⚠️ Socket.io instance not initialized. Cannot emit new delivery opportunities.");
+    return;
+  }
+
+  console.log(`📦 Emitting newDeliveryOpportunity to ${nearbyRiders.length} riders`);
+
+  nearbyRiders.forEach((rider) => {
+    const roomName = `rider_${rider.user_id}`;
+    console.log(`🚴 Sending opportunity to ${roomName}`);
+    ioInstance.to(roomName).emit('newDeliveryOpportunity', payload);
+  });
+};
