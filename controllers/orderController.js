@@ -5,7 +5,6 @@ const sendNotificationToUser = require("../utils/sendNotificationToUser");
 const {User} = require('../models/User');
 const Product = require('../models/productModel');
 const { generateOtp } = require('../utils/otpGenerator'); // adjust path if needed
-
 const { emitNewDeliveryOpportunityToRiders } = require('../sockets/locationSocket');
  
 // const createOrder = async (req, res) => {
