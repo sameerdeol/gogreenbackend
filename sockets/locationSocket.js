@@ -37,14 +37,25 @@ module.exports.emitRiderLocationToCustomer = (customerId, riderId, location) => 
 
   ioInstance.to(`customer_${customerId}`).emit('riderLocationUpdate', payload);
 };
-module.exports.emitNewOrderToRider = (riderId, data) => {
+module.exports.emitNewOrderToRider = (riders, data) => {
   if (!ioInstance) {
     console.warn("⚠️ Socket.io instance not initialized. Cannot emit new order.");
     return;
   }
 
-  console.log(`📢 Emitting new_order to rider_${riderId}`);
-  ioInstance.to(`rider_${riderId}`).emit('new_order', data);
+  if (!Array.isArray(riders)) {
+    // single rider
+    console.log(`📢 Emitting new_order to rider_${riders}`);
+    ioInstance.to(`rider_${riders}`).emit('new_order', data);
+    return;
+  }
+
+  // multiple riders
+  riders.forEach(r => {
+    if (!r.user_id) return;
+    console.log(`📢 Emitting new_order to rider_${r.user_id}`);
+    ioInstance.to(`rider_${r.user_id}`).emit('new_order', data);
+  });
 };
 //----new function to get vendor notification via socket----
 
