@@ -773,7 +773,7 @@ const updateOrderStatus = async (req, res) => {
                                 type: "new_order",
                             };
 
-                            emitNewOrderToRiders(nearbyRiders, payload);
+                            emitNewOrderToRider(nearbyRiders, payload);
 
                             // still keep push notifications (optional)
                             for (const rider of nearbyRiders) {
