@@ -5,9 +5,14 @@ const sendNotificationToUser = require("../utils/sendNotificationToUser");
 const {User} = require('../models/User');
 const Product = require('../models/productModel');
 const { generateOtp } = require('../utils/otpGenerator'); // adjust path if needed
+<<<<<<< Updated upstream
 // const { emitNewOrderToRiders } = require("../sockets/locationSocket");
 const { emitNewOrderToRider } = require("../sockets/locationSocket");
 const { emitNewOrderToVendor } = require('../sockets/locationSocket');
+=======
+
+const { emitNewDeliveryOpportunityToRiders } = require('../sockets/locationSocket');
+>>>>>>> Stashed changes
  
 // const createOrder = async (req, res) => {
 //     try {
