@@ -488,26 +488,28 @@ const createOrder = async (req, res) => {
                         }
                     });
                     
+                    // ✅ Emit new order live update to vendor socket
                     emitNewOrderToVendor(vendor_id, {
-                        order_id,
-                        order_uid,
-                        type: "new_order",
-                        total_price,
-                        is_fast_delivery,
-                        customer_name: username,
-                        customer_address: addressText,
-                        vendor_lat,
-                        vendor_lng,
-                        rider_found: riderFound,
-                        nearby_riders_count: nearbyRiders.length,
-                        search_radius_km: searchRadiusKm,
-                        nearby_riders: nearbyRiders.map(r => ({
-                            user_id: r.user_id,
-                            rider_lat: parseFloat(r.rider_lat),
-                            rider_lng: parseFloat(r.rider_lng),
-                            distance_km: parseFloat(r.distance_km)
-                        }))
+                    order_id,
+                    order_uid,
+                    type: "new_order",
+                    total_price,
+                    is_fast_delivery,
+                    customer_name: username,
+                    customer_address: addressText,
+                    vendor_lat,
+                    vendor_lng,
+                    rider_found: riderFound,
+                    nearby_riders_count: nearbyRiders.length,
+                    search_radius_km: searchRadiusKm,
+                    nearby_riders: nearbyRiders.map(r => ({
+                        user_id: r.user_id,
+                        rider_lat: parseFloat(r.rider_lat),
+                        rider_lng: parseFloat(r.rider_lng),
+                        distance_km: parseFloat(r.distance_km)
+                    }))
                     });
+
                 } catch (notifyErr) {
                     console.warn("Notification failed:", notifyErr.message);
                 }
