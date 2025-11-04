@@ -46,4 +46,15 @@ module.exports.emitNewOrderToRider = (riderId, data) => {
   console.log(`📢 Emitting new_order to rider_${riderId}`);
   ioInstance.to(`rider_${riderId}`).emit('new_order', data);
 };
+//----new function to get vendor notification via socket----
+
+module.exports.emitNewOrderToVendor = (vendorId, data) => {
+  if (!ioInstance) {
+    console.warn("⚠️ Socket.io instance not initialized. Cannot emit new order to vendor.");
+    return;
+  }
+
+  console.log(`📢 Emitting new_order to vendor_${vendorId}`);
+  ioInstance.to(`vendor_${vendorId}`).emit('new_order', data);
+};
 

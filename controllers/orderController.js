@@ -7,6 +7,7 @@ const Product = require('../models/productModel');
 const { generateOtp } = require('../utils/otpGenerator'); // adjust path if needed
 // const { emitNewOrderToRiders } = require("../sockets/locationSocket");
 const { emitNewOrderToRider } = require("../sockets/locationSocket");
+const { emitNewOrderToVendor } = require('../sockets/locationSocket');
  
 // const createOrder = async (req, res) => {
 //     try {
@@ -485,6 +486,27 @@ const createOrder = async (req, res) => {
                             customer_address: addressText.toString(),
                             is_fast_delivery: is_fast_delivery.toString()
                         }
+                    });
+                    
+                    emitNewOrderToVendor(vendor_id, {
+                        order_id,
+                        order_uid,
+                        type: "new_order",
+                        total_price,
+                        is_fast_delivery,
+                        customer_name: username,
+                        customer_address: addressText,
+                        vendor_lat,
+                        vendor_lng,
+                        rider_found: riderFound,
+                        nearby_riders_count: nearbyRiders.length,
+                        search_radius_km: searchRadiusKm,
+                        nearby_riders: nearbyRiders.map(r => ({
+                            user_id: r.user_id,
+                            rider_lat: parseFloat(r.rider_lat),
+                            rider_lng: parseFloat(r.rider_lng),
+                            distance_km: parseFloat(r.distance_km)
+                        }))
                     });
                 } catch (notifyErr) {
                     console.warn("Notification failed:", notifyErr.message);
