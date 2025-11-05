@@ -34,14 +34,34 @@ const sendNotificationToUser = async ({ userId, title, body, data = {}, saveToDB
             return { success: false, error: "No FCM token found" };
         }
 
+        // const message = {
+        //     token: user.fcm_token,
+        //     notification: { title, body },
+        //     data: Object.fromEntries(
+        //         Object.entries(data).map(([k, v]) => [k, String(v)])
+        //     )
+        // };
         const message = {
-            token: user.fcm_token,
-            notification: { title, body },
-            data: Object.fromEntries(
-                Object.entries(data).map(([k, v]) => [k, String(v)])
-            )
-        };
-
+        token: user.fcm_token,
+        data: {
+            title,
+            body,
+            click_action: 'FLUTTER_NOTIFICATION_CLICK', // not required but safe
+            ...Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])),
+        },
+        android: {
+            priority: 'high',
+            notification: {
+                sound: 'default',
+                channelId: 'default'
+            }
+        },
+        apns: {
+            payload: {
+                aps: { sound: 'default' }
+            }
+        }
+    }
         // const message = {
         //     token: user.fcm_token,
         //     data: {
