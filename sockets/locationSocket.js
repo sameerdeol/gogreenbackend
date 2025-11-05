@@ -10,6 +10,13 @@ module.exports = (io) => {
       if (role === 'customer') socket.join(`customer_${id}`);
       if (role === 'vendor') socket.join(`vendor_${id}`);
       if (role === 'admin') socket.join('admins');
+      if (role === 'rider') {
+        const roomName = `rider_${id}`;
+        socket.join(roomName);
+        console.log(`✅ Rider ${id} joined room: ${roomName}`);
+        // Optional: Send confirmation back to client
+        socket.emit('joined', { room: roomName, role: 'rider', id: id });
+      }
     });
 
     socket.on('disconnect', () => {
