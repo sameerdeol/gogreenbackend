@@ -60,6 +60,13 @@ const sendNotificationToUser = async ({ userId, title, body, data = {}, saveToDB
         return { success: true, response };
     } catch (error) {
         console.error('Notification Error:', error);
+                if (error.code === "messaging/registration-token-not-registered") {
+        console.warn(`🚫 Invalid FCM token for user ${userId} — removing from DB`);
+
+        // Example: remove it from DB
+        await db.query("UPDATE users SET fcm_token = NULL WHERE id = ?", [userId]);
+        }
+
         return { success: false, error: error.message };
     }
 };
