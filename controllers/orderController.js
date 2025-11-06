@@ -836,11 +836,9 @@ const updateOrderStatus = async (req, res) => {
 
         // Step 5: Send notifications
         const notifResults = await Promise.allSettled(notifications);
-        notifResults.forEach((result, index) => {
+            notifResults.forEach((result, index) => {
             if (result.status === "rejected") {
-                console.warn(`⚠️ Notification #${index + 1} failed:`, result.reason);
-            } else {
-                console.log(`✅ Notification #${index + 1} sent successfully`);
+                console.warn(`Notification #${index + 1} failed:`, result.reason);
             }
         });
 

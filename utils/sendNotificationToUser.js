@@ -42,18 +42,6 @@ const sendNotificationToUser = async ({ userId, title, body, data = {}, saveToDB
             )
         };
 
-        // const message = {
-        //     token: user.fcm_token,
-        //     data: {
-        //         title,
-        //         body,
-        //         ...Object.fromEntries(
-        //         Object.entries(data).map(([k, v]) => [k, String(v)])
-        //         )
-        //     }
-        //     // 🚫 DO NOT include `notification: { ... }`
-        // };
-
         const firebaseApp = getFirebaseApp();
         const response = await firebaseApp.messaging().send(message);
 
@@ -64,7 +52,7 @@ const sendNotificationToUser = async ({ userId, title, body, data = {}, saveToDB
         console.warn(`🚫 Invalid FCM token for user ${userId} — removing from DB`);
 
         // Example: remove it from DB
-        // await db.query("UPDATE users SET fcm_token = NULL WHERE id = ?", [userId]);
+        await db.query("UPDATE users_fcm_token SET fcm_token = NULL WHERE user_id = ?", [userId]);
         }
 
         return { success: false, error: error.message };
