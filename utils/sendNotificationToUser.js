@@ -64,7 +64,7 @@ const sendNotificationToUser = async ({ userId, title, body, data = {}, saveToDB
         console.warn(`🚫 Invalid FCM token for user ${userId} — removing from DB`);
 
         // Example: remove it from DB
-        await db.query("UPDATE users SET fcm_token = NULL WHERE id = ?", [userId]);
+        // await db.query("UPDATE users SET fcm_token = NULL WHERE id = ?", [userId]);
         }
 
         return { success: false, error: error.message };
