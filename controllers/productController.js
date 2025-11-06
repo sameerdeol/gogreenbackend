@@ -227,7 +227,7 @@ const getallproductsbyvendorID = (req, res) => {
 
     Product.findallByVendorId(vendor_id, searchTerm, user_id, (err, product) => {
         console.log("🔍 Model error:", err);
-        console.log("📦 Model returned product:", product);
+        // console.log("📦 Model returned product:", product);
 
         if (err) {
             return res.status(500).json({ success: false, message: 'Database error', error: err });
