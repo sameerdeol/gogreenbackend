@@ -1744,7 +1744,8 @@ const handleOrderByRider = async (req, res, io) => {
     return res.status(400).json({ success: false, message: "Invalid status" });
   }
 
-  const orderIdStr = orderId.toString();
+  const orderIdStr = orderId;
+  console.log('order id', orderIdStr)
 
   try {
     const isHandled = await OrderModel.handleOrder(orderIdStr, riderId, status);
@@ -1760,6 +1761,7 @@ const handleOrderByRider = async (req, res, io) => {
         await OrderDetails.updateOrderStatusbyRider(orderIdStr, 2, riderId);
 
         const results = await OrderModel.getOrderandRiderDetails(orderIdStr);
+        console.log('getOrderandRiderDetails results,',results)
         if (!results || results.length === 0) {
           return res
             .status(404)
