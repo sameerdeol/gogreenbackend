@@ -97,7 +97,12 @@ const OrderDetails = {
             WHERE o.id = ?
         `;
         db.query(sql, [order_id], callback);
-    }
+    },
+
+    updateRiderAvailable: (order_id, rider_available, callback) => {
+        const sql = `UPDATE order_details SET rider_available = ? WHERE id = ?`;
+        db.query(sql, [rider_available, order_id], callback);
+    },
 };
- 
+  
  module.exports = OrderDetails;

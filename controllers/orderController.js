@@ -467,6 +467,15 @@ const createOrder = async (req, res) => {
 
         // ✅ 9. Background Notifications (instant orders)
         if (riderFound) {
+            
+             OrderDetails.updateRiderAvailable(order_id, 1, (err) => {
+                if (err) {
+                    console.error(`❌ Failed to update rider_available for order ${order_id}:`, err);
+                } else {
+                    console.log(`✅ rider_available updated to 1 for order ${order_id}`);
+                }
+            });
+
             process.nextTick(async () => {
                 try {
                     const userdata = await User.getUserDetailsByIdAsync(user_id, user_address_id);
