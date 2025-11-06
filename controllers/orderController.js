@@ -467,7 +467,7 @@ const createOrder = async (req, res) => {
 
         // ✅ 9. Background Notifications (instant orders)
         if (riderFound) {
-            
+
              OrderDetails.updateRiderAvailable(order_id, 1, (err) => {
                 if (err) {
                     console.error(`❌ Failed to update rider_available for order ${order_id}:`, err);
@@ -772,32 +772,45 @@ const updateOrderStatus = async (req, res) => {
 
                         console.log("✅ Nearby riders fetched:", nearbyRiders.length);
 
+                        
                         if (nearbyRiders.length > 0) {
                             console.log("📡 Emitting new_order to nearby riders via socket...");
 
+                            const vendorIdStr = String(vendor_id);
+                            const storeNameStr = store_name || "Unknown Store";
+
                             const payload = {
                                 order_id: orderIdStr,
-                                vendor_id: String(vendor_id),
-                                store_name,
+                                vendor_id: vendorIdStr,
+                                store_name: storeNameStr,
                                 type: "new_order",
                             };
 
+                            // Emit to socket
                             emitNewOrderToRider(nearbyRiders, payload);
 
-                            // still keep push notifications (optional)
+                            // Send push notifications to each nearby rider
                             for (const rider of nearbyRiders) {
-                                notifications.push(sendNotificationToUser({
-                                userId: String(rider.user_id || ""),
-                                title: "New Delivery Opportunity",
-                                body: `New order from ${store_name} is ready for pickup near you.`,
-                                data: {
+                                const dataPayload = {
                                     ...payload,
                                     vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
                                     rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00"),
-                                },
-                                }));
+                                };
+
+                                console.log("📦 Sending to rider:", rider.user_id, dataPayload);
+
+                                notifications.push(
+                                    sendNotificationToUser({
+                                        userId: String(rider.user_id || ""),
+                                        title: "New Delivery Opportunity",
+                                        body: `New order from ${storeNameStr} is ready for pickup near you.`,
+                                        saveToDB: true, // ✅ added for consistency
+                                        data: dataPayload,
+                                    })
+                                );
                             }
-                            }
+                        }
+                          
 
                     } catch (err) {
                         console.error("Error fetching nearby riders:", err);
