@@ -105,8 +105,8 @@ const Order = {
 
             WHERE 
                 ${role_id === 3 ? 'OD.vendor_id = ?' : 'OD.rider_id = ?'}
-
-            ORDER BY OD.created_at DESC;
+            AND OD.rider_available = 1
+            ORDER BY OD.created_at DESC;    
         `;
 
         // Use user_id as the parameter for vendor_id or rider_id dynamically
