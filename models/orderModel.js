@@ -543,16 +543,22 @@ const Order = {
     });
     },
 
-    getOrderandRiderDetails: (order_id, callback) => {
-        const sql = `SELECT 
-                        OD.user_id as customer_id,
-                        U.firstname as rider_firstname,
-                        U.lastname as rider_last_name,
-                        U.phonenumber as rider_number
-                    FROM order_details OD
-                    join users U on U.id = OD.rider_id
-                    WHERE OD.id = ?`;
-        db.query(sql, [order_id], callback);
+    getOrderandRiderDetails: (order_id) => {
+        return new Promise((resolve, reject) => {
+            const sql = `SELECT 
+                            OD.user_id as customer_id,
+                            U.firstname as rider_firstname,
+                            U.lastname as rider_last_name,
+                            U.phonenumber as rider_number
+                        FROM order_details OD
+                        JOIN users U ON U.id = OD.rider_id
+                        WHERE OD.id = ?`;
+
+            db.query(sql, [order_id], (err, results) => {
+            if (err) return reject(err);
+            resolve(results);
+            });
+        });
     },
 
     getOrdersByRiderId : (rider_id, callback) => {
