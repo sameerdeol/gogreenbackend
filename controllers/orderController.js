@@ -856,8 +856,6 @@ const updateOrderStatus = async (req, res) => {
 };
 
 
-
-
 // const updateOrder = async (req, res, io) => {
 //     const { order_id, actor_role, vendor_id, order_status, rider_id } = req.body;
 
@@ -1245,8 +1243,6 @@ const getAllOrders = async (req, res) => {
 };
 
 
-
-
 const getOrderDetails = (req, res) => {
     const { order_id } = req.body;
 
@@ -1602,10 +1598,6 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
 };
 
 
-
-
-
-
 const orderHistory = async (req, res) => {
     const { user_id } = req.body;
 
@@ -1735,7 +1727,6 @@ const orderHistory = async (req, res) => {
 };
 
 
-
 const handleOrderByRider = async (req, res, io) => {
   const { orderId, riderId, status } = req.body;
 
@@ -1761,46 +1752,108 @@ const handleOrderByRider = async (req, res, io) => {
 
     switch (status) {
       // Rider accepted
-      case 2: {
-        await OrderDetails.updateOrderStatusbyRider(orderIdStr, 2, riderId);
+    //   case 2: {
+    //     const rider_accept = await OrderDetails.updateOrderStatusbyRider(orderIdStr, 2, riderId);
+    //     console.log('rider_accept results,',rider_accept);
+    //     const results = await OrderModel.getOrderandRiderDetails(orderIdStr);
+    //     console.log('getOrderandRiderDetails results,',results)
+    //     if (!results || results.length === 0) {
+    //       return res
+    //         .status(404)
+    //         .json({ success: false, message: "Order not found" });
+    //     }
 
-        const results = await OrderModel.getOrderandRiderDetails(orderIdStr);
-        console.log('getOrderandRiderDetails results,',results)
-        if (!results || results.length === 0) {
-          return res
-            .status(404)
-            .json({ success: false, message: "Order not found" });
-        }
+    //     const orderDetails = results[0];
 
-        const orderDetails = results[0];
+    //     try {
+    //       await sendNotificationToUser({
+    //         userId: orderDetails.customer_id,
+    //         title: "Meet Your Delivery Partner",
+    //         body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
+    //         data: {
+    //           order_id: orderIdStr,
+    //           rider_name: orderDetails.rider_firstname,
+    //           rider_phone: orderDetails.rider_number.toString(),
+    //           type: "order_update",
+    //         },
+    //          saveToDB: true
+    //       });
 
-        try {
-          await sendNotificationToUser({
-            userId: orderDetails.customer_id,
-            title: "Meet Your Delivery Partner",
-            body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
-            data: {
-              order_id: orderIdStr,
-              rider_name: orderDetails.rider_firstname,
-              rider_phone: orderDetails.rider_number.toString(),
-              type: "order_update",
-            },
-             saveToDB: true
-          });
+    //       io.emit(`stop-buzzer-${orderIdStr}`, { orderId: orderIdStr });
+    //       return res.json({
+    //         success: true,
+    //         message: "Order accepted by rider",
+    //       });
+    //     } catch (notificationError) {
+    //       console.error("Notification error:", notificationError);
+    //       return res.status(500).json({
+    //         success: false,
+    //         message: "Failed to send notification",
+    //       });
+    //     }
+    //   }
 
-          io.emit(`stop-buzzer-${orderIdStr}`, { orderId: orderIdStr });
-          return res.json({
-            success: true,
-            message: "Order accepted by rider",
-          });
-        } catch (notificationError) {
-          console.error("Notification error:", notificationError);
-          return res.status(500).json({
-            success: false,
-            message: "Failed to send notification",
-          });
-        }
-      }
+        case 2: {
+                const rider_accept = await OrderDetails.updateOrderStatusbyRider(orderIdStr, 2, riderId);
+                console.log('rider_accept results,', rider_accept);
+
+                const results = await OrderModel.getOrderandRiderDetails(orderIdStr);
+                console.log('getOrderandRiderDetails results,', results);
+
+                if (!results || results.length === 0) {
+                    return res
+                    .status(404)
+                    .json({ success: false, message: "Order not found" });
+                }
+
+                const orderDetails = results[0];
+
+                try {
+                    // ✅ Notify customer
+                    await sendNotificationToUser({
+                    userId: orderDetails.customer_id,
+                    title: "Meet Your Delivery Partner",
+                    body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
+                    data: {
+                        order_id: orderIdStr,
+                        rider_name: orderDetails.rider_firstname,
+                        rider_phone: orderDetails.rider_number.toString(),
+                        type: "order_update",
+                    },
+                    saveToDB: true
+                    });
+
+                    // ✅ Emit to stop buzzer
+                    io.emit(`stop-buzzer-${orderIdStr}`, { orderId: orderIdStr });
+
+                    // ✅ Emit new socket event for rider acceptance
+                    const payload = {
+                    order_id: orderIdStr,
+                    rider_id: riderId,
+                    rider_accepted: true,  // <-- Added flag
+                    type: "rider_accept_order",
+                    };
+
+                    console.log("📡 Emitting rider_accept_order event:", payload);
+
+                    // Emit globally OR to specific riders
+                    io.emit(`rider-accepted-${orderIdStr}`, payload); 
+                    // 👆 emits to all — or you can target vendor/customer rooms if you use room joins like:
+                    // io.to(`vendor_${orderDetails.vendor_id}`).emit(`rider-accepted-${orderIdStr}`, payload);
+
+                    return res.json({
+                    success: true,
+                    message: "Order accepted by rider",
+                    });
+                } catch (notificationError) {
+                    console.error("Notification error:", notificationError);
+                    return res.status(500).json({
+                    success: false,
+                    message: "Failed to send notification",
+                    });
+                }
+                }
+
 
       // Rider reached vendor → Generate OTP
       case 3: {
