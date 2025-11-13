@@ -425,8 +425,8 @@ const Order = {
 
         return { status: 'verified', user_id: order.user_id };
     },
-    orderHistorybyUserID: (user_id, callback) => {
-        const query = `
+    orderHistorybyUserID: (user_id, isToday = false, callback) => {
+        let query = `
             SELECT 
                 OD.id AS order_id,
                 OD.order_uid,
@@ -519,11 +519,18 @@ const Order = {
             LEFT JOIN product_attributes PA ON PA.product_id = OI.product_id
 
             WHERE OD.user_id = ?
-            ORDER BY OD.created_at DESC
         `;
+
+        // 👇 Add date filter dynamically
+        if (isToday) {
+            query += ` AND DATE(OD.created_at) = CURDATE() `;
+        }
+
+        query += ` ORDER BY OD.created_at DESC`;
 
         db.query(query, [user_id], callback);
     },
+
 
 
     

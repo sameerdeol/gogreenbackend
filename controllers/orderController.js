@@ -1600,23 +1600,25 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
 
 const orderHistory = async (req, res) => {
     const { user_id } = req.body;
+    const isToday = req.path.includes('/today'); // 👈 detect the URL
 
     if (!user_id) {
         return res.status(400).json({ error: "user_id is required" });
     }
 
-    OrderModel.orderHistorybyUserID(user_id, (err, results) => {
+    OrderModel.orderHistorybyUserID(user_id, isToday, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
         if (!results || results.length === 0) {
-            return res.status(200).json({ message: "No order found." });
+            const msg = isToday ? "No orders found for today." : "No order found.";
+            return res.status(200).json({ message: msg });
         }
 
+        // 🧠 Your existing order grouping logic stays exactly the same ↓
         const ordersMap = {};
 
         results.forEach(row => {
             const order_id = row.order_id;
 
-            // Initialize order
             if (!ordersMap[order_id]) {
                 ordersMap[order_id] = {
                     order_id: row.order_id,
@@ -1659,7 +1661,6 @@ const orderHistory = async (req, res) => {
 
             const order = ordersMap[order_id];
 
-            // Initialize product
             if (!order.products[row.product_id]) {
                 order.products[row.product_id] = {
                     product_id: row.product_id,
@@ -1677,12 +1678,10 @@ const orderHistory = async (req, res) => {
 
             const product = order.products[row.product_id];
 
-            // Add gallery image if not already added
             if (row.gallery_image && !product.gallery_images.includes(row.gallery_image)) {
                 product.gallery_images.push(row.gallery_image);
             }
 
-            // Add attribute if not already added
             if (row.attribute_key && row.attribute_value) {
                 const exists = product.attributes.find(a => a.attribute_key === row.attribute_key && a.attribute_value === row.attribute_value);
                 if (!exists) {
@@ -1690,7 +1689,6 @@ const orderHistory = async (req, res) => {
                 }
             }
 
-            // Add selected variant (only once)
             if (row.variant_id && !product.variants.find(v => v.variant_id === row.variant_id)) {
                 product.variants.push({
                     variant_id: row.variant_id,
@@ -1700,7 +1698,6 @@ const orderHistory = async (req, res) => {
                 });
             }
 
-            // Add selected addon
             if (row.addon_id && !product.addons.find(a => a.addon_id === row.addon_id)) {
                 product.addons.push({
                     addon_id: row.addon_id,
@@ -1710,13 +1707,11 @@ const orderHistory = async (req, res) => {
             }
         });
 
-        // Convert products from object to array
         const groupedOrders = Object.values(ordersMap).map(order => {
             order.products = Object.values(order.products);
             return order;
         });
 
-        // Sort grouped orders by created_at DESC
         groupedOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         res.status(200).json({
@@ -1725,6 +1720,7 @@ const orderHistory = async (req, res) => {
         });
     });
 };
+
 
 
 const handleOrderByRider = async (req, res, io) => {
