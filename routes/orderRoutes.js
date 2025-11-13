@@ -33,6 +33,7 @@ module.exports = (io) => {
   );
 
   router.post('/orderhistorybyuserid', verifyToken, orderHistory);
+  router.post('/orderhistorybyuserid/today', verifyToken, orderHistory);
 
   // 🛠️ Pass io to the controller function
   router.post('/handle-orderbyrider', verifyToken, (req, res) =>
