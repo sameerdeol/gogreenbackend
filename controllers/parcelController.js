@@ -151,12 +151,27 @@ const createParcel = async (req, res) => {
 };
 
 const getParcel = (req, res) => {
-    ParcelModel.findall(req.params.user_id, (err, result) => {
-        if (err) return res.status(500).json({ success: false, message: 'Error fetching parcels', error: err });
-        if (!result.length) return res.status(404).json({ success: false, message: 'parcels not found' });
+    const user_id = req.params.user_id;
+    const isToday = req.path.includes('/today'); // ✅ Detect /today route
+
+    ParcelModel.findall(user_id, isToday, (err, result) => {
+        if (err)
+            return res
+                .status(500)
+                .json({ success: false, message: 'Error fetching parcels', error: err });
+
+        if (!result.length)
+            return res
+                .status(404)
+                .json({ 
+                    success: false, 
+                    message: isToday ? 'No parcels found for today' : 'Parcels not found' 
+                });
+
         res.status(200).json({ success: true, parcels: result });
     });
 };
+
 const getParcelbyID = (req, res) => {
     ParcelModel.findById(req.params.id,req.params.user_id, (err, result) => {
         if (err) return res.status(500).json({ success: false, message: 'Error fetching parcels', error: err });

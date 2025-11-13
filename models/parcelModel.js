@@ -50,15 +50,18 @@ const ParcelModel = {
             callback(null, results.length > 0 ? results[0] : null);
         });
     },
-    findall: (user_id, callback) => {
-        const query = 'SELECT * FROM parcels WHERE user_id = ?';
+    findall: (user_id, isToday = false, callback) => {
+        let query = 'SELECT * FROM parcels WHERE user_id = ?';
+
+        if (isToday) {
+            query += ' AND DATE(created_at) = CURDATE()'; // ✅ Filter for today's date
+        }
+
         db.query(query, [user_id], (err, results) => {
             if (err) {
-                console.error("Database error in findall:", err); // 🔍 Log errors
+                console.error("Database error in findall:", err);
                 return callback(err, null);
             }
-
-            // ✅ Return all rows instead of just the first one
             callback(null, results);
         });
     },
