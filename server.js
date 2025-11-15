@@ -44,6 +44,7 @@ app.options('*', cors());
 require('./sockets/orderSocket')(io);
 require('./sockets/vendorSocket')(io);
 require('./sockets/locationSocket')(io);
+require('./sockets/chatSocket')(io);
 // Import Routes
 const userRoutes = require('./routes/userRoutes');
 const vendorRoutes = require('./routes/vendorRoutes');
