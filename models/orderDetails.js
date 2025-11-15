@@ -60,7 +60,55 @@ const OrderDetails = {
         );
         },
 
+    addExtraDetails: (
+        order_id,
+        items_price,
+        fast_delivery_charges,
+        scheduled_order_date,
+        scheduled_time_date,
+        order_vendor_distance,
+        order_delivery_type,
+        rider_deliveryCharge,
+        overall_amount,
+        tip_amount,
+        tip_percentage,
+        callback
+    ) => {
+        const sql = `
+            INSERT INTO order_extra_details (
+                order_id,
+                items_price,
+                fast_delivery_charges,
+                scheduled_order_date,
+                scheduled_time_date,
+                order_vendor_distance,
+                order_delivery_type,
+                rider_deliveryCharge,
+                overall_amount,
+                tip_amount,
+                tip_percentage
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
 
+        db.query(
+            sql,
+            [
+                order_id,
+                items_price,
+                fast_delivery_charges,
+                scheduled_order_date,
+                scheduled_time_date,
+                order_vendor_distance,
+                order_delivery_type,
+                rider_deliveryCharge,
+                overall_amount,
+                tip_amount,
+                tip_percentage
+            ],
+            callback
+        );
+    },
+    
     getOrderById: (order_id, callback) => {
         const sql = `SELECT * FROM order_details WHERE order_id = ?`;
         db.query(sql, [order_id], callback);
