@@ -1431,6 +1431,18 @@ const verifyOtp = async (req, res, io) => {
           status: "verified" 
         });
 
+        io.to(`customer_${result.user_id}`).emit("chat_ready", {
+            chat_id: order_id,
+            rider_id: result.rider_id,
+            customer_id: result.user_id
+            });
+
+        io.to(`rider_${result.rider_id}`).emit("chat_ready", {
+            chat_id: order_id,
+            rider_id: result.rider_id,
+            customer_id: result.user_id
+        });
+
         // ✅ Console log for debug
         console.log(`Socket emitted: otp-verified-${order_id}`, { 
           orderId: order_id, 
