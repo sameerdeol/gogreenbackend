@@ -8,6 +8,7 @@ const { generateOtp } = require('../utils/otpGenerator'); // adjust path if need
 // const { emitNewOrderToRiders } = require("../sockets/locationSocket");
 const { emitNewOrderToRider } = require("../sockets/locationSocket");
 const { emitNewOrderToVendor } = require('../sockets/locationSocket');
+const { UpdateBucketMetadataJournalTableConfigurationCommand } = require("@aws-sdk/client-s3");
  
 // const createOrder = async (req, res) => {
 //     try {
@@ -218,7 +219,7 @@ const { emitNewOrderToVendor } = require('../sockets/locationSocket');
 //         if (!res.headersSent) {
 //             res.status(500).json({ error: "Server error" });
 //         }
-//     }
+//     } THIS JDS
 // };
 
 const createOrder = async (req, res) => {
@@ -230,7 +231,15 @@ const createOrder = async (req, res) => {
             user_address_id, 
             vendor_id, 
             is_fast_delivery, 
-            scheduled_time // ⏰ new field for scheduled delivery
+            scheduled_time, // ⏰ new field for scheduled delivery
+            items_price,
+            fast_delivery_charges,
+            order_vendor_distance,
+            order_delivery_type,
+            rider_deliveryCharge,
+            overall_amount,
+            tip_amount,
+            tip_percentage          
         } = req.body;
 
         if (!user_id || !cart || cart.length === 0) {
@@ -278,7 +287,6 @@ const createOrder = async (req, res) => {
             console.warn("Stock validation failed:", stockErr.message);
             return res.status(400).json({ error: stockErr.message });
         }
-
         // ✅ 2. Calculate totals
         cart.forEach((item) => {
             const hasVariant = item.variant_price && Number(item.variant_price) > 0;
@@ -304,7 +312,7 @@ const createOrder = async (req, res) => {
             OrderDetails.addOrder(
                 user_id,
                 total_quantity,
-                total_price,
+                items_price,
                 payment_method,
                 user_address_id,
                 vendor_id,
@@ -320,6 +328,25 @@ const createOrder = async (req, res) => {
 
         const order_id = orderResult.insertId;
         console.log(`✅ Order created: ${order_id}`);
+        await new Promise((resolve, reject) => {
+            OrderDetails.addExtraDetails(
+                order_id,
+                items_price,                     // items_price
+                fast_delivery_charges || null,        // fast_delivery_charges
+                scheduled_time ? scheduled_time.split("T")[0] : null, // scheduled_order_date
+                scheduled_time ? scheduled_time.split("T")[1] : null, // scheduled_time_date
+                order_vendor_distance || 0,    // order_vendor_distance
+                order_delivery_type, // order_delivery_type
+                rider_deliveryCharge,                               // rider_deliveryCharge (set later)
+                overall_amount,                     // overall_amount
+                tip_amount || 0,
+                tip_percentage || 0,
+                (err, result) => {
+                    if (err) return reject(err);
+                    resolve(result);
+                }
+            );
+        });
 
         // ✅ 4. Add items + addons
         await Promise.all(cart.map(async (item) => {
