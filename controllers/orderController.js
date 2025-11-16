@@ -765,7 +765,7 @@ const updateOrderStatus = async (req, res) => {
         const orderIdStr = order_id.toString();
         const notifications = [];
         let nearbyRiders = [];
-
+        console.log('order_status when vendor perform action',order_status)
         // Step 4: Handle notifications and riders
         switch (order_status) {
             case 1: // Vendor confirmed order
