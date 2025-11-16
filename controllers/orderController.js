@@ -437,10 +437,8 @@ const createOrder = async (req, res) => {
         let nearbyRiders = [];
         let searchRadiusKm = 10;
         let riderFound = false;
-        console.log('vendor_lat',vendor_lat,vendor_lng)
         if (!isNaN(vendor_lat) && !isNaN(vendor_lng)) {
             const radiusOptions = [3, 5, 10];
-            console.log('radiusOptions',radiusOptions,vendor_lat,vendor_lng)
             for (const radius of radiusOptions) {
                 try {
                     const ridersInRange = await User.getNearbyRidersWithPolylines(
@@ -452,7 +450,7 @@ const createOrder = async (req, res) => {
                         user_address_id,
                         radius
                     );
-                    console.log('ridersInRange',ridersInRange)
+                    
                     if (ridersInRange.length > 0) {
                         nearbyRiders = ridersInRange;
                         searchRadiusKm = radius;
