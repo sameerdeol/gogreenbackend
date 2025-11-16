@@ -7,9 +7,7 @@ const Product = require('../models/productModel');
 const { generateOtp } = require('../utils/otpGenerator'); // adjust path if needed
 // const { emitNewOrderToRiders } = require("../sockets/locationSocket");
 const { emitNewOrderToRider } = require("../sockets/locationSocket");
-const { emitNewOrderToVendor } = require('../sockets/locationSocket');
-const { UpdateBucketMetadataJournalTableConfigurationCommand } = require("@aws-sdk/client-s3");
- 
+const { emitNewOrderToVendor } = require('../sockets/locationSocket'); 
 // const createOrder = async (req, res) => {
 //     try {
 //         const { user_id, cart, payment_method, user_address_id, vendor_id, is_fast_delivery } = req.body;
@@ -444,6 +442,7 @@ const createOrder = async (req, res) => {
 
         if (!isNaN(vendor_lat) && !isNaN(vendor_lng)) {
             const radiusOptions = [3, 5, 10];
+            console.log('radiusOptions',radiusOptions,vendor_lat,vendor_lng)
             for (const radius of radiusOptions) {
                 try {
                     const ridersInRange = await User.getNearbyRidersWithPolylines(
@@ -455,7 +454,7 @@ const createOrder = async (req, res) => {
                         user_address_id,
                         radius
                     );
-
+                    console.log('ridersInRange',ridersInRange)
                     if (ridersInRange.length > 0) {
                         nearbyRiders = ridersInRange;
                         searchRadiusKm = radius;
