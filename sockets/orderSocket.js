@@ -14,27 +14,54 @@ module.exports = (io) => {
     socket.on('acceptOrder', ({ orderId, riderId }) => {
       console.log(`[Accept Order Attempt] Rider: ${riderId}, Order: ${orderId}`);
 
-      // 2 = accepted status
       OrderModel.handleOrder(orderId, riderId, 2)
         .then((success) => {
           if (success) {
             console.log(`[Order Accepted] Order ${orderId} accepted by Rider ${riderId}`);
 
-            // Notify other riders to stop buzzer
             socket.to(`order_${orderId}`).emit('stopBuzzer', { orderId });
-
-            // Notify current rider
             socket.emit('orderAccepted', { success: true });
+
+            // 🔥 NEW: Fetch user & notify customer
+            OrderModel.getUserIdByOrderId(orderId, async (err, result) => {
+              if (err) return console.error("❌ Error fetching user:", err);
+
+              if (!result?.length) {
+                console.warn("⚠️ No customer found to notify");
+                return;
+              }
+
+              const userId = result[0].user_id;
+
+              try {
+                await sendNotificationToUser({
+                  userId: String(userId),
+                  title: "Delivery Partner Assigned",
+                  body: "A rider has accepted your order and will reach the store soon.",
+                  data: { 
+                    type: "order_update",
+                    order_id: String(orderId)
+                  },
+                  saveToDB: true,
+                });
+
+                console.log(`📩 Notification sent to user ${userId}`);
+
+              } catch (error) {
+                console.error("❌ Failed to send customer notification:", error);
+              }
+            });
+
           } else {
-            console.warn(`[Order Already Accepted] Rider: ${riderId}, Order: ${orderId}`);
             socket.emit('orderAccepted', { success: false });
           }
         })
         .catch((err) => {
-          console.error(`[Error] acceptOrder failed for Rider: ${riderId}, Order: ${orderId}`, err);
+          console.error(`[Error] acceptOrder failed`, err);
           socket.emit('orderAccepted', { success: false, error: 'Server error' });
         });
     });
+
 
     socket.on('disconnect', () => {
           console.log(`[Socket Disconnected] ID: ${socket.id}`);
