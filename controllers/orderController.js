@@ -403,8 +403,6 @@ const createOrder = async (req, res) => {
 
         // ✅ 6. Scheduled Order Logic
         if (scheduled_time) {
-            
-
             // 📨 Notify vendor about scheduled order
             sendNotificationToUser({
                 userId: vendor_id,
@@ -439,7 +437,7 @@ const createOrder = async (req, res) => {
         let nearbyRiders = [];
         let searchRadiusKm = 10;
         let riderFound = false;
-
+        console.log('vendor_lat',vendor_lat,vendor_lng)
         if (!isNaN(vendor_lat) && !isNaN(vendor_lng)) {
             const radiusOptions = [3, 5, 10];
             console.log('radiusOptions',radiusOptions,vendor_lat,vendor_lng)
@@ -459,6 +457,7 @@ const createOrder = async (req, res) => {
                         nearbyRiders = ridersInRange;
                         searchRadiusKm = radius;
                         riderFound = true;
+
                         console.log(`✅ Found ${ridersInRange.length} riders within ${radius} km`);
                         break;
                     }
