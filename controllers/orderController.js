@@ -1689,6 +1689,18 @@ const orderHistory = async (req, res) => {
                         floor: row.address_floor,
                         landmark: row.address_landmark
                     },
+                    extra_details: {
+                        items_price: row.extra_items_price || 0,
+                        fast_delivery_charges: row.extra_fast_delivery_charges || 0,
+                        scheduled_order_date: row.scheduled_order_date || null,
+                        scheduled_time_date: row.scheduled_time_date || null,
+                        order_vendor_distance: row.order_vendor_distance || null,
+                        order_delivery_type: row.order_delivery_type || null,
+                        rider_deliveryCharge: row.rider_deliveryCharge || 0,
+                        overall_amount: row.extra_overall_amount || 0,
+                        tip_amount: row.tip_amount || 0,
+                        tip_percentage: row.tip_percentage || 0
+                    },
 
                     products: {}
                 };
