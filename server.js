@@ -67,7 +67,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const parcelRoutes = require('./routes/parcelRoutes');
 const ratingsRoutes = require('./routes/ratingRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const chatRoutes = require('./routes/chatRoutes')(io);
+const chatRoutes = require('./routes/chatRoutes');
 
 // Routes
 app.use('/webhook', webhookHandler);
