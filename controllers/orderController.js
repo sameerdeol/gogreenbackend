@@ -1287,7 +1287,7 @@ const getOrderDetails = (req, res) => {
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
                 address, type, floor, landmark,
-                firstname, lastname, phonenumber, prefix, is_fast_delivery,
+                firstname, lastname, phonenumber, prefix, is_fast_delivery,rider_id,
                 store_name, store_address, vendor_phonenumber, vendor_prefix
             } = row;
 
@@ -1298,6 +1298,7 @@ const getOrderDetails = (req, res) => {
                     order_uid,
                     preparing_time,
                     is_fast_delivery,
+                    rider_id,
                     user_id,
                     total_quantity,
                     total_price,
