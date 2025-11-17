@@ -16,3 +16,16 @@ exports.saveMessage = async ({ ride_id, sender_id, receiver_id, sender_type, mes
     sent_at
   ]);
 };
+
+exports.getMessages = async (ride_id, rider_id) => {
+  const query = `
+    SELECT *
+    FROM chat_messages
+    WHERE ride_id = ?
+      AND (sender_id = ? OR receiver_id = ?)
+    ORDER BY sent_at ASC
+  `;
+
+  const [rows] = await db.execute(query, [ride_id, rider_id, rider_id]);
+  return rows;
+};
