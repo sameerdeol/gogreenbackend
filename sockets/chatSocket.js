@@ -11,7 +11,7 @@ module.exports = (io) => {
 
       try {
         // 1️⃣ Save message to DB
-        await ChatModel.saveMessage(data);
+        await ChatModel.save(data);
         console.log("💾 Message saved to DB");
       } catch (err) {
         console.error("❌ Error saving message:", err);
