@@ -2073,7 +2073,7 @@ const User = {
             FROM order_details o
             LEFT JOIN user_addresses ua ON ua.id = o.user_address_id
             LEFT JOIN delivery_partners dp ON dp.user_id = o.rider_id
-            WHERE o.order_uid = ? AND o.user_id = ?
+            WHERE o.id = ? AND o.user_id = ?
             LIMIT 1
         `;
 
