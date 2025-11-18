@@ -25,6 +25,6 @@ router.get('/getallridersforadminbyID/:rider_id', verifyToken, riderController.a
 router.post('/rider-analytics', verifyToken, riderController.riderAnalytics);
 router.post('/riderdashboard-analytics', verifyToken, riderController.riderDashboardAnalytics);
 router.post('/rider-bankdetails', verifyToken, riderController.riderBankDetails);
-router.get('/live-order-location/:order_id/:user_id', verifyToken, riderController.getLiveOrderLocation);
+router.post('/live-order-location', verifyToken, riderController.getLiveOrderLocation);
 
 module.exports = router; 

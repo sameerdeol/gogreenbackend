@@ -532,7 +532,7 @@ const vehicleDetails = (req, res) => {
 };
 
 const getLiveOrderLocation = (req, res) => {
-  const { order_id, user_id } = req.params;
+  const { order_id, user_id } = req.body;
 
   if (!order_id || !user_id) {
     return res.status(400).json({
