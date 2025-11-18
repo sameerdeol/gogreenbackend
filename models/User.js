@@ -20,6 +20,7 @@ const updateFields = (data, tableFields) => {
     };
 };
 
+
 const User = {
 
     findByEmail: (email, callback) => {
@@ -2056,6 +2057,46 @@ const User = {
             callback(null, results[0]); // returns a single user object
         });
     }, 
+
+    // Add this method to your User object in user.js model
+
+    getLiveOrderLocation: (order_id, user_id, callback) => {
+        const sql = `
+            SELECT 
+                o.order_uid,
+                o.rider_id,
+                o.user_address_id,
+                ua.customer_lat,
+                ua.customer_lng,
+                dp.rider_lat,
+                dp.rider_lng
+            FROM order_details o
+            LEFT JOIN user_addresses ua ON ua.id = o.user_address_id
+            LEFT JOIN delivery_partners dp ON dp.user_id = o.rider_id
+            WHERE o.order_uid = ? AND o.user_id = ?
+            LIMIT 1
+        `;
+
+        db.query(sql, [order_id, user_id], (err, results) => {
+            if (err) {
+                console.error("Database error in getLiveOrderLocation:", err);
+                return callback(err, null);
+            }
+            
+            if (!results || results.length === 0) {
+                return callback(null, null);
+            }
+
+            // Parse coordinates to float for consistency
+            const result = results[0];
+            if (result.customer_lat) result.customer_lat = parseFloat(result.customer_lat);
+            if (result.customer_lng) result.customer_lng = parseFloat(result.customer_lng);
+            if (result.rider_lat) result.rider_lat = parseFloat(result.rider_lat);
+            if (result.rider_lng) result.rider_lng = parseFloat(result.rider_lng);
+
+            callback(null, result);
+        });
+    },
 
 
 

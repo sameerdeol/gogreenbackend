@@ -531,6 +531,31 @@ const vehicleDetails = (req, res) => {
     });
 };
 
+const getLiveOrderLocation = (req, res) => {
+  const { order_id, user_id } = req.params;
+
+  if (!order_id || !user_id) {
+    return res.status(400).json({
+      success: false,
+      message: "order_id and user_id are required"
+    });
+  }
+
+  User.getLiveOrderLocation(order_id, user_id, (err, result) => {
+    if (err) {
+      return res.status(500).json({ success: false, message: "Database error", error: err });
+    }
+
+    if (!result) {
+      return res.status(404).json({ success: false, message: "Order or user not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  });
+};
 
 
 
@@ -858,5 +883,6 @@ module.exports = {
     updateVehicleDetails,
     riderAnalytics,
     riderDashboardAnalytics,
-    riderBankDetails
+    riderBankDetails,
+    getLiveOrderLocation
 }; 
