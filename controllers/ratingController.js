@@ -48,7 +48,28 @@ const getAverageRating = (req, res) => {
     });
 };
 
+const getAllRatingByUserId = (req, res) => {
+    const { rateable_type, rateable_id } = req.body;
+
+    if (!rateable_type || !rateable_id) {
+        return res.status(400).json({ success: false, message: 'rateable_type and rateable_id are required.' });
+    }
+
+    RatingModel.getRatingsByItem(rateable_type, rateable_id, (err, results) => {
+        if (err) {
+            console.error('Error fetching  rating:', err);
+            return res.status(500).json({ success: false, message: 'Failed to fetch rating', error: err });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: results[0] || { average_rating: null, total_ratings: 0 }
+        });
+    });
+};
+
 module.exports = {
     giveRating,
-    getAverageRating
+    getAverageRating,
+    getAllRatingByUserId
 };

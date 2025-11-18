@@ -4,9 +4,11 @@ const router = express.Router();
 const { verifyToken } = require('../middleware/authroization');
 const {
     giveRating,
-    getAverageRating
-} = require('../controllers/ratingController');
+    getAverageRating,
+    getAllRatingByUserId
 
+} = require('../controllers/ratingController');
+router.post('/getAllRating',verifyToken , getAllRatingByUserId)
 router.post('/add',verifyToken, giveRating);
 router.get('/average', getAverageRating);  
 
