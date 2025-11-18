@@ -1667,6 +1667,7 @@ const orderHistory = async (req, res) => {
                     is_fast_delivery: row.is_fast_delivery,
                     order_status: row.order_status,
                     created_at: row.created_at,
+                    
 
                     user: {
                         firstname: row.user_firstname,
@@ -1740,6 +1741,7 @@ const orderHistory = async (req, res) => {
             if (row.variant_id && !product.variants.find(v => v.variant_id === row.variant_id)) {
                 product.variants.push({
                     variant_id: row.variant_id,
+                    item_variant_id: row.item_variant_id,
                     variant_type: row.variant_type,
                     variant_value: row.variant_value,
                     variant_price: row.variant_price

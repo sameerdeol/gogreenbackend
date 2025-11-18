@@ -427,117 +427,96 @@ const Order = {
         return { status: 'verified', user_id: order.user_id };
     },
     orderHistorybyUserID: (user_id, isToday = false, callback) => {
+
         let query = `
             SELECT 
-            OD.id AS order_id,
-            OD.order_uid,
-            OD.user_id,
-            OD.total_quantity,
-            OD.total_price,
-            OD.payment_method,
-            OD.is_fast_delivery,
-            OD.order_status,
-            OD.vendor_id,
-            OD.created_at,
+                OD.id AS order_id,
+                OD.order_uid,
+                OD.user_id,
+                OD.total_quantity,
+                OD.total_price,
+                OD.payment_method,
+                OD.is_fast_delivery,
+                OD.order_status,
+                OD.vendor_id,
+                OD.created_at,
 
-            -- Customer details
-            U.firstname AS user_firstname,
-            U.lastname AS user_lastname,
-            U.email AS user_email,
-            U.prefix AS user_prefix,
-            U.phonenumber AS user_phonenumber,
-            U.custom_id AS user_custom_id,
+                U.firstname AS user_firstname,
+                U.lastname AS user_lastname,
+                U.email AS user_email,
+                U.prefix AS user_prefix,
+                U.phonenumber AS user_phonenumber,
+                U.custom_id AS user_custom_id,
 
-            -- Address details
-            UA.address AS user_address,
-            UA.type AS address_type,
-            UA.floor AS address_floor,
-            UA.landmark AS address_landmark,
+                UA.address AS user_address,
+                UA.type AS address_type,
+                UA.floor AS address_floor,
+                UA.landmark AS address_landmark,
 
-            -- Vendor details
-            V.store_address,
-            V.store_name,
-            V.store_image,
-            VU.custom_id AS vendor_custom_id,
+                V.store_address,
+                V.store_name,
+                V.store_image,
+                VU.custom_id AS vendor_custom_id,
 
-            -- Order item details
-            OI.id AS order_item_id,
-            OI.product_id,
-            OI.product_quantity,
-            OI.total_item_price,
-            OI.single_item_price,
-            OI.variant_id,
+                OI.id AS order_item_id,
+                OI.product_id,
+                OI.product_quantity,
+                OI.total_item_price,
+                OI.single_item_price,
+                OI.variant_id AS item_variant_id,   -- ✅ FIXED
 
-            P.featured_image,
-            P.name,
+                P.featured_image,
+                P.name,
 
-            -- Selected variant
-            PV.id AS variant_id,
-            PV.type AS variant_type,
-            PV.value AS variant_value,
-            PV.price AS variant_price,
+                PV.id AS variant_id,
+                PV.type AS variant_type,
+                PV.value AS variant_value,
+                PV.price AS variant_price,
 
-            -- Selected addons
-            OIA.addon_id,
-            A.name AS addon_name,
-            A.price AS addon_price,
+                OIA.addon_id,
+                A.name AS addon_name,
+                A.price AS addon_price,
 
-            -- Product gallery images
-            GI.image_path AS gallery_image,
+                GI.image_path AS gallery_image,
 
-            -- Product attributes
-            PA.attribute_key,
-            PA.attribute_value,
+                PA.attribute_key,
+                PA.attribute_value,
 
-            -- ⭐ Extra order-level details from order_extra_details
-            OED.items_price AS extra_items_price,
-            OED.fast_delivery_charges AS extra_fast_delivery_charges,
-            OED.scheduled_order_date,
-            OED.scheduled_time_date,
-            OED.order_vendor_distance,
-            OED.order_delivery_type,
-            OED.rider_deliveryCharge,
-            OED.overall_amount AS extra_overall_amount,
-            OED.tip_amount,
-            OED.tip_percentage
+                OED.items_price AS extra_items_price,
+                OED.fast_delivery_charges AS extra_fast_delivery_charges,
+                OED.scheduled_order_date,
+                OED.scheduled_time_date,
+                OED.order_vendor_distance,
+                OED.order_delivery_type,
+                OED.rider_deliveryCharge,
+                OED.overall_amount AS extra_overall_amount,
+                OED.tip_amount,
+                OED.tip_percentage,
 
-        FROM 
-            order_details OD
+                OD.rider_id,
+                OD.rider_available,
+                RU.custom_id AS rider_uid
 
-            -- Customer
+            FROM order_details OD
+
             JOIN users U ON U.id = OD.user_id
-
-            -- Vendor
             JOIN users VU ON VU.id = OD.vendor_id
             JOIN vendors V ON V.user_id = OD.vendor_id
-
-            -- Address
             JOIN user_addresses UA ON UA.id = OD.user_address_id
-
-            -- Order items
             JOIN order_items OI ON OI.order_id = OD.id
-
-            -- Selected variant
             LEFT JOIN product_variants PV ON PV.id = OI.variant_id
             LEFT JOIN products P ON P.id = OI.product_id
-
-            -- Selected addons
             LEFT JOIN order_item_addons OIA ON OIA.order_item_id = OI.id
             LEFT JOIN product_addons A ON A.id = OIA.addon_id
-
-            -- Product gallery images
             LEFT JOIN gallery_images GI ON GI.product_id = OI.product_id
-
-            -- Product attributes
             LEFT JOIN product_attributes PA ON PA.product_id = OI.product_id
-
-            -- ⭐ NEW SAFE JOIN (does not break anything)
             LEFT JOIN order_extra_details OED ON OED.order_id = OD.id
+            LEFT JOIN users RU ON RU.id = OD.rider_id
 
-        WHERE OD.user_id = ?
+            WHERE OD.user_id = ?
         `;
 
-        // 👇 Add date filter dynamically
+        // 👇 Fix: append condition BEFORE semicolon
         if (isToday) {
             query += ` AND DATE(OD.created_at) = CURDATE() `;
         }
@@ -546,6 +525,7 @@ const Order = {
 
         db.query(query, [user_id], callback);
     },
+
 
 
 
