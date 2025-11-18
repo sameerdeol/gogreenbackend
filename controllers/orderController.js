@@ -1706,7 +1706,9 @@ const orderHistory = async (req, res) => {
                     rider_details: {
                         rider_uid: row.rider_uid || null,
                         rider_id: row.rider_id || null,
-                        rider_available: row.rider_available || 0
+                        rider_available: row.rider_available || 0,
+                        rider_firstname: row.rider_firstname || null,
+                        rider_lastname: row.rider_lastname || null,
                     },
 
                     products: {}

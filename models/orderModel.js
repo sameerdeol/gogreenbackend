@@ -495,7 +495,9 @@ const Order = {
 
                 OD.rider_id,
                 OD.rider_available,
-                RU.custom_id AS rider_uid
+                RU.custom_id AS rider_uid,
+                RU.firstname AS rider_firstname,
+                RU.lastname AS rider_lastname
 
             FROM order_details OD
 
