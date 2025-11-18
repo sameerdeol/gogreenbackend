@@ -1703,6 +1703,11 @@ const orderHistory = async (req, res) => {
                         tip_amount: row.tip_amount || 0,
                         tip_percentage: row.tip_percentage || 0
                     },
+                    rider_details: {
+                        rider_uid: row.rider_uid || null,
+                        rider_id: row.rider_id || null,
+                        rider_available: row.rider_available || 0
+                    },
 
                     products: {}
                 };
