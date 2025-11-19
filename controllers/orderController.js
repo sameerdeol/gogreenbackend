@@ -400,7 +400,7 @@ const createOrder = async (req, res) => {
 
         const vendor_lat = parseFloat(vendorDetails?.vendor_lat);
         const vendor_lng = parseFloat(vendorDetails?.vendor_lng);
-        console.log('scheduled_time',scheduled_time)
+
         // ✅ 6. Scheduled Order Logic
         if (scheduled_time) {
             // 📨 Notify vendor about scheduled order
@@ -437,7 +437,7 @@ const createOrder = async (req, res) => {
         let nearbyRiders = [];
         let searchRadiusKm = 10;
         let riderFound = false;
-        if (vendor_lat && vendor_lng) {
+        if (!isNaN(vendor_lat) && !isNaN(vendor_lng)) {
             const radiusOptions = [3, 5, 10];
             for (const radius of radiusOptions) {
                 try {
