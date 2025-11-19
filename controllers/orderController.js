@@ -437,7 +437,7 @@ const createOrder = async (req, res) => {
         let nearbyRiders = [];
         let searchRadiusKm = 10;
         let riderFound = false;
-        if (!isNaN(vendor_lat) && !isNaN(vendor_lng)) {
+        if (vendor_lat && vendor_lng) {
             const radiusOptions = [3, 5, 10];
             for (const radius of radiusOptions) {
                 try {
