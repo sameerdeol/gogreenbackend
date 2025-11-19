@@ -400,7 +400,7 @@ const createOrder = async (req, res) => {
 
         const vendor_lat = parseFloat(vendorDetails?.vendor_lat);
         const vendor_lng = parseFloat(vendorDetails?.vendor_lng);
-
+        console.log('scheduled_time',scheduled_time)
         // ✅ 6. Scheduled Order Logic
         if (scheduled_time) {
             // 📨 Notify vendor about scheduled order
