@@ -7,7 +7,8 @@ const {
     getUnverifiedUsers,
     createSuperadminManagers,
     workersProfile,
-    userBankDetails
+    userBankDetails,
+    getPhonePrefixes
 } = require('../controllers/userController');
 const vendorController = require('../controllers/vendorController');
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -30,7 +31,7 @@ router.put('/update-user', verifyToken, updateUser);
 router.get('/unverifiedUsers', authenticateToken, getUnverifiedUsers);
 router.put('/verify-user',authenticateToken, verifyUser);
 router.post(['/vendor-profile', '/rider-profile', '/customer-profile'], verifyToken, verifyToken,workersProfile);
-
+router.get('/getprefixes', verifyToken, getPhonePrefixes);
 
 /**
  * Create Superadmins & Managers

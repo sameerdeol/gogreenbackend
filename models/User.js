@@ -1271,6 +1271,16 @@ const User = {
     });
 },
 
+    getprefixes: (callback)=>{
+             
+        const sql = `SELECT id, nicename AS country, phonecode FROM country ORDER BY nicename ASC`;
+
+        db.query(sql, (err, result) => {
+            if (err) return callback(err, null);
+
+            callback(null, result);
+        });
+    },
 
 
 

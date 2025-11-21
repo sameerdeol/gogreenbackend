@@ -354,6 +354,19 @@ const verifyOtp = (req, res) => {
     });
 };
 
+const getPhonePrefixes = (req, res)=>{
+     User.getprefixes((err, result) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Database error', error: err });
+        }
+
+        res.json({
+            success: true,
+            prefixes: result,
+        });
+    });
+};
+
 
 // RESET password using OTP
 const resetPassword = (req, res) => {
@@ -574,4 +587,4 @@ const userBankDetails = async (req, res) => {
 // Vendor and rider logic has been moved to vendorController.js and riderController.js
 
 
-module.exports = { loginadmin, updateUser, appsignup, getUnverifiedUsers, verifyUser, updatePassword, resetPassword, sendOTP, verifyOtp, changePassword, workersProfile, userBankDetails};
+module.exports = { loginadmin, updateUser, appsignup, getUnverifiedUsers, verifyUser, updatePassword, resetPassword, sendOTP, verifyOtp, changePassword, workersProfile, userBankDetails,getPhonePrefixes};
