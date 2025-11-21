@@ -1273,7 +1273,7 @@ const User = {
 
     getprefixes: (callback)=>{
              
-        const sql = `SELECT id, nicename AS country, iso3 as country_name, phonecode FROM country ORDER BY nicename ASC;`;
+        const sql = `SELECT id, code as country_code, country_name, phone_code FROM countries;`;
 
         db.query(sql, (err, result) => {
             if (err) return callback(err, null);
