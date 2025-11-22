@@ -426,7 +426,7 @@ const Order = {
 
         return { status: 'verified', user_id: order.user_id };
     },
-    orderHistorybyUserID: (user_id, isToday = false, callback) => {
+    orderHistorybyUserID: (user_id, isToday = false, date = null, callback) => {
 
         let query = `
             SELECT 
@@ -463,7 +463,7 @@ const Order = {
                 OI.product_quantity,
                 OI.total_item_price,
                 OI.single_item_price,
-                OI.variant_id AS item_variant_id,   -- ✅ FIXED
+                OI.variant_id AS item_variant_id,
 
                 P.featured_image,
                 P.name,
@@ -518,15 +518,20 @@ const Order = {
             WHERE OD.user_id = ?
         `;
 
-        // 👇 Fix: append condition BEFORE semicolon
+        let values = [user_id];
+
         if (isToday) {
-            query += ` AND DATE(OD.created_at) = CURDATE() `;
+            query += ` AND DATE(OD.created_at) = CURDATE()`;
+        } else if (date) {
+            query += ` AND DATE(OD.created_at) = ?`;
+            values.push(date);
         }
 
         query += ` ORDER BY OD.created_at DESC`;
 
-        db.query(query, [user_id], callback);
+        db.query(query, values, callback);
     },
+
 
 
 

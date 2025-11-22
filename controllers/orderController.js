@@ -1636,18 +1636,35 @@ const getOrdersByVendorIdandRiderID = (req, res) => {
 
 const orderHistory = async (req, res) => {
     const { user_id } = req.body;
-    const isToday = req.path.includes('/today'); // 👈 detect the URL
+    // const isToday = req.path.includes('/today'); // 👈 detect the URL
+    let isToday = false;
+    
+    let selectedDate = null;
+
+    // Check if path ends with /today
+    if (req.path.includes('/today')) {
+        isToday = true;
+    }
+
+    // If path has a date param (like /order-history/2025-01-03)
+    if (req.params.date && req.params.date !== "today") {
+        selectedDate = req.params.date;
+    }
 
     if (!user_id) {
         return res.status(400).json({ error: "user_id is required" });
     }
 
-    OrderModel.orderHistorybyUserID(user_id, isToday, (err, results) => {
+    OrderModel.orderHistorybyUserID(user_id, isToday,selectedDate, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
-        if (!results || results.length === 0) {
-            const msg = isToday ? "No orders found for today." : "No order found.";
-            return res.status(200).json({ message: msg });
-        }
+         if (!results || results.length === 0) {
+                const msg = isToday
+                    ? "No orders found for today."
+                    : selectedDate
+                        ? `No orders found for ${selectedDate}.`
+                        : "No order found.";
+                return res.status(200).json({ message: msg });
+            }
 
         // 🧠 Your existing order grouping logic stays exactly the same ↓
         const ordersMap = {};
