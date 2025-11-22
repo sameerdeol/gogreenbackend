@@ -1,4 +1,5 @@
 const ChatModel = require("../models/ChatModel");
+const sendNotificationToUser = require("../utils/sendNotificationToUser");
 
 module.exports = (io) => {
 
@@ -39,11 +40,40 @@ module.exports = (io) => {
       if (data.sender_type === "customer") {
         // customer → rider
         io.to(`rider_${data.receiver_id}`).emit("receive_message", data);
+
+            // 🔔 Send push notification to rider
+        await sendNotificationToUser({
+          userId: data.receiver_id,
+          title: "New Message",
+          body: data.message,
+          saveToDB: true,
+          data: {
+            type: "chat_message",
+            from: data.sender_id,
+            to: data.receiver_id,
+            chat_id: data.chat_id || "",
+          }
+        });
+  
       }
 
       if (data.sender_type === "rider") {
         // rider → customer
         io.to(`customer_${data.receiver_id}`).emit("receive_message", data);
+
+         // 🔔 Send push notification to customer
+        await sendNotificationToUser({
+          userId: data.receiver_id,
+          title: "New Message",
+          body: data.message,
+          saveToDB: true,
+          data: {
+            type: "chat_message",
+            from: data.sender_id,
+            to: data.receiver_id,
+            chat_id: data.chat_id || "",
+          }
+        });
       }
     });
   });

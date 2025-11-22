@@ -2,12 +2,12 @@ const OrderDetails = require("../models/orderDetails");
 const OrderItem = require("../models/orderItem");
 const OrderModel = require("../models/orderModel");
 const sendNotificationToUser = require("../utils/sendNotificationToUser");
-const {User} = require('../models/User');
+const { User } = require('../models/User');
 const Product = require('../models/productModel');
 const { generateOtp } = require('../utils/otpGenerator'); // adjust path if needed
 // const { emitNewOrderToRiders } = require("../sockets/locationSocket");
 const { emitNewOrderToRider } = require("../sockets/locationSocket");
-const { emitNewOrderToVendor } = require('../sockets/locationSocket'); 
+const { emitNewOrderToVendor } = require('../sockets/locationSocket');
 // const createOrder = async (req, res) => {
 //     try {
 //         const { user_id, cart, payment_method, user_address_id, vendor_id, is_fast_delivery } = req.body;
@@ -222,13 +222,13 @@ const { emitNewOrderToVendor } = require('../sockets/locationSocket');
 
 const createOrder = async (req, res) => {
     try {
-        const { 
-            user_id, 
-            cart, 
-            payment_method, 
-            user_address_id, 
-            vendor_id, 
-            is_fast_delivery, 
+        const {
+            user_id,
+            cart,
+            payment_method,
+            user_address_id,
+            vendor_id,
+            is_fast_delivery,
             scheduled_time, // ⏰ new field for scheduled delivery
             items_price,
             fast_delivery_charges,
@@ -237,7 +237,7 @@ const createOrder = async (req, res) => {
             rider_deliveryCharge,
             overall_amount,
             tip_amount,
-            tip_percentage          
+            tip_percentage
         } = req.body;
 
         if (!user_id || !cart || cart.length === 0) {
@@ -301,9 +301,9 @@ const createOrder = async (req, res) => {
             total_price = parseFloat((total_price + 3).toFixed(2));
         }
         const formattedScheduledTime =
-        scheduled_time && typeof scheduled_time === "string" && scheduled_time.trim() !== ""
-            ? scheduled_time.replace("T", " ")
-            : null;
+            scheduled_time && typeof scheduled_time === "string" && scheduled_time.trim() !== ""
+                ? scheduled_time.replace("T", " ")
+                : null;
 
         // ✅ 3. Create order entry
         const orderResult = await new Promise((resolve, reject) => {
@@ -450,7 +450,7 @@ const createOrder = async (req, res) => {
                         user_address_id,
                         radius
                     );
-                    
+
                     if (ridersInRange.length > 0) {
                         nearbyRiders = ridersInRange;
                         searchRadiusKm = radius;
@@ -491,7 +491,7 @@ const createOrder = async (req, res) => {
         // ✅ 9. Background Notifications (instant orders)
         if (riderFound) {
 
-             OrderDetails.updateRiderAvailable(order_id, 1, (err) => {
+            OrderDetails.updateRiderAvailable(order_id, 1, (err) => {
                 if (err) {
                     console.error(`❌ Failed to update rider_available for order ${order_id}:`, err);
                 } else {
@@ -519,27 +519,27 @@ const createOrder = async (req, res) => {
                             is_fast_delivery: is_fast_delivery.toString()
                         }
                     });
-                    
+
                     // ✅ Emit new order live update to vendor socket
                     emitNewOrderToVendor(vendor_id, {
-                    order_id,
-                    order_uid,
-                    type: "new_order",
-                    total_price,
-                    is_fast_delivery,
-                    customer_name: username,
-                    customer_address: addressText,
-                    vendor_lat,
-                    vendor_lng,
-                    rider_found: riderFound,
-                    nearby_riders_count: nearbyRiders.length,
-                    search_radius_km: searchRadiusKm,
-                    nearby_riders: nearbyRiders.map(r => ({
-                        user_id: r.user_id,
-                        rider_lat: parseFloat(r.rider_lat),
-                        rider_lng: parseFloat(r.rider_lng),
-                        distance_km: parseFloat(r.distance_km)
-                    }))
+                        order_id,
+                        order_uid,
+                        type: "new_order",
+                        total_price,
+                        is_fast_delivery,
+                        customer_name: username,
+                        customer_address: addressText,
+                        vendor_lat,
+                        vendor_lng,
+                        rider_found: riderFound,
+                        nearby_riders_count: nearbyRiders.length,
+                        search_radius_km: searchRadiusKm,
+                        nearby_riders: nearbyRiders.map(r => ({
+                            user_id: r.user_id,
+                            rider_lat: parseFloat(r.rider_lat),
+                            rider_lng: parseFloat(r.rider_lng),
+                            distance_km: parseFloat(r.distance_km)
+                        }))
                     });
 
                 } catch (notifyErr) {
@@ -549,17 +549,17 @@ const createOrder = async (req, res) => {
         }
 
     } catch (error) {
-    console.error("❌ Server error while creating order:");
-    console.error(error.message);
-    console.error(error.stack);
+        console.error("❌ Server error while creating order:");
+        console.error(error.message);
+        console.error(error.stack);
 
-    if (!res.headersSent) {
-        res.status(500).json({
-            error: "Server error",
-            details: error.message // 👈 this will show real error in response
-        });
+        if (!res.headersSent) {
+            res.status(500).json({
+                error: "Server error",
+                details: error.message // 👈 this will show real error in response
+            });
+        }
     }
-}
 };
 
 // const updateOrderStatus = async (req, res, io) => {
@@ -765,7 +765,7 @@ const updateOrderStatus = async (req, res) => {
         const orderIdStr = order_id.toString();
         const notifications = [];
         let nearbyRiders = [];
-        console.log('order_status when vendor perform action',order_status)
+        console.log('order_status when vendor perform action', order_status)
         // Step 4: Handle notifications and riders
         switch (order_status) {
             case 1: // Vendor confirmed order
@@ -779,7 +779,7 @@ const updateOrderStatus = async (req, res) => {
                     saveToDB: true
                 }));
 
-               if (vendor_id) {
+                if (vendor_id) {
                     try {
                         console.log("🛰 Fetching nearby riders for order:", order_id);
 
@@ -795,7 +795,7 @@ const updateOrderStatus = async (req, res) => {
 
                         console.log("✅ Nearby riders fetched:", nearbyRiders.length);
 
-                        
+
                         if (nearbyRiders.length > 0) {
                             console.log("📡 Emitting new_order to nearby riders via socket...");
 
@@ -833,7 +833,7 @@ const updateOrderStatus = async (req, res) => {
                                 );
                             }
                         }
-                          
+
 
                     } catch (err) {
                         console.error("Error fetching nearby riders:", err);
@@ -859,7 +859,7 @@ const updateOrderStatus = async (req, res) => {
 
         // Step 5: Send notifications
         const notifResults = await Promise.allSettled(notifications);
-            notifResults.forEach((result, index) => {
+        notifResults.forEach((result, index) => {
             if (result.status === "rejected") {
                 console.warn(`Notification #${index + 1} failed:`, result.reason);
             }
@@ -877,181 +877,6 @@ const updateOrderStatus = async (req, res) => {
         return res.status(500).json({ error: "Something went wrong while updating order status" });
     }
 };
-
-
-// const updateOrder = async (req, res, io) => {
-//     const { order_id, actor_role, vendor_id, order_status, rider_id } = req.body;
-
-//     if (!order_id || !order_status || !actor_role || !vendor_id) {
-//         return res.status(400).json({ success: false, message: "Missing required fields" });
-//     }
-
-//     try {
-//         // Step 1: Permission check
-//         if (actor_role === 3) {
-//             const orderResult = await new Promise((resolve, reject) => {
-//                 OrderDetails.findOrderByVendor(order_id, vendor_id, (err, results) => {
-//                     if (err) return reject(err);
-//                     resolve(results);
-//                 });
-//             });
-//             if (!orderResult || orderResult.length === 0) {
-//                 return res.status(403).json({ success: false, message: "Vendor not authorized for this order" });
-//             }
-//         }
-
-//         if (actor_role === 4) {
-//             const isHandled = await OrderModel.handleOrder(order_id, vendor_id, order_status);
-//             if (!isHandled) {
-//                 return res.status(400).json({ success: false, message: "Order already handled" });
-//             }
-//         }
-
-//         // Step 2: Update order status
-//         await OrderModel.updateOrderStatus(order_id, order_status, rider_id);
-
-//         // Step 3: Fetch order & user details
-//         const userResult = await new Promise((resolve, reject) => {
-//             OrderDetails.getUserIdByOrderId(order_id, (err, result) => {
-//                 if (err) return reject(err);
-//                 resolve(result);
-//             });
-//         });
-
-//         if (!userResult || userResult.length === 0) {
-//             return res.status(404).json({ success: false, message: "Order not found for notifications" });
-//         }
-
-//         const order = userResult[0];
-//         const orderIdStr = order_id.toString();
-//         const notifications = [];
-
-//         // Step 4: Handle status-specific actions
-//         switch (order_status) {
-//             // Vendor confirmed
-//             case 1:
-//                 notifications.push(sendNotificationToUser({
-//                     userId: order.user_id,
-//                     title: "Order Confirmed",
-//                     body: `Your order from ${order.store_name} is being prepared.`,
-//                     data: { order_id: orderIdStr, type: "order_update" }
-//                 }));
-
-//                 if (actor_role === 3) {
-//                     User.getNearbyRidersWithPolylines(
-//                         order_id,
-//                         vendor_id,
-//                         order.vendor_lat,
-//                         order.vendor_lng,
-//                         order.user_id,
-//                         order.user_address_id,
-//                         3,
-//                         (err, nearbyRiders) => {
-//                             if (err) return console.error("Error fetching riders:", err);
-//                             for (const rider of nearbyRiders) {
-//                                 notifications.push(sendNotificationToUser({
-//                                     userId: String(rider.user_id || ""),
-//                                     title: "New Delivery Opportunity",
-//                                     body: `New order from ${order.store_name} ready for pickup.`,
-//                                     data: {
-//                                         order_id: orderIdStr,
-//                                         type: "new_order",
-//                                         vendor_id: String(vendor_id),
-//                                         vendor_to_customer_distance_km: String(rider.vendor_to_customer_distance_km ?? "0.00"),
-//                                         rider_to_vendor_distance_km: String(rider.distance_km ?? "0.00")
-//                                     }
-//                                 }));
-//                             }
-//                         }
-//                     );
-//                 }
-//                 break;
-
-//             // Rider accepted
-//             case 2: // Rider accepted
-//                 notifications.push(sendNotificationToUser({
-//                     userId: order.user_id,
-//                     title: "Delivery Assigned",
-//                     body: `A rider has been assigned to deliver your order.`,
-//                     data: { order_id: orderIdStr, type: "order_update" }
-//                 }));
-
-//                 io.emit(`stop-buzzer-${orderIdStr}`, { orderId: orderIdStr });
-//                 break;
-
-
-//             // Rider reached vendor
-//             case 3: // Rider reached vendor
-//                 const otp = generateOtp(6);
-//                 const expiry = new Date(Date.now() + 10 * 60 * 1000);
-//                 await OrderModel.updateOtpAndStatus(orderIdStr, otp, expiry);
-
-//                 await sendNotificationToUser({
-//                     userId: rider_id,
-//                     title: "OTP for Vendor",
-//                     body: `Show this OTP to the vendor: ${otp}`,
-//                     data: { order_id: orderIdStr, type: "otp_info" }
-//                 });
-
-//                 io.emit(`rider-reached-vendor-${orderIdStr}`, { orderId: orderIdStr, riderId: rider_id });
-//                 break;
-
-//             case 4: // Out for Delivery
-//                 await OrderModel.updateOrderStatus(orderIdStr, 4, rider_id);
-
-//                 notifications.push(sendNotificationToUser({
-//                     userId: order.user_id,
-//                     title: "Order Out for Delivery",
-//                     body: `Your order is on the way with ${order.rider_firstname}.`,
-//                     data: { order_id: orderIdStr, type: "order_update" }
-//                 }));
-
-//                 io.emit(`order-out-for-delivery-${orderIdStr}`, { orderId: orderIdStr, riderId: rider_id });
-//                 break;  
-                
-//             // Rider delivered
-//             case 5:
-//                 await OrderModel.updateOrderStatus(order_id, 5, rider_id);
-//                 notifications.push(sendNotificationToUser({
-//                     userId: order.user_id,
-//                     title: "Order Delivered",
-//                     body: "Your order has been delivered successfully.",
-//                     data: { order_id: orderIdStr, type: "order_update" }
-//                 }));
-//                 io.emit(`order-delivered-${orderIdStr}`, { orderId: orderIdStr, riderId: rider_id });
-//                 break;
-
-//             // Rejected
-//             case 6:
-//                 notifications.push(sendNotificationToUser({
-//                     userId: order.user_id,
-//                     title: "Order Rejected",
-//                     body: `Your order from ${order.store_name} was rejected.`,
-//                     data: { order_id: orderIdStr, type: "order_update" }
-//                 }));
-
-//                 io.emit(`order-rejected-${orderIdStr}`, { orderId: orderIdStr, riderId: rider_id });
-//                 break;                
-
-//             default:
-//                 console.log("Unhandled status:", order_status);
-//         }
-
-//         // Step 5: Send notifications concurrently
-//         const notifResults = await Promise.allSettled(notifications);
-//         notifResults.forEach((result, index) => {
-//             if (result.status === "rejected") {
-//                 console.warn(`Notification #${index + 1} failed:`, result.reason);
-//             }
-//         });
-
-//         return res.status(200).json({ success: true, message: `Order updated to status '${order_status}' successfully` });
-
-//     } catch (error) {
-//         console.error("Error in updateOrder:", error);
-//         return res.status(500).json({ success: false, message: "Internal server error" });
-//     }
-// };
 
 
 const getOrdersByUserId = (req, res) => {
@@ -1287,7 +1112,7 @@ const getOrderDetails = (req, res) => {
                 variant_id, variant_type, variant_value, variant_price,
                 addon_id, addon_name, addon_price,
                 address, type, floor, landmark,
-                firstname, lastname, phonenumber, prefix, is_fast_delivery,rider_id,
+                firstname, lastname, phonenumber, prefix, is_fast_delivery, rider_id,
                 store_name, store_address, vendor_phonenumber, vendor_prefix
             } = row;
 
@@ -1377,115 +1202,115 @@ const getOrderDetails = (req, res) => {
 
 
 const updateOrderTiming = (req, res) => {
-  const { order_id, update_time, vendor_id } = req.body;
+    const { order_id, update_time, vendor_id } = req.body;
 
-  OrderModel.getOrdertimeByOrderId(order_id, vendor_id, (err, results) => {
-    if (err) return res.status(500).json({ error: "Database error" });
+    OrderModel.getOrdertimeByOrderId(order_id, vendor_id, (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error" });
 
-    if (!results || results.length === 0) {
-      return res.status(200).json({ message: "No order found for this user." });
-    }
+        if (!results || results.length === 0) {
+            return res.status(200).json({ message: "No order found for this user." });
+        }
 
-    const currentPreparingTime = results[0].preparing_time || 0;
-    let updatedTime = currentPreparingTime;
+        const currentPreparingTime = results[0].preparing_time || 0;
+        let updatedTime = currentPreparingTime;
 
-    if (update_time.startsWith("+")) {
-      updatedTime += parseInt(update_time.substring(1), 10);
-    } else if (update_time.startsWith("-")) {
-      updatedTime -= parseInt(update_time.substring(1), 10);
-    } else {
-      return res.status(400).json({ message: "Invalid update_time format. Use +5 or -3 etc." });
-    }
+        if (update_time.startsWith("+")) {
+            updatedTime += parseInt(update_time.substring(1), 10);
+        } else if (update_time.startsWith("-")) {
+            updatedTime -= parseInt(update_time.substring(1), 10);
+        } else {
+            return res.status(400).json({ message: "Invalid update_time format. Use +5 or -3 etc." });
+        }
 
-    // Ensure time doesn't go negative
-    if (updatedTime < 0) updatedTime = 0;
+        // Ensure time doesn't go negative
+        if (updatedTime < 0) updatedTime = 0;
 
-    OrderModel.updatePreparingTime(order_id, vendor_id, updatedTime, (updateErr) => {
-      if (updateErr) return res.status(500).json({ error: "Failed to update preparing time" });
+        OrderModel.updatePreparingTime(order_id, vendor_id, updatedTime, (updateErr) => {
+            if (updateErr) return res.status(500).json({ error: "Failed to update preparing time" });
 
-      return res.status(200).json({
-        message: "Preparing time updated successfully",
-        old_time: currentPreparingTime,
-        new_time: updatedTime,
-      });
+            return res.status(200).json({
+                message: "Preparing time updated successfully",
+                old_time: currentPreparingTime,
+                new_time: updatedTime,
+            });
+        });
     });
-  });
 };
 
 const verifyOtp = async (req, res, io) => {
-  try {
-    const { order_id, entered_otp } = req.body;
+    try {
+        const { order_id, entered_otp } = req.body;
 
-    if (!order_id || !entered_otp) {
-      return res.status(400).json({ message: "Missing order_id or entered_otp" });
+        if (!order_id || !entered_otp) {
+            return res.status(400).json({ message: "Missing order_id or entered_otp" });
+        }
+
+        const result = await OrderModel.verifyOtp(order_id, entered_otp);
+        switch (result.status) {
+            case 'not_found':
+                return res.status(404).json({ message: "Order not found" });
+
+            case 'already_verified':
+                return res.status(400).json({ message: "OTP already verified" });
+
+            case 'expired':
+                return res.status(400).json({ message: "OTP has expired" });
+
+            case 'invalid':
+                return res.status(401).json({ message: "Invalid OTP" });
+
+            case 'verified':
+                // ✅ Update order status
+                await OrderDetails.updateOrderStatus(order_id, 2);
+
+                // ✅ Send notification to user
+                await sendNotificationToUser({
+                    userId: result.user_id,
+                    title: "Order Picked Up",
+                    body: "Your order is on the way!",
+                    data: { order_id: order_id.toString(), type: "order_update" },
+                    saveToDB: true
+                });
+
+                // ✅ Emit socket event for OTP verified
+                io.emit(`otp-verified-${order_id}`, {
+                    orderId: order_id,
+                    userId: result.user_id,
+                    riderId: result.rider_id || null,
+                    status: "verified"
+                });
+
+                io.to(`customer_${result.user_id}`).emit("chat_ready", {
+                    chat_id: order_id,
+                    rider_id: result.rider_id,
+                    customer_id: result.user_id
+                });
+
+                io.to(`rider_${result.rider_id}`).emit("chat_ready", {
+                    chat_id: order_id,
+                    rider_id: result.rider_id,
+                    customer_id: result.user_id
+                });
+
+                // ✅ Console log for debug
+                console.log(`Socket emitted: otp-verified-${order_id}`, {
+                    orderId: order_id,
+                    userId: result.user_id,
+                    riderId: result.rider_id || null,
+                    status: "verified"
+                });
+
+                return res.status(200).json({
+                    message: "OTP verified successfully. Order picked up."
+                });
+
+            default:
+                return res.status(500).json({ message: "Unexpected error" });
+        }
+    } catch (error) {
+        console.error("verifyOtp error:", error);
+        res.status(500).json({ message: "Server error" });
     }
-
-    const result = await OrderModel.verifyOtp(order_id, entered_otp);
-    switch (result.status) {
-      case 'not_found':
-        return res.status(404).json({ message: "Order not found" });
-
-      case 'already_verified':
-        return res.status(400).json({ message: "OTP already verified" });
-
-      case 'expired':
-        return res.status(400).json({ message: "OTP has expired" });
-
-      case 'invalid':
-        return res.status(401).json({ message: "Invalid OTP" });
-
-      case 'verified':
-        // ✅ Update order status
-        await OrderDetails.updateOrderStatus(order_id, 2);
-
-        // ✅ Send notification to user
-        await sendNotificationToUser({
-          userId: result.user_id,
-          title: "Order Picked Up",
-          body: "Your order is on the way!",
-          data: { order_id: order_id.toString(), type: "order_update" },
-          saveToDB: true
-        });
-
-        // ✅ Emit socket event for OTP verified
-        io.emit(`otp-verified-${order_id}`, { 
-          orderId: order_id, 
-          userId: result.user_id, 
-          riderId: result.rider_id || null, 
-          status: "verified" 
-        });
-
-        io.to(`customer_${result.user_id}`).emit("chat_ready", {
-            chat_id: order_id,
-            rider_id: result.rider_id,
-            customer_id: result.user_id
-            });
-
-        io.to(`rider_${result.rider_id}`).emit("chat_ready", {
-            chat_id: order_id,
-            rider_id: result.rider_id,
-            customer_id: result.user_id
-        });
-
-        // ✅ Console log for debug
-        console.log(`Socket emitted: otp-verified-${order_id}`, { 
-          orderId: order_id, 
-          userId: result.user_id, 
-          riderId: result.rider_id || null, 
-          status: "verified" 
-        });
-
-        return res.status(200).json({ 
-          message: "OTP verified successfully. Order picked up." 
-        });
-
-      default:
-        return res.status(500).json({ message: "Unexpected error" });
-    }
-  } catch (error) {
-    console.error("verifyOtp error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
 };
 
 
@@ -1638,7 +1463,7 @@ const orderHistory = async (req, res) => {
     const { user_id } = req.body;
     // const isToday = req.path.includes('/today'); // 👈 detect the URL
     let isToday = false;
-    
+
     let selectedDate = null;
 
     // Check if path ends with /today
@@ -1655,16 +1480,16 @@ const orderHistory = async (req, res) => {
         return res.status(400).json({ error: "user_id is required" });
     }
 
-    OrderModel.orderHistorybyUserID(user_id, isToday,selectedDate, (err, results) => {
+    OrderModel.orderHistorybyUserID(user_id, isToday, selectedDate, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });
-         if (!results || results.length === 0) {
-                const msg = isToday
-                    ? "No orders found for today."
-                    : selectedDate
-                        ? `No orders found for ${selectedDate}.`
-                        : "No order found.";
-                return res.status(200).json({ message: msg });
-            }
+        if (!results || results.length === 0) {
+            const msg = isToday
+                ? "No orders found for today."
+                : selectedDate
+                    ? `No orders found for ${selectedDate}.`
+                    : "No order found.";
+            return res.status(200).json({ message: msg });
+        }
 
         // 🧠 Your existing order grouping logic stays exactly the same ↓
         const ordersMap = {};
@@ -1684,7 +1509,7 @@ const orderHistory = async (req, res) => {
                     is_fast_delivery: row.is_fast_delivery,
                     order_status: row.order_status,
                     created_at: row.created_at,
-                    
+
 
                     user: {
                         firstname: row.user_firstname,
@@ -1798,72 +1623,72 @@ const orderHistory = async (req, res) => {
 
 
 const handleOrderByRider = async (req, res, io) => {
-  const { orderId, riderId, status } = req.body;
+    const { orderId, riderId, status } = req.body;
 
-  // Allowed statuses
-  if (![2, 3, 4, 5].includes(status)) {
-    return res.status(400).json({ success: false, message: "Invalid status" });
-  }
+    // Allowed statuses
+    if (![2, 3, 4, 5].includes(status)) {
+        return res.status(400).json({ success: false, message: "Invalid status" });
+    }
 
-  const orderIdStr = orderId.toString();
-   console.log('order id', orderId)
-  console.log('order id type', orderIdStr)
-   console.log('rider id', riderId)
+    const orderIdStr = orderId.toString();
+    console.log('order id', orderId)
+    console.log('order id type', orderIdStr)
+    console.log('rider id', riderId)
     console.log('status id', status)
 
 
-  try {
-    const isHandled = await OrderModel.handleOrder(orderIdStr, riderId, status);
-    if (!isHandled) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Order already handled" });
-    }
+    try {
+        const isHandled = await OrderModel.handleOrder(orderIdStr, riderId, status);
+        if (!isHandled) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Order already handled" });
+        }
 
-    switch (status) {
-      // Rider accepted
-    //   case 2: {
-    //     const rider_accept = await OrderDetails.updateOrderStatusbyRider(orderIdStr, 2, riderId);
-    //     console.log('rider_accept results,',rider_accept);
-    //     const results = await OrderModel.getOrderandRiderDetails(orderIdStr);
-    //     console.log('getOrderandRiderDetails results,',results)
-    //     if (!results || results.length === 0) {
-    //       return res
-    //         .status(404)
-    //         .json({ success: false, message: "Order not found" });
-    //     }
+        switch (status) {
+            // Rider accepted
+            //   case 2: {
+            //     const rider_accept = await OrderDetails.updateOrderStatusbyRider(orderIdStr, 2, riderId);
+            //     console.log('rider_accept results,',rider_accept);
+            //     const results = await OrderModel.getOrderandRiderDetails(orderIdStr);
+            //     console.log('getOrderandRiderDetails results,',results)
+            //     if (!results || results.length === 0) {
+            //       return res
+            //         .status(404)
+            //         .json({ success: false, message: "Order not found" });
+            //     }
 
-    //     const orderDetails = results[0];
+            //     const orderDetails = results[0];
 
-    //     try {
-    //       await sendNotificationToUser({
-    //         userId: orderDetails.customer_id,
-    //         title: "Meet Your Delivery Partner",
-    //         body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
-    //         data: {
-    //           order_id: orderIdStr,
-    //           rider_name: orderDetails.rider_firstname,
-    //           rider_phone: orderDetails.rider_number.toString(),
-    //           type: "order_update",
-    //         },
-    //          saveToDB: true
-    //       });
+            //     try {
+            //       await sendNotificationToUser({
+            //         userId: orderDetails.customer_id,
+            //         title: "Meet Your Delivery Partner",
+            //         body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
+            //         data: {
+            //           order_id: orderIdStr,
+            //           rider_name: orderDetails.rider_firstname,
+            //           rider_phone: orderDetails.rider_number.toString(),
+            //           type: "order_update",
+            //         },
+            //          saveToDB: true
+            //       });
 
-    //       io.emit(`stop-buzzer-${orderIdStr}`, { orderId: orderIdStr });
-    //       return res.json({
-    //         success: true,
-    //         message: "Order accepted by rider",
-    //       });
-    //     } catch (notificationError) {
-    //       console.error("Notification error:", notificationError);
-    //       return res.status(500).json({
-    //         success: false,
-    //         message: "Failed to send notification",
-    //       });
-    //     }
-    //   }
+            //       io.emit(`stop-buzzer-${orderIdStr}`, { orderId: orderIdStr });
+            //       return res.json({
+            //         success: true,
+            //         message: "Order accepted by rider",
+            //       });
+            //     } catch (notificationError) {
+            //       console.error("Notification error:", notificationError);
+            //       return res.status(500).json({
+            //         success: false,
+            //         message: "Failed to send notification",
+            //       });
+            //     }
+            //   }
 
-        case 2: {
+            case 2: {
                 const rider_accept = await OrderDetails.updateOrderStatusbyRider(orderIdStr, 2, riderId);
                 console.log('rider_accept results,', rider_accept);
 
@@ -1872,8 +1697,8 @@ const handleOrderByRider = async (req, res, io) => {
 
                 if (!results || results.length === 0) {
                     return res
-                    .status(404)
-                    .json({ success: false, message: "Order not found" });
+                        .status(404)
+                        .json({ success: false, message: "Order not found" });
                 }
 
                 const orderDetails = results[0];
@@ -1881,16 +1706,16 @@ const handleOrderByRider = async (req, res, io) => {
                 try {
                     // ✅ Notify customer
                     await sendNotificationToUser({
-                    userId: orderDetails.customer_id,
-                    title: "Meet Your Delivery Partner",
-                    body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
-                    data: {
-                        order_id: orderIdStr,
-                        rider_name: orderDetails.rider_firstname,
-                        rider_phone: orderDetails.rider_number.toString(),
-                        type: "order_update",
-                    },
-                    saveToDB: true
+                        userId: orderDetails.customer_id,
+                        title: "Meet Your Delivery Partner",
+                        body: `Your order is on the way with ${orderDetails.rider_firstname}. Contact: ${orderDetails.rider_number}`,
+                        data: {
+                            order_id: orderIdStr,
+                            rider_name: orderDetails.rider_firstname,
+                            rider_phone: orderDetails.rider_number.toString(),
+                            type: "order_update",
+                        },
+                        saveToDB: true
                     });
 
                     // ✅ Emit to stop buzzer
@@ -1898,179 +1723,179 @@ const handleOrderByRider = async (req, res, io) => {
 
                     // ✅ Emit new socket event for rider acceptance
                     const payload = {
-                    order_id: orderIdStr,
-                    rider_id: riderId,
-                    rider_accepted: true,  // <-- Added flag
-                    type: "rider_accept_order",
+                        order_id: orderIdStr,
+                        rider_id: riderId,
+                        rider_accepted: true,  // <-- Added flag
+                        type: "rider_accept_order",
                     };
 
                     console.log("📡 Emitting rider_accept_order event:", payload);
 
                     // Emit globally OR to specific riders
-                    io.emit(`rider-accepted-${orderIdStr}`, payload); 
+                    io.emit(`rider-accepted-${orderIdStr}`, payload);
                     // 👆 emits to all — or you can target vendor/customer rooms if you use room joins like:
                     // io.to(`vendor_${orderDetails.vendor_id}`).emit(`rider-accepted-${orderIdStr}`, payload);
 
                     return res.json({
-                    success: true,
-                    message: "Order accepted by rider",
+                        success: true,
+                        message: "Order accepted by rider",
                     });
                 } catch (notificationError) {
                     console.error("Notification error:", notificationError);
                     return res.status(500).json({
-                    success: false,
-                    message: "Failed to send notification",
+                        success: false,
+                        message: "Failed to send notification",
                     });
                 }
+            }
+
+
+            // Rider reached vendor → Generate OTP
+            case 3: {
+                await OrderDetails.updateOrderStatusbyRider(orderIdStr, 3, riderId);
+
+                const otp = generateOtp(6);
+                const expiry = new Date(Date.now() + 10 * 60 * 1000);
+
+                await OrderModel.updateOtpAndStatus(orderIdStr, otp, expiry);
+
+                try {
+                    await sendNotificationToUser({
+                        userId: riderId,
+                        title: "OTP for Vendor",
+                        body: `Show this OTP to the vendor: ${otp}`,
+                        data: { order_id: orderIdStr, type: "otp_info" },
+                        saveToDB: true
+                    });
+                } catch (e) {
+                    console.error("OTP notification error:", e);
                 }
 
+                io.emit(`otp-generated-${orderIdStr}`, { orderId: orderIdStr, riderId, otp });
+                console.log(`Socket emitted: otp-generated-${orderIdStr}`, {
+                    orderId: orderIdStr,
+                    riderId,
+                    otp,
+                });
 
-      // Rider reached vendor → Generate OTP
-      case 3: {
-        await OrderDetails.updateOrderStatusbyRider(orderIdStr, 3, riderId);
+                return res.json({
+                    success: true,
+                    message: "OTP generated and sent to rider when reached vendor",
+                });
+            }
 
-        const otp = generateOtp(6);
-        const expiry = new Date(Date.now() + 10 * 60 * 1000);
+            // Rider delivered
+            case 4: {
+                await OrderDetails.updateOrderStatusbyRider(orderIdStr, 4, riderId);
 
-        await OrderModel.updateOtpAndStatus(orderIdStr, otp, expiry);
+                try {
+                    const customerId = await OrderModel.getCustomerId(orderIdStr);
+                    await sendNotificationToUser({
+                        userId: customerId,
+                        title: "Order Delivered",
+                        body: "Your order has been delivered successfully.",
+                        data: { order_id: orderIdStr, type: "order_update" },
+                        saveToDB: true
+                    });
+                } catch (e) {
+                    console.error("Delivery notification error:", e);
+                }
 
-        try {
-          await sendNotificationToUser({
-            userId: riderId,
-            title: "OTP for Vendor",
-            body: `Show this OTP to the vendor: ${otp}`,
-            data: { order_id: orderIdStr, type: "otp_info" },
-            saveToDB: true
-          });
-        } catch (e) {
-          console.error("OTP notification error:", e);
+                io.emit(`order-delivered-${orderIdStr}`, { orderId: orderIdStr, riderId });
+                return res.json({ success: true, message: "Order delivered" });
+            }
+
+            // Rider rejected
+            case 5: {
+                await OrderDetails.updateOrderStatusbyRider(orderIdStr, 5, riderId);
+                io.emit(`order-rejected-${orderIdStr}`, { orderId: orderIdStr, riderId });
+                return res.json({ success: true, message: "Order rejected by rider" });
+            }
         }
-
-        io.emit(`otp-generated-${orderIdStr}`, { orderId: orderIdStr, riderId, otp });
-        console.log(`Socket emitted: otp-generated-${orderIdStr}`, {
-          orderId: orderIdStr,
-          riderId,
-          otp,
-        });
-
-        return res.json({
-          success: true,
-          message: "OTP generated and sent to rider when reached vendor",
-        });
-      }
-
-      // Rider delivered
-      case 4: {
-        await OrderDetails.updateOrderStatusbyRider(orderIdStr, 4, riderId);
-
-        try {
-          const customerId = await OrderModel.getCustomerId(orderIdStr);
-          await sendNotificationToUser({
-            userId: customerId,
-            title: "Order Delivered",
-            body: "Your order has been delivered successfully.",
-            data: { order_id: orderIdStr, type: "order_update" },
-            saveToDB: true
-          });
-        } catch (e) {
-          console.error("Delivery notification error:", e);
-        }
-
-        io.emit(`order-delivered-${orderIdStr}`, { orderId: orderIdStr, riderId });
-        return res.json({ success: true, message: "Order delivered" });
-      }
-
-      // Rider rejected
-      case 5: {
-        await OrderDetails.updateOrderStatusbyRider(orderIdStr, 5, riderId);
-        io.emit(`order-rejected-${orderIdStr}`, { orderId: orderIdStr, riderId });
-        return res.json({ success: true, message: "Order rejected by rider" });
-      }
+    } catch (error) {
+        console.error("Error in handleOrderByRider:", error);
+        return res
+            .status(500)
+            .json({ success: false, message: "Internal server error" });
     }
-  } catch (error) {
-    console.error("Error in handleOrderByRider:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
-  }
 };
 
 
 
 
 const orderDetailsForRider = (req, res) => {
-  const { rider_id } = req.params;
+    const { rider_id } = req.params;
 
-  OrderModel.getOrdersByRiderId(rider_id, (err, results) => {
-    if (err) return res.status(500).json({ error: "Database error" });
+    OrderModel.getOrdersByRiderId(rider_id, (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error" });
 
-    if (!results || results.length === 0) {
-      return res.status(404).json({ message: "No order found for this rider." });
-    }
+        if (!results || results.length === 0) {
+            return res.status(404).json({ message: "No order found for this rider." });
+        }
 
-    const ordersMap = {};
+        const ordersMap = {};
 
-    results.forEach(row => {
-      if (!ordersMap[row.order_id]) {
-        ordersMap[row.order_id] = {
-          order_id: row.order_id,
-          user_id: row.user_id,
-          total_quantity: row.total_quantity,
-          total_price: row.total_price,
-          payment_method: row.payment_method,
-          is_fast_delivery: row.is_fast_delivery,
-          order_status: row.order_status,
-          created_at: row.created_at,
+        results.forEach(row => {
+            if (!ordersMap[row.order_id]) {
+                ordersMap[row.order_id] = {
+                    order_id: row.order_id,
+                    user_id: row.user_id,
+                    total_quantity: row.total_quantity,
+                    total_price: row.total_price,
+                    payment_method: row.payment_method,
+                    is_fast_delivery: row.is_fast_delivery,
+                    order_status: row.order_status,
+                    created_at: row.created_at,
 
-          user: {
-            firstname: row.firstname,
-            lastname: row.lastname,
-            email: row.email,
-            prefix: row.prefix,
-            phonenumber: row.phonenumber,
-            custom_id: row.user_custom_id
-          },
+                    user: {
+                        firstname: row.firstname,
+                        lastname: row.lastname,
+                        email: row.email,
+                        prefix: row.prefix,
+                        phonenumber: row.phonenumber,
+                        custom_id: row.user_custom_id
+                    },
 
-          vendor: {
-            store_name: row.store_name,
-            store_address: row.store_address,
-            custom_id: row.vendor_custom_id
-          },
+                    vendor: {
+                        store_name: row.store_name,
+                        store_address: row.store_address,
+                        custom_id: row.vendor_custom_id
+                    },
 
-          rider: {
-            firstname: row.rider_first_name,
-            lastname: row.rider_last_name,
-            custom_id: row.rider_custom_id
-          },
+                    rider: {
+                        firstname: row.rider_first_name,
+                        lastname: row.rider_last_name,
+                        custom_id: row.rider_custom_id
+                    },
 
-          address: {
-            address: row.address,
-            type: row.type,
-            floor: row.floor,
-            landmark: row.landmark
-          },
+                    address: {
+                        address: row.address,
+                        type: row.type,
+                        floor: row.floor,
+                        landmark: row.landmark
+                    },
 
-          products: []
-        };
-      }
+                    products: []
+                };
+            }
 
-      ordersMap[row.order_id].products.push({
-        product_name: row.product_name,
-        product_size: row.product_size,
-        product_quantity: row.product_quantity,
-        total_item_price: row.total_item_price,
-        single_item_price: row.single_item_price
-      });
+            ordersMap[row.order_id].products.push({
+                product_name: row.product_name,
+                product_size: row.product_size,
+                product_quantity: row.product_quantity,
+                total_item_price: row.total_item_price,
+                single_item_price: row.single_item_price
+            });
+        });
+
+        res.status(200).json({
+            status: true,
+            message: "Orders fetched successfully",
+            data: Object.values(ordersMap)
+        });
     });
-
-    res.status(200).json({
-    status: true,
-    message: "Orders fetched successfully",
-    data: Object.values(ordersMap)
-    });
-  });
 };
 
 
 
- module.exports = { createOrder, getOrdersByUserId,  updateOrderStatus, getOrdersByVendorIdandRiderID, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, handleOrderByRider, orderDetailsForRider};
+module.exports = { createOrder, getOrdersByUserId, updateOrderStatus, getOrdersByVendorIdandRiderID, getOrderDetails, updateOrderTiming, verifyOtp, getAllOrders, orderHistory, handleOrderByRider, orderDetailsForRider };
