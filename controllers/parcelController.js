@@ -152,20 +152,35 @@ const createParcel = async (req, res) => {
 
 const getParcel = (req, res) => {
     const user_id = req.params.user_id;
-    const isToday = req.path.includes('/today'); // ✅ Detect /today route
+    let isToday = false;
+    let selectedDate = null;
 
-    ParcelModel.findall(user_id, isToday, (err, result) => {
+    // Check for "/today"
+    if (req.path.includes('/today')) {
+        isToday = true;
+    }
+
+    // If a date param is provided (except "today")
+    if (req.params.date && req.params.date !== "today") {
+        selectedDate = req.params.date;
+    }
+
+     ParcelModel.findall(user_id, isToday, selectedDate, (err, result) => {
         if (err)
             return res
                 .status(500)
                 .json({ success: false, message: 'Error fetching parcels', error: err });
 
-        if (!result.length)
+        if (!result || result.length === 0)
             return res
-                .status(404)
+                .status(200)
                 .json({ 
                     success: false, 
-                    message: isToday ? 'No parcels found for today' : 'Parcels not found' 
+                    message: isToday 
+                        ? 'No parcels found for today' 
+                        : selectedDate 
+                            ? `No parcels found for ${selectedDate}` 
+                            : 'Parcels not found'
                 });
 
         res.status(200).json({ success: true, parcels: result });
