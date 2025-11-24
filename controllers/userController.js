@@ -367,7 +367,6 @@ const getPhonePrefixes = (req, res)=>{
     });
 };
 
-
 // RESET password using OTP
 const resetPassword = (req, res) => {
     const { email, otp, new_password } = req.body;
