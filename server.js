@@ -40,6 +40,7 @@ app.use(cors({
 }));
 app.options('*', cors());
 
+
 // ✅ Socket.IO setup
 require('./sockets/orderSocket')(io);
 require('./sockets/vendorSocket')(io);
