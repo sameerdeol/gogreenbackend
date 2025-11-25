@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "go-green-canada-73b42",
+  "private_key_id": "b694dc741870bfcbf205983759bf16b800e3d67e",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC+mNEMEZkhWjrV\nJCdQhyouwc/LcczEdQEz0PKhY2QUj1EsRBLyVnr6Yo8bZCQiXaRjxj35XpUN9CEv\nYlAlcgSfRcZ2qUlUqUDaCkBa04u4FnJwpDrG3d+6lm2nS1hKzs4HRnPVFbKhfFCl\nZ/trBNcaKJZuA66WIasjRmayICnpme/jRSG1madO4d9gr9VLI2k/CulMw/5+BpNU\nZrTwae2QjV37mUp6QVBc5EvASYHycRecVIR/UTSVCYjVvq9D1vWKjg5LiGc1pG6X\nMu/xQ8hanP5dagCIscYxAk+hmTc7MNYNATvWwjr1XZEcEF0KNqzZtf4cBuVqhsRp\nEQAmAoMHAgMBAAECggEAEHHR85cfHbQRyGsOo1GOL6uUOKrwbnDj8isQjCEttOJq\nsAWNlvAkOy8+xq+8uGRY9yzXEwl4ldQe+t4iKSDtyio0he90PsQ9rrJcvBltgCwb\noqFg2uCw2YH6IwmKrCWsvA71loiBOZKmyKawmBq6Tmz7EbHqodR01h3QZYUF6Lwz\nmbj/SlYOMzKgiAEFoLaZ3IvEEGfr44Yy6yikuxf8LC+N98ZwLHf1ruOm3GEbjYVa\nV1fPgQvg+D2aRaPM53zBqMjCLrX+fZVEr+68jRor8B6l6vq7MOHzj6OgiWBXuOcu\njmjWyHue7SguGjAAYzx8Jud583rXf0OQTDFkO5CBvQKBgQD0NE9+iRhImquwZuAt\nvm/3mMDnDuVUC2JcAFCZDXZQn47Pmlf5gOyl0xryeTOYp+2jOA8z/8VBazGb9ohn\n/COqXxfTNZR7Heg9h9omkBEqJmeDDCkCSZHiI+AKykOWds7zQwkxUgb+F3UP8o8F\nPyG0xamZi1J8iU0d5L1n42rFgwKBgQDHzaDFdBzWjfaWFKfxie3MXxFdzMbcdH5k\nftJoOtc24wRjt5imy181Q3vllFLrr0wF9ddlmixDYgwl3EnhQ/VAMGZ/7P6qZal7\nO1VqG8h41wgjb3ehecUqOK25/JPaKbtZOIJjgw+E0RdIfEiQ/F46F6RQsSziTIsv\ngOCOxvwZLQKBgFwIlukOS+uY9xmtO9GhktsSY6jw8TbCb5hSug1kiHGMIKtW9M7g\nas94BxDY4rwmlaXMy9YCD9o+xtyLhg8CdIKSAg2khMf9lngSCgI8i2uCO8Kkw5PM\nHEHI2XfXkK9VKVt+qSlAS8hZGNIgzQviJhbV47wtSLIMoNaiTUuo5qV3AoGAfe7a\nRXnw7z6dTG0KiZARBP5quL9oG+2E+JyCy9VCbsLZsmw21/JZOP4m6kX5mblsZllU\ngSKSgYob9AULv+MQgnu/LyRWQ1o+X4C/Tljim1+VLpiEQ4+3uOvue8p5+kjRX+Ph\nMw2ZS3JqhXJoXpHiZiUemQmDK8No+vD1GKjMnqUCgYAswVrTDjshm5DXEl6iIsq7\n4u2KRK/uOirNL6/0V91TH8mEOzTQR2S9olCFnJ1Z4C6EknnKYkNrY885OSO8w2wN\n9jWjUB0vQsQiSBjRiUiKzAn593vOp4iNBaMkUbaxeus4IN87nsMEDYpziNnKyM4V\nZlyVEqUxrlUQwJmsw6h3Bg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@go-green-canada-73b42.iam.gserviceaccount.com",
+  "client_id": "109109768390286349454",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40go-green-canada-73b42.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
