@@ -14,7 +14,7 @@ const {
   getAllOrders,
   orderHistory,
   handleOrderByRider,
-  orderDetailsForRider
+  orderDetailsForRider,
 } = require("../controllers/orderController");
 
 // Accept `io` when initializing routes

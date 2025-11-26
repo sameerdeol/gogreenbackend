@@ -74,6 +74,15 @@ const OrderDetails = {
         tip_percentage,
         callback
     ) => {
+        const baseDelivery = Number(rider_deliveryCharge) || 0;
+        const fastDelivery = Number(fast_delivery_charges) || 0;
+
+        // ✅ Add fast delivery charges to rider delivery charge
+        const final_delivery_charge = baseDelivery + fastDelivery;
+
+        // ✅ Calculate shares
+        const admin_share = Number((final_delivery_charge * 0.10).toFixed(2));
+        const rider_share = Number((final_delivery_charge - admin_share).toFixed(2));
         const sql = `
             INSERT INTO order_extra_details (
                 order_id,
@@ -86,8 +95,10 @@ const OrderDetails = {
                 rider_deliveryCharge,
                 overall_amount,
                 tip_amount,
-                tip_percentage
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                tip_percentage,
+                admin_share,
+                rider_share
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)
         `;
 
         db.query(
@@ -103,7 +114,9 @@ const OrderDetails = {
                 rider_deliveryCharge,
                 overall_amount,
                 tip_amount,
-                tip_percentage
+                tip_percentage,
+                admin_share,
+                rider_share
             ],
             callback
         );

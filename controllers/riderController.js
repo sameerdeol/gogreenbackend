@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models/User');
+const { Order } = require('../models/orderModel')
 const { generateUniqueUsername } = require('../middleware/username');
 const generateCustomId = require('../utils/generateCustomId');
 const path = require('path');
@@ -557,7 +558,27 @@ const getLiveOrderLocation = (req, res) => {
   });
 };
 
+const getOrdersWithExtraDetailsbyRiderId = (req, res) => {
+    const { rider_id } = req.body;
+    const { filter } = req.params;
 
+    Order.getOrdersWithExtraDetails(rider_id, filter, (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: "Database error" });
+        }
+
+        if (!results || results.length === 0) {
+            return res.status(200).json({
+                message: filter === "today" ? "No orders found for today" : "No orders found"
+            });
+        }
+
+         return res.status(200).json({
+            status: true,
+            Orders: results
+        });
+    });
+};
 
 
 const riderStatus = (req, res) => {
@@ -884,5 +905,6 @@ module.exports = {
     riderAnalytics,
     riderDashboardAnalytics,
     riderBankDetails,
-    getLiveOrderLocation
+    getLiveOrderLocation,
+    getOrdersWithExtraDetailsbyRiderId
 }; 
