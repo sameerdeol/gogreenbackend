@@ -31,7 +31,7 @@ router.put('/update-user', verifyToken, updateUser);
 router.get('/unverifiedUsers', authenticateToken, getUnverifiedUsers);
 router.put('/verify-user',authenticateToken, verifyUser);
 router.post(['/vendor-profile', '/rider-profile', '/customer-profile'], verifyToken, verifyToken,workersProfile);
-router.get('/getprefixes', verifyToken, getPhonePrefixes);
+router.get('/getprefixes', getPhonePrefixes);
 
 /**
  * Create Superadmins & Managers
