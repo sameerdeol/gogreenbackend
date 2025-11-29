@@ -519,6 +519,7 @@ const User = {
                     data.user_id,
                     data.address,
                     data.dob,
+                    data.prefix,
                     data.other_phone_number,
                     data.profile_pic,
                     data.identity_proof
@@ -541,8 +542,9 @@ const User = {
                     SET 
                         address = ?, 
                         dob = ?, 
+                        prefix = ?,
                         other_phone_number = ?, 
-                        profile_pic = ?, 
+                        profile_pic = ?,
                         identity_proof = ?
                     WHERE user_id = ?
                 `;
@@ -550,6 +552,7 @@ const User = {
                 const deliveryPartnerValues = [
                     data.address,
                     data.dob,
+                    data.prefix,
                     data.other_phone_number,
                     data.profile_pic,
                     data.identity_proof,
