@@ -566,6 +566,10 @@ const getOrdersWithExtraDetailsbyRiderId = (req, res) => {
     const { rider_id } = req.body;
     const { filter } = req.params;
 
+    if (!rider_id) {
+        return res.status(400).json({ error: "rider_id is required" });
+    }
+
     Order.getOrdersWithExtraDetails(rider_id, filter, (err, results) => {
         if (err) {
             return res.status(500).json({ error: "Database error" });
@@ -573,16 +577,22 @@ const getOrdersWithExtraDetailsbyRiderId = (req, res) => {
 
         if (!results || results.length === 0) {
             return res.status(200).json({
-                message: filter === "today" ? "No orders found for today" : "No orders found"
+                message:
+                    filter === "today"
+                        ? "No orders found for today"
+                        : /^\d{4}-\d{2}-\d{2}$/.test(filter)
+                        ? `No orders found on ${filter}`
+                        : "No orders found",
             });
         }
 
-         return res.status(200).json({
+        return res.status(200).json({
             status: true,
-            Orders: results
+            Orders: results,
         });
     });
 };
+
 
 
 const riderStatus = (req, res) => {

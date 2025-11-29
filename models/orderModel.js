@@ -115,60 +115,69 @@ const Order = {
 
     getOrdersWithExtraDetails: (rider_id, filter, callback) => {
 
-        let dateFilter = "";
+    let dateFilter = "";
+    let params = [rider_id];
 
-        // If user requests today's orders
-        if (filter && filter.toLowerCase() === "today") {
-            dateFilter = "AND DATE(OD.created_at) = CURDATE()";
-        }
+    // TODAY
+    if (filter && filter.toLowerCase() === "today") {
+        dateFilter = `
+            AND DATE(OD.created_at) = CURDATE()
+        `;
+    }
 
-        const query = `
-                SELECT 
-                    OD.id AS order_id,
-                    OD.order_uid,
-                    OD.user_id,
-                    OD.total_quantity,
-                    OD.total_price,
-                    OD.payment_method,
-                    OD.order_status,
-                    OD.rider_status,
-                    OD.created_at AS order_created_at,
+    // SPECIFIC DATE (YYYY-MM-DD)
+    else if (filter && /^\d{4}-\d{2}-\d{2}$/.test(filter)) {
+        dateFilter = `
+            AND DATE(OD.created_at) = ?
+        `;
+        params.push(filter); // ⬅ ADD DATE VALUE
+    }
 
-                    OED.items_price,
-                    OED.fast_delivery_charges,
-                    OED.order_vendor_distance,
-                    OED.order_delivery_type,
-                    OED.rider_deliveryCharge,
-                    OED.overall_amount,
-                    OED.tip_amount,
-                    OED.tip_percentage,
-                    OED.rider_share,
-                    OED.admin_share,
+    const query = `
+        SELECT 
+            OD.id AS order_id,
+            OD.order_uid,
+            OD.user_id,
+            OD.total_quantity,
+            OD.total_price,
+            OD.payment_method,
+            OD.order_status,
+            OD.rider_status,
+            OD.created_at AS order_created_at,
 
-                    U.firstname,
-                    U.lastname,
-                    U.phonenumber,
+            OED.items_price,
+            OED.fast_delivery_charges,
+            OED.order_vendor_distance,
+            OED.order_delivery_type,
+            OED.rider_deliveryCharge,
+            OED.overall_amount,
+            OED.tip_amount,
+            OED.tip_percentage,
+            OED.rider_share,
+            OED.admin_share,
 
-                    UA.address,
-                    UA.type,
-                    UA.floor,
-                    UA.landmark
+            U.firstname,
+            U.lastname,
+            U.phonenumber,
 
-                FROM 
-                    order_details OD
-                LEFT JOIN order_extra_details OED ON OED.order_id = OD.id
-                LEFT JOIN users U ON OD.user_id = U.id
-                LEFT JOIN user_addresses UA ON OD.user_address_id = UA.id
+            UA.address,
+            UA.type,
+            UA.floor,
+            UA.landmark
 
-                WHERE 
-                    OD.rider_id = ?
-                    ${dateFilter}
+        FROM order_details OD
+        LEFT JOIN order_extra_details OED ON OED.order_id = OD.id
+        LEFT JOIN users U ON OD.user_id = U.id
+        LEFT JOIN user_addresses UA ON OD.user_address_id = UA.id
+        WHERE OD.rider_id = ?
+        ${dateFilter}
+        ORDER BY OD.created_at DESC
+        `;
 
-                ORDER BY OD.created_at DESC
-            `;
-
-            db.query(query, [rider_id], callback);
+        db.query(query, params, callback); // ⬅ USE params
     },
+
+
 
 
     getOrdersByOrderId : (order_id, callback) => {
