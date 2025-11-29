@@ -409,6 +409,7 @@ const updateRiderProfile = async (req, res) => {
         user_id,
         prefix,
         license_number,
+        other_phone_prefix,
         dob
     } = req.body;
 
@@ -457,6 +458,7 @@ const updateRiderProfile = async (req, res) => {
                 email,
                 sin_code,
                 license_number,
+                delivery_partner_prefix: other_phone_prefix,
                 lastname,
                 dob
             };

@@ -258,7 +258,7 @@ const User = {
     
             const userTableFields = ['firstname', 'lastname', 'prefix', 'phonenumber', 'email'];
             const vendorTableFields = ['store_name','vendor_type_id','store_address', 'sin_code', 'profile_pic', 'vendor_thumb', 'vendor_lng', 'vendor_lat','business_reg_number', 'store_image'];
-            const deliveryPartnerTableFields = ['license_number', 'sin_code', 'profile_pic', 'dob'];
+            const deliveryPartnerTableFields = ['license_number', 'sin_code', 'profile_pic', 'dob', 'prefix'];
             const customerTableFields = ['dob','gender'];
     
             const queries = [];
@@ -281,7 +281,16 @@ const User = {
                     extraValues = [...values, user_id];
                 }
             } else if (role_id === 4) {
-                const { queryPart, values } = updateFields(userData, deliveryPartnerTableFields);
+                 const mappedDeliveryData = {
+                    license_number: userData.license_number,
+                    sin_code: userData.sin_code,
+                    profile_pic: userData.profile_pic,
+                    dob: userData.dob,
+                    prefix: userData.delivery_partner_prefix   // 👈 THIS IS THE FIX
+                };
+
+                const { queryPart, values } = updateFields(mappedDeliveryData, deliveryPartnerTableFields);
+                // const { queryPart, values } = updateFields(userData, deliveryPartnerTableFields);
                 if (queryPart) {
                     extraQuery = `UPDATE delivery_partners SET ${queryPart} WHERE user_id = ?`;
                     extraValues = [...values, user_id];
