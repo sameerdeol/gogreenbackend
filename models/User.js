@@ -611,6 +611,7 @@ const User = {
                     dp.id AS delivery_partners_id,
                     dp.sin_code,
                     dp.license_number,
+                    dp.prefix as other_phone_prefix,
                     dp.profile_pic,
                     dp.other_phone_number,
                     dp.rider_start_time,
