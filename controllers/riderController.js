@@ -341,6 +341,7 @@ const riderPersonalDetails = async (req, res) => {
             user_id,
             address,
             dob,
+            prefix,
             other_phone_number
         } = req.body;
 
@@ -372,6 +373,7 @@ const riderPersonalDetails = async (req, res) => {
             address,
             dob,
             other_phone_number,
+            prefix,
             profile_pic: await fileUpload('profile_pic'),
             identity_proof: await fileUpload('identity_proof'),
         };

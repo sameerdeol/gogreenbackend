@@ -512,8 +512,8 @@ const User = {
 
             if (rows.length === 0) {
                 const insertQuery = `
-                    INSERT INTO delivery_partners (user_id, address, dob, other_phone_number, profile_pic, identity_proof)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO delivery_partners (user_id, address, dob, prefix, other_phone_number, profile_pic, identity_proof)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 `;
                 const insertValues = [
                     data.user_id,
